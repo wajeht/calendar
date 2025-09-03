@@ -19,9 +19,21 @@ const server = Bun.serve({
   port: PORT,
 
   routes: {
-    "/": new Response(await Bun.file('./public/index.html').text(), {
-      headers: { 'Content-Type': 'text/html' }
-    }),
+    "/": async (req) => {
+      const url = new URL(req.url)
+      const viewParam = url.searchParams.get('view')
+      
+      if (viewParam) {
+        const mappedView = viewMap[viewParam.toLowerCase()]
+        if (mappedView) {
+          currentView = mappedView
+        }
+      }
+      
+      return new Response(await Bun.file('./public/index.html').text(), {
+        headers: { 'Content-Type': 'text/html' }
+      })
+    },
     "/favicon.ico": new Response(await Bun.file('./public/favicon.ico').bytes(), {
       headers: { 'Content-Type': 'image/x-icon' }
     }),
