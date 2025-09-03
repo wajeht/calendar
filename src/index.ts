@@ -22,14 +22,14 @@ const server = Bun.serve({
     "/": async (req) => {
       const url = new URL(req.url)
       const viewParam = url.searchParams.get('view')
-      
+
       if (viewParam) {
         const mappedView = viewMap[viewParam.toLowerCase()]
         if (mappedView) {
           currentView = mappedView
         }
       }
-      
+
       return new Response(await Bun.file('./public/index.html').text(), {
         headers: { 'Content-Type': 'text/html' }
       })
@@ -58,6 +58,42 @@ const server = Bun.serve({
     "/robots.txt": new Response(await Bun.file('./public/robots.txt').text(), {
       headers: { 'Content-Type': 'text/plain' }
     }),
+
+    "/healthz": async () => {
+      const health: any = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        checks: {
+          app: 'healthy',
+          database: 'healthy',
+          websocket: 'healthy'
+        }
+      };
+
+      try {
+        const calendars = CalendarDB.getAll();
+        health.checks.database = 'healthy';
+        health.checks.database_calendars_count = calendars.length;
+      } catch (error: any) {
+        health.status = 'unhealthy';
+        health.checks.database = 'unhealthy';
+        health.checks.database_error = error.message;
+      }
+
+      health.checks.websocket_connections = server.pendingWebSockets;
+
+      const statusCode = health.status === 'healthy' ? 200 : 503;
+
+      return Response.json(health, {
+        status: statusCode,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    },
 
     "/api/proxy-ical": async (req) => {
       const url = new URL(req.url)
