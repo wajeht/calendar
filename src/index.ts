@@ -232,6 +232,21 @@ const server = Bun.serve({
     }
   },
 
+  // Handle WebSocket upgrades in fetch for paths not caught by routes
+  fetch(req, server) {
+    // Check if this is a WebSocket upgrade request
+    if (req.headers.get("upgrade") === "websocket") {
+      const success = server.upgrade(req)
+      if (success) {
+        return undefined // Don't return a Response for successful upgrades
+      }
+      return new Response("WebSocket upgrade failed", { status: 500 })
+    }
+    
+    // If not a WebSocket request and no route matched, return 404
+    return new Response('Not Found', { status: 404 })
+  },
+
   websocket: {
     open(ws) {
       ws.subscribe("calendar")
@@ -247,17 +262,6 @@ const server = Bun.serve({
       ws.unsubscribe("calendar")
       console.log("WebSocket client disconnected")
     }
-  },
-
-  fetch(req, server) {
-    if (req.headers.get("upgrade") === "websocket") {
-      const success = server.upgrade(req)
-      if (success) {
-        return undefined
-      }
-    }
-
-    return new Response('Not Found', { status: 404 })
   }
 })
 
