@@ -604,7 +604,47 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', initCalendar);
+        // WebSocket connection for live view changes
+        let ws;
+        
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'changeView' && data.view) {
+                        console.log('Changing view to:', data.view);
+                        if (calendar) {
+                            calendar.changeView(data.view);
+                        }
+                    }
+                } catch (error) {
+                    console.error('WebSocket message error:', error);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting in 3s...');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCalendar();
+            connectWebSocket();
+        });
     </script>
 </body>
 </html>
