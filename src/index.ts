@@ -4,6 +4,17 @@ const PORT = parseInt(Bun.env.PORT || '80');
 
 let currentView = 'timeGridWeek';
 
+const viewMap: Record<string, string> = {
+  'month': 'dayGridMonth',
+  'week': 'timeGridWeek',
+  'day': 'timeGridDay',
+  'list': 'listMonth',
+  'dayGridMonth': 'dayGridMonth',
+  'timeGridWeek': 'timeGridWeek',
+  'timeGridDay': 'timeGridDay',
+  'listMonth': 'listMonth'
+};
+
 const server = Bun.serve({
   port: PORT,
 
@@ -111,17 +122,6 @@ const server = Bun.serve({
         const viewParam = url.searchParams.get('view')
 
         if (viewParam) {
-          const viewMap: Record<string, string> = {
-            'month': 'dayGridMonth',
-            'week': 'timeGridWeek',
-            'day': 'timeGridDay',
-            'list': 'listMonth',
-            'dayGridMonth': 'dayGridMonth',
-            'timeGridWeek': 'timeGridWeek',
-            'timeGridDay': 'timeGridDay',
-            'listMonth': 'listMonth'
-          }
-
           const mappedView = viewMap[viewParam.toLowerCase()]
 
           if (!mappedView) {
@@ -158,17 +158,6 @@ const server = Bun.serve({
         try {
           const body = await req.json()
           const { view } = body
-
-          const viewMap: Record<string, string> = {
-            'month': 'dayGridMonth',
-            'week': 'timeGridWeek',
-            'day': 'timeGridDay',
-            'list': 'listMonth',
-            'dayGridMonth': 'dayGridMonth',
-            'timeGridWeek': 'timeGridWeek',
-            'timeGridDay': 'timeGridDay',
-            'listMonth': 'listMonth'
-          }
 
           const mappedView = viewMap[view?.toLowerCase()]
 
