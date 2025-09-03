@@ -247,7 +247,7 @@
             const calendarEl = document.getElementById('calendar');
             
             calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
+                initialView: 'timeGridWeek',  // Changed to week view
                 firstDay: 1, // Start week on Monday (0=Sunday, 1=Monday)
                 headerToolbar: {
                     left: 'prev,next today',
