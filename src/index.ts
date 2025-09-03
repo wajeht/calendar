@@ -4,94 +4,81 @@ const PORT = parseInt(Bun.env.PORT || '80');
 
 const server = Bun.serve({
   port: PORT,
-  async fetch(request) {
-    const url = new URL(request.url)
+  
+  routes: {
+    // Static files served from memory (buffered at startup)
+    "/": new Response(await Bun.file('./public/index.html').text(), {
+      headers: { 'Content-Type': 'text/html' }
+    }),
+    "/favicon.ico": new Response(await Bun.file('./public/favicon.ico').bytes(), {
+      headers: { 'Content-Type': 'image/x-icon' }
+    }),
+    "/favicon-16x16.png": new Response(await Bun.file('./public/favicon-16x16.png').bytes(), {
+      headers: { 'Content-Type': 'image/png' }
+    }),
+    "/favicon-32x32.png": new Response(await Bun.file('./public/favicon-32x32.png').bytes(), {
+      headers: { 'Content-Type': 'image/png' }
+    }),
+    "/apple-touch-icon.png": new Response(await Bun.file('./public/apple-touch-icon.png').bytes(), {
+      headers: { 'Content-Type': 'image/png' }
+    }),
+    "/android-chrome-192x192.png": new Response(await Bun.file('./public/android-chrome-192x192.png').bytes(), {
+      headers: { 'Content-Type': 'image/png' }
+    }),
+    "/android-chrome-512x512.png": new Response(await Bun.file('./public/android-chrome-512x512.png').bytes(), {
+      headers: { 'Content-Type': 'image/png' }
+    }),
+    "/site.webmanifest": new Response(await Bun.file('./public/site.webmanifest').text(), {
+      headers: { 'Content-Type': 'application/manifest+json' }
+    }),
+    "/robots.txt": new Response(await Bun.file('./public/robots.txt').text(), {
+      headers: { 'Content-Type': 'text/plain' }
+    }),
 
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      return new Response(Bun.file('./public/index.html'))
-    }
+    // API routes
+    "/api/proxy-ical": async (req) => {
+      const url = new URL(req.url)
+      const targetUrl = url.searchParams.get('url')
+      if (!targetUrl) {
+        return Response.json({ error: 'URL parameter required' }, { status: 400 })
+      }
 
-    if (url.pathname.startsWith('/api/')) {
-      if (url.pathname === '/api/proxy-ical') {
-        const targetUrl = url.searchParams.get('url')
-        if (!targetUrl) {
-          return new Response(JSON.stringify({ error: 'URL parameter required' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-          })
+      try {
+        const response = await fetch(targetUrl)
+        if (!response.ok) {
+          return Response.json({ error: 'Failed to fetch calendar' }, { status: 500 })
         }
-
-        try {
-          const response = await fetch(targetUrl)
-          if (!response.ok) {
-            return new Response(JSON.stringify({ error: 'Failed to fetch calendar' }), {
-              status: 500,
-              headers: { 'Content-Type': 'application/json' }
-            })
+        
+        const text = await response.text()
+        return new Response(text, {
+          headers: {
+            'Content-Type': 'text/calendar',
+            'Cache-Control': 'max-age=300',
+            'Access-Control-Allow-Origin': '*'
           }
-
-          const text = await response.text()
-          return new Response(text, {
-            headers: {
-              'Content-Type': 'text/calendar',
-              'Cache-Control': 'max-age=300',
-              'Access-Control-Allow-Origin': '*'
-            }
-          })
-        } catch (error: any) {
-          return new Response(JSON.stringify({ error: 'Failed to fetch calendar: ' + error.message }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        }
+        })
+      } catch (error: any) {
+        return Response.json({ error: 'Failed to fetch calendar: ' + error.message }, { status: 500 })
       }
+    },
 
-      if (url.pathname === '/api/calendars' && request.method === 'GET') {
+    "/api/calendars": {
+      GET: () => {
         const calendars = CalendarDB.getAll()
-        return new Response(JSON.stringify(calendars), {
-          headers: { 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (url.pathname === '/api/calendars' && request.method === 'POST') {
+        return Response.json(calendars)
+      },
+      
+      POST: async (req) => {
         try {
-          const body = await request.json()
+          const body = await req.json()
           const calendar = CalendarDB.add(body)
-          return new Response(JSON.stringify(calendar), {
-            status: 201,
-            headers: { 'Content-Type': 'application/json' }
-          })
+          return Response.json(calendar, { status: 201 })
         } catch (error: any) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-          })
+          return Response.json({ error: error.message }, { status: 400 })
         }
-      }
-
-      if (url.pathname.startsWith('/api/calendars/') && request.method === 'DELETE') {
-        const id = parseInt(url.pathname.split('/')[3])
-        if (isNaN(id)) {
-          return new Response(JSON.stringify({ error: 'Invalid ID' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        }
-
-        const success = CalendarDB.remove(id)
-        if (!success) {
-          return new Response(JSON.stringify({ error: 'Calendar not found' }), {
-            status: 404,
-            headers: { 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (request.method === 'OPTIONS') {
+      },
+      
+      OPTIONS: () => {
         return new Response(null, {
           headers: {
             'Access-Control-Allow-Origin': '*',
@@ -100,8 +87,27 @@ const server = Bun.serve({
           }
         })
       }
+    },
+    
+    "/api/calendars/:id": {
+      DELETE: (req: any) => {
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) {
+          return Response.json({ error: 'Invalid ID' }, { status: 400 })
+        }
+        
+        const success = CalendarDB.remove(id)
+        if (!success) {
+          return Response.json({ error: 'Calendar not found' }, { status: 404 })
+        }
+        
+        return Response.json({ success: true })
+      }
     }
+  },
 
+  // Fallback for unmatched routes
+  fetch(req) {
     return new Response('Not Found', { status: 404 })
   }
 })
