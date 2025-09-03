@@ -1,0 +1,29 @@
+# Use the official Bun image
+FROM oven/bun:1-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lockb* ./
+
+# Install dependencies (if any)
+RUN bun install --frozen-lockfile || bun install
+
+# Copy source code
+COPY src ./src
+COPY public ./public
+
+# Create directory for SQLite database with proper permissions
+RUN mkdir -p /app/data && chmod 777 /app/data
+
+# Environment variables
+ENV BUN_ENV=production
+ENV PORT=80
+ENV DATABASE_PATH=/app/data/calendars.db
+
+# Expose port 80
+EXPOSE 80
+
+# Run the application
+CMD ["bun", "run", "src/index.ts"]

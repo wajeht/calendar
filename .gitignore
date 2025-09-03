@@ -1,6 +1,5 @@
 # deps
 node_modules/
-.claude/*
 .DS_Store
 .claude
 calendars.db

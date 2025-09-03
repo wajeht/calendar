@@ -1,8 +1,8 @@
 import { Database } from 'bun:sqlite'
 
-const db = new Database('calendars.db', { create: true })
+const dbPath = Bun.env.DATABASE_PATH || 'calendars.db';
+const db = new Database(dbPath, { create: true })
 
-// Create tables
 db.run(`
   CREATE TABLE IF NOT EXISTS calendars (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,30 +22,26 @@ export interface Calendar {
 }
 
 export const CalendarDB = {
-  // Get all calendars
   getAll(): Calendar[] {
     return db.query('SELECT * FROM calendars ORDER BY created_at DESC').all() as Calendar[]
   },
 
-  // Add a calendar
   add(calendar: Omit<Calendar, 'id' | 'created_at'>): Calendar {
     const stmt = db.prepare('INSERT INTO calendars (url, color, name) VALUES (?, ?, ?)')
     const result = stmt.run(calendar.url, calendar.color, calendar.name || null)
     return { ...calendar, id: result.lastInsertRowid as number }
   },
 
-  // Remove a calendar
   remove(id: number): boolean {
     const stmt = db.prepare('DELETE FROM calendars WHERE id = ?')
     const result = stmt.run(id)
     return result.changes > 0
   },
 
-  // Update a calendar
   update(id: number, calendar: Partial<Omit<Calendar, 'id' | 'created_at'>>): boolean {
     const fields = []
     const values = []
-    
+
     if (calendar.url !== undefined) {
       fields.push('url = ?')
       values.push(calendar.url)
@@ -58,9 +54,9 @@ export const CalendarDB = {
       fields.push('name = ?')
       values.push(calendar.name)
     }
-    
+
     if (fields.length === 0) return false
-    
+
     values.push(id)
     const stmt = db.prepare(`UPDATE calendars SET ${fields.join(', ')} WHERE id = ?`)
     const result = stmt.run(...values)

@@ -1,18 +1,17 @@
 import { CalendarDB } from './db'
 
+const PORT = parseInt(Bun.env.PORT || '80');
+
 const server = Bun.serve({
-  port: 80,
+  port: PORT,
   async fetch(request) {
     const url = new URL(request.url)
-    
-    // Serve static files
+
     if (url.pathname === '/' || url.pathname === '/index.html') {
       return new Response(Bun.file('./public/index.html'))
     }
-    
-    // API Routes - no authentication required
+
     if (url.pathname.startsWith('/api/')) {
-      // Proxy endpoint for fetching calendars
       if (url.pathname === '/api/proxy-ical') {
         const targetUrl = url.searchParams.get('url')
         if (!targetUrl) {
@@ -30,7 +29,7 @@ const server = Bun.serve({
               headers: { 'Content-Type': 'application/json' }
             })
           }
-          
+
           const text = await response.text()
           return new Response(text, {
             headers: {
@@ -47,7 +46,6 @@ const server = Bun.serve({
         }
       }
 
-      // GET /api/calendars
       if (url.pathname === '/api/calendars' && request.method === 'GET') {
         const calendars = CalendarDB.getAll()
         return new Response(JSON.stringify(calendars), {
@@ -55,7 +53,6 @@ const server = Bun.serve({
         })
       }
 
-      // POST /api/calendars
       if (url.pathname === '/api/calendars' && request.method === 'POST') {
         try {
           const body = await request.json()
@@ -72,7 +69,6 @@ const server = Bun.serve({
         }
       }
 
-      // DELETE /api/calendars/:id
       if (url.pathname.startsWith('/api/calendars/') && request.method === 'DELETE') {
         const id = parseInt(url.pathname.split('/')[3])
         if (isNaN(id)) {
@@ -81,7 +77,7 @@ const server = Bun.serve({
             headers: { 'Content-Type': 'application/json' }
           })
         }
-        
+
         const success = CalendarDB.remove(id)
         if (!success) {
           return new Response(JSON.stringify({ error: 'Calendar not found' }), {
@@ -89,13 +85,12 @@ const server = Bun.serve({
             headers: { 'Content-Type': 'application/json' }
           })
         }
-        
+
         return new Response(JSON.stringify({ success: true }), {
           headers: { 'Content-Type': 'application/json' }
         })
       }
 
-      // OPTIONS for CORS
       if (request.method === 'OPTIONS') {
         return new Response(null, {
           headers: {
