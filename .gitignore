@@ -1,6 +1,34 @@
-# deps
+# Dependencies
 node_modules/
-.DS_Store
-.claude
-calendars.db
+bun.lockb
+
+# Environment
 .env
+.env.local
+.env.production
+
+# Database
+*.db
+calendars.db
+data/
+
+# Build output
+dist/
+build/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude
+.claude/
+
+# Docker
+docker-compose.override.yml

@@ -1,15 +1,49 @@
-node_modules
-npm-debug.log
-.git
+# Dependencies
+node_modules/
+
+# Git
+.git/
 .gitignore
-README.md
+
+# Environment files
 .env
 .env.local
-.DS_Store
-calendars.db
+.env.production
+
+# Database
 *.db
+calendars.db
 data/
-Dockerfile
-docker-compose.yml
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+README.md
+*.md
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
 .dockerignore
+
+# Claude
+.claude/
+
+# Lock files (we'll copy separately)
 bun.lockb

@@ -1,5 +1,5 @@
-# Use the official Bun image
-FROM oven/bun:1-alpine
+# Use the official Bun image with specific version
+FROM oven/bun:1.2.19-alpine
 
 # Set working directory
 WORKDIR /app
@@ -13,6 +13,10 @@ RUN bun install --frozen-lockfile || bun install
 # Copy source code
 COPY src ./src
 COPY public ./public
+COPY tsconfig.json ./
+
+# Build the TypeScript application
+RUN bun build ./src/index.ts --target=bun --outdir=./dist --minify
 
 # Create directory for SQLite database with proper permissions
 RUN mkdir -p /app/data && chmod 777 /app/data
@@ -25,5 +29,5 @@ ENV DATABASE_PATH=/app/data/calendars.db
 # Expose port 80
 EXPOSE 80
 
-# Run the application
-CMD ["bun", "run", "src/index.ts"]
+# Run the compiled application
+CMD ["bun", "run", "./dist/index.js"]
