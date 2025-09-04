@@ -227,14 +227,6 @@ const server = Bun.serve({
     }
 
     if (url.pathname === "/") {
-      const viewParam = url.searchParams.get('view')
-
-      if (viewParam) {
-        const mappedView = viewMap[viewParam.toLowerCase()]
-        if (mappedView) {
-          currentView = mappedView
-        }
-      }
 
       return new Response(await Bun.file('./public/index.html').text(), {
         headers: { 'Content-Type': 'text/html' }
@@ -250,10 +242,9 @@ const server = Bun.serve({
     sendPings: false,
     publishToSelf: true,
     perMessageDeflate: false,
-    
+
     open(ws) {
       ws.subscribe("calendar")
-      ws.send(JSON.stringify({ type: 'changeView', view: currentView }));
     },
 
     message(ws, message) {},
