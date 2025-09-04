@@ -607,23 +607,27 @@
         // WebSocket connection for live view changes
         let ws;
         let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
+        const maxReconnectAttempts = 3;
+        let wsEnabled = true;
         
         function connectWebSocket() {
-            // Only attempt WebSocket connection if not too many failures
-            if (reconnectAttempts >= maxReconnectAttempts) {
-                console.log('WebSocket disabled after too many failed attempts');
+            // Only attempt WebSocket connection if enabled and not too many failures
+            if (!wsEnabled || reconnectAttempts >= maxReconnectAttempts) {
+                if (reconnectAttempts >= maxReconnectAttempts) {
+                    console.log('WebSocket disabled after failed attempts - calendar will work normally without live updates');
+                }
                 return;
             }
             
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            // Use root path for WebSocket as it's the standard approach with proxies
+            const wsUrl = `${protocol}//${window.location.host}/`;
             
             try {
                 ws = new WebSocket(wsUrl);
                 
                 ws.onopen = () => {
-                    console.log('WebSocket connected');
+                    console.log('WebSocket connected for live updates');
                     reconnectAttempts = 0; // Reset on successful connection
                 };
                 
@@ -642,20 +646,19 @@
                 };
                 
                 ws.onerror = (error) => {
-                    console.warn('WebSocket connection failed - this is optional functionality');
+                    // Silently handle errors - WebSocket is optional
                     reconnectAttempts++;
                 };
                 
                 ws.onclose = () => {
                     if (reconnectAttempts < maxReconnectAttempts) {
-                        const delay = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff
-                        console.log(`WebSocket disconnected, reconnecting in ${delay/1000}s...`);
+                        const delay = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000); // Start at 5s
                         setTimeout(connectWebSocket, delay);
                     }
                 };
             } catch (e) {
-                console.warn('WebSocket not supported or blocked');
-                reconnectAttempts = maxReconnectAttempts; // Stop trying
+                // WebSocket not available - disable it
+                wsEnabled = false;
             }
         }
 
