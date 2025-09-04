@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar</title>
-    
+
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -13,12 +13,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
     <link rel="manifest" href="/site.webmanifest">
-    
-    <!-- FullCalendar CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.19/main.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.19/main.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.19/main.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.19/main.min.css" rel="stylesheet">
+
     <style>
         * {
             margin: 0;
@@ -130,7 +125,7 @@
             font-size: 12px;
             z-index: 999;
         }
-        
+
         /* Event Details Modal */
         .event-modal {
             display: none;
@@ -238,14 +233,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.19/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.19/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/icalendar@6.1.19/index.global.min.js"></script>
-    
+
     <script>
         let calendar;
         let eventSources = [];
 
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
-            
+
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'timeGridWeek',  // Changed to week view
                 firstDay: 1, // Start week on Monday (0=Sunday, 1=Monday)
@@ -282,7 +277,7 @@
                     showError('Failed to load calendar. Make sure the URL is correct and accessible.');
                 }
             });
-            
+
             calendar.render();
             loadCalendarsFromDB();
         }
@@ -321,16 +316,16 @@
                 showError('Please enter a calendar URL');
                 return;
             }
-            
+
             // Convert webcal:// to https:// for proxy
             const originalUrl = url;
             if (url.startsWith('webcal://')) {
                 url = url.replace('webcal://', 'https://');
             }
-            
+
             // Use proxy to avoid CORS issues
             const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-            
+
             const color = getRandomColor();
             const source = {
                 url: proxyUrl,
@@ -345,9 +340,9 @@
                     showError('Failed to load calendar from: ' + originalUrl);
                 }
             };
-            
+
             const eventSource = calendar.addEventSource(source);
-            
+
             // Save to database
             try {
                 const response = await fetch('/api/calendars', {
@@ -366,17 +361,17 @@
             } catch {
                 eventSources.push({ url: originalUrl, proxyUrl: proxyUrl, color: color, source: eventSource, visible: true });
             }
-            
+
             // Also save to localStorage as backup
             saveCalendars();
-            
+
             document.getElementById('calendar-url').value = '';
             updateActiveCalendarsList();
         }
 
         async function removeCalendar(index) {
             const source = eventSources[index];
-            
+
             // Remove from database if it has an ID
             if (source.id) {
                 try {
@@ -387,7 +382,7 @@
                     // Continue with local removal
                 }
             }
-            
+
             if (source.source) {
                 source.source.remove();
             } else {
@@ -405,7 +400,7 @@
         function toggleCalendar(index) {
             const source = eventSources[index];
             source.visible = !source.visible;
-            
+
             if (source.visible) {
                 // Re-add the source
                 const calSource = {
@@ -421,7 +416,7 @@
                     source.source.remove();
                 }
             }
-            
+
             saveCalendars();
         }
 
@@ -431,7 +426,7 @@
                 container.innerHTML = '<p>No calendars added yet</p>';
                 return;
             }
-            
+
             container.innerHTML = eventSources.map((es, index) => `
                 <div class="calendar-item">
                     <input type="checkbox" ${es.visible ? 'checked' : ''} onchange="toggleCalendar(${index})">
@@ -517,10 +512,10 @@
             const overlay = document.getElementById('eventModalOverlay');
             const titleEl = document.getElementById('eventTitle');
             const detailsEl = document.getElementById('eventDetails');
-            
+
             // Set title
             titleEl.textContent = event.title || 'Event Details';
-            
+
             // Format date and time
             const formatDate = (date) => {
                 if (!date) return 'N/A';
@@ -533,20 +528,20 @@
                     minute: event.allDay ? undefined : '2-digit'
                 });
             };
-            
+
             // Build details HTML
             let detailsHTML = '';
-            
+
             if (event.allDay) {
                 detailsHTML += `<div class="event-detail"><label>When:</label> All day event</div>`;
             }
-            
+
             detailsHTML += `<div class="event-detail"><label>Start:</label> ${formatDate(event.start)}</div>`;
-            
+
             if (event.end) {
                 detailsHTML += `<div class="event-detail"><label>End:</label> ${formatDate(event.end)}</div>`;
             }
-            
+
             // Duration
             if (event.start && event.end && !event.allDay) {
                 const duration = (event.end - event.start) / 1000 / 60; // minutes
@@ -558,17 +553,17 @@
                     detailsHTML += `<div class="event-detail"><label>Duration:</label> ${hours}h ${mins > 0 ? mins + 'm' : ''}</div>`;
                 }
             }
-            
+
             // Location (if available in extended props)
             if (event.extendedProps && event.extendedProps.location) {
                 detailsHTML += `<div class="event-detail"><label>Location:</label> ${event.extendedProps.location}</div>`;
             }
-            
+
             // Description (if available in extended props)
             if (event.extendedProps && event.extendedProps.description) {
                 detailsHTML += `<div class="event-detail"><label>Description:</label><br>${event.extendedProps.description}</div>`;
             }
-            
+
             // Calendar source
             if (event.source) {
                 const sourceCalendar = eventSources.find(es => es.proxyUrl === event.source.url);
@@ -576,27 +571,27 @@
                     detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${sourceCalendar.url}</div>`;
                 }
             }
-            
+
             // URL (if available)
             if (event.url) {
                 detailsHTML += `<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank">Open in calendar</a></div>`;
             }
-            
+
             detailsEl.innerHTML = detailsHTML;
-            
+
             // Show modal
             modal.classList.add('show');
             overlay.classList.add('show');
-            
+
             // Close on overlay click
             overlay.onclick = closeEventModal;
         }
-        
+
         function closeEventModal() {
             document.getElementById('eventModal').classList.remove('show');
             document.getElementById('eventModalOverlay').classList.remove('show');
         }
-        
+
         // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
@@ -606,29 +601,29 @@
 
         let ws;
         let wsConnectionAttempted = false;
-        
+
         function connectWebSocket() {
             if (wsConnectionAttempted) {
                 return;
             }
             wsConnectionAttempted = true;
-            
+
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws`;
-            
+
             try {
                 ws = new WebSocket(wsUrl);
-                
+
                 let connectionTimeout = setTimeout(() => {
                     if (ws.readyState !== WebSocket.OPEN) {
                         ws.close();
                     }
                 }, 3000);
-                
+
                 ws.onopen = () => {
                     clearTimeout(connectionTimeout);
                 };
-                
+
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
@@ -639,7 +634,7 @@
                         }
                     } catch (error) {}
                 };
-                
+
                 ws.onerror = () => {};
                 ws.onclose = () => {};
             } catch (e) {}
