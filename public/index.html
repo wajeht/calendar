@@ -604,14 +604,10 @@
             }
         });
 
-        // WebSocket connection for live view changes (optional feature)
-        // Note: WebSocket may not work behind some reverse proxies like CapRover
-        // The calendar will work perfectly fine without it
         let ws;
         let wsConnectionAttempted = false;
         
         function connectWebSocket() {
-            // Only try once to avoid spamming connection attempts
             if (wsConnectionAttempted) {
                 return;
             }
@@ -621,46 +617,32 @@
             const wsUrl = `${protocol}//${window.location.host}/ws`;
             
             try {
-                console.log('Attempting WebSocket connection to:', wsUrl);
                 ws = new WebSocket(wsUrl);
                 
-                // Set a timeout for connection
                 let connectionTimeout = setTimeout(() => {
                     if (ws.readyState !== WebSocket.OPEN) {
                         ws.close();
-                        console.log('WebSocket timeout - continuing without live updates');
                     }
                 }, 3000);
                 
                 ws.onopen = () => {
                     clearTimeout(connectionTimeout);
-                    console.log('WebSocket connected for live view updates');
                 };
                 
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         if (data.type === 'changeView' && data.view) {
-                            console.log('Live update: changing view to', data.view);
                             if (calendar) {
                                 calendar.changeView(data.view);
                             }
                         }
-                    } catch (error) {
-                        // Silently ignore parse errors
-                    }
+                    } catch (error) {}
                 };
                 
-                ws.onerror = () => {
-                    // Silently fail - WebSocket is optional
-                };
-                
-                ws.onclose = () => {
-                    // Connection closed - no need to log in production
-                };
-            } catch (e) {
-                // WebSocket not available
-            }
+                ws.onerror = () => {};
+                ws.onclose = () => {};
+            } catch (e) {}
         }
 
         document.addEventListener('DOMContentLoaded', () => {
