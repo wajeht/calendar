@@ -234,8 +234,11 @@ const server = Bun.serve({
 
   // Handle WebSocket upgrades in fetch for paths not caught by routes
   fetch(req, server) {
-    // Check if this is a WebSocket upgrade request
-    if (req.headers.get("upgrade") === "websocket") {
+    const url = new URL(req.url);
+    
+    // Check if this is a WebSocket upgrade request (accept both root and /ws path)
+    if (req.headers.get("upgrade") === "websocket" && 
+        (url.pathname === "/" || url.pathname === "/ws")) {
       const success = server.upgrade(req)
       if (success) {
         return undefined // Don't return a Response for successful upgrades

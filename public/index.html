@@ -606,39 +606,57 @@
 
         // WebSocket connection for live view changes
         let ws;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
         
         function connectWebSocket() {
+            // Only attempt WebSocket connection if not too many failures
+            if (reconnectAttempts >= maxReconnectAttempts) {
+                console.log('WebSocket disabled after too many failed attempts');
+                return;
+            }
+            
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}`;
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
             
-            ws = new WebSocket(wsUrl);
-            
-            ws.onopen = () => {
-                console.log('WebSocket connected');
-            };
-            
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'changeView' && data.view) {
-                        console.log('Changing view to:', data.view);
-                        if (calendar) {
-                            calendar.changeView(data.view);
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    reconnectAttempts = 0; // Reset on successful connection
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'changeView' && data.view) {
+                            console.log('Changing view to:', data.view);
+                            if (calendar) {
+                                calendar.changeView(data.view);
+                            }
                         }
+                    } catch (error) {
+                        console.error('WebSocket message error:', error);
                     }
-                } catch (error) {
-                    console.error('WebSocket message error:', error);
-                }
-            };
-            
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-            
-            ws.onclose = () => {
-                console.log('WebSocket disconnected, reconnecting in 3s...');
-                setTimeout(connectWebSocket, 3000);
-            };
+                };
+                
+                ws.onerror = (error) => {
+                    console.warn('WebSocket connection failed - this is optional functionality');
+                    reconnectAttempts++;
+                };
+                
+                ws.onclose = () => {
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        const delay = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff
+                        console.log(`WebSocket disconnected, reconnecting in ${delay/1000}s...`);
+                        setTimeout(connectWebSocket, delay);
+                    }
+                };
+            } catch (e) {
+                console.warn('WebSocket not supported or blocked');
+                reconnectAttempts = maxReconnectAttempts; // Stop trying
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
