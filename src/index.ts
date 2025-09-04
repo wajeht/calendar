@@ -252,10 +252,18 @@ const server = Bun.serve({
   },
 
   websocket: {
+    idleTimeout: 120,
+    sendPings: true,
+    perMessageDeflate: false,
+    
     open(ws) {
       ws.subscribe("calendar")
       console.log("WebSocket client connected from:", ws.remoteAddress)
-      ws.send(JSON.stringify({ type: 'changeView', view: currentView }))
+      
+      // Send initial message immediately
+      const message = JSON.stringify({ type: 'changeView', view: currentView });
+      const result = ws.send(message);
+      console.log("Initial message sent, result:", result, "bytes:", message.length);
     },
 
     message(ws, message) {
