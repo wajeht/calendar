@@ -232,29 +232,13 @@ const server = Bun.serve({
     }
   },
 
-  // Handle WebSocket upgrades in fetch for paths not caught by routes
+  // Handle WebSocket upgrades and unmatched routes
   fetch(req, server) {
     const url = new URL(req.url);
 
-    // Check if this is a WebSocket upgrade request
-    // Check both Upgrade header and Connection header (for proxies)
-    const upgradeHeader = req.headers.get("upgrade");
-    const connectionHeader = req.headers.get("connection");
-
-    const isWebSocketRequest =
-      (upgradeHeader && upgradeHeader.toLowerCase() === "websocket") ||
-      (connectionHeader && connectionHeader.toLowerCase().includes("upgrade"));
-
-    if (isWebSocketRequest && (url.pathname === "/" || url.pathname === "/ws")) {
-      const success = server.upgrade(req, {
-        headers: {
-          "Sec-WebSocket-Protocol": req.headers.get("sec-websocket-protocol") || ""
-        }
-      })
-      if (success) {
-        return undefined // Don't return a Response for successful upgrades
-      }
-      return new Response("WebSocket upgrade failed", { status: 500 })
+    // Try to upgrade to WebSocket if requested
+    if (server.upgrade(req)) {
+      return; // Important: return undefined for successful WebSocket upgrades
     }
 
     // If not a WebSocket request and no route matched, return 404

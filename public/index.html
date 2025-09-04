@@ -604,61 +604,59 @@
             }
         });
 
-        // WebSocket connection for live view changes
+        // WebSocket connection for live view changes (optional feature)
         let ws;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 3;
-        let wsEnabled = true;
+        let wsConnectionAttempted = false;
         
         function connectWebSocket() {
-            // Only attempt WebSocket connection if enabled and not too many failures
-            if (!wsEnabled || reconnectAttempts >= maxReconnectAttempts) {
-                if (reconnectAttempts >= maxReconnectAttempts) {
-                    console.log('WebSocket disabled after failed attempts - calendar will work normally without live updates');
-                }
+            // Only try once to avoid spamming connection attempts
+            if (wsConnectionAttempted) {
                 return;
             }
+            wsConnectionAttempted = true;
             
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            // Use root path for WebSocket as it's the standard approach with proxies
             const wsUrl = `${protocol}//${window.location.host}/`;
             
             try {
                 ws = new WebSocket(wsUrl);
                 
+                // Set a timeout for connection
+                let connectionTimeout = setTimeout(() => {
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        ws.close();
+                        console.log('WebSocket not available - calendar continues without live updates');
+                    }
+                }, 3000);
+                
                 ws.onopen = () => {
-                    console.log('WebSocket connected for live updates');
-                    reconnectAttempts = 0; // Reset on successful connection
+                    clearTimeout(connectionTimeout);
+                    console.log('WebSocket connected for live view updates');
                 };
                 
                 ws.onmessage = (event) => {
                     try {
                         const data = JSON.parse(event.data);
                         if (data.type === 'changeView' && data.view) {
-                            console.log('Changing view to:', data.view);
+                            console.log('Live update: changing view to', data.view);
                             if (calendar) {
                                 calendar.changeView(data.view);
                             }
                         }
                     } catch (error) {
-                        console.error('WebSocket message error:', error);
+                        // Silently ignore parse errors
                     }
                 };
                 
-                ws.onerror = (error) => {
-                    // Silently handle errors - WebSocket is optional
-                    reconnectAttempts++;
+                ws.onerror = () => {
+                    // Silently fail - WebSocket is optional
                 };
                 
                 ws.onclose = () => {
-                    if (reconnectAttempts < maxReconnectAttempts) {
-                        const delay = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000); // Start at 5s
-                        setTimeout(connectWebSocket, delay);
-                    }
+                    // Don't reconnect - if it fails once, leave it
                 };
             } catch (e) {
-                // WebSocket not available - disable it
-                wsEnabled = false;
+                console.log('WebSocket not supported in this environment');
             }
         }
 
