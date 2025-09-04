@@ -1,6 +1,5 @@
+import { config } from './config';
 import { CalendarDB } from './db'
-
-const PORT = parseInt(Bun.env.PORT || '80');
 
 let currentView = 'timeGridWeek';
 
@@ -16,24 +15,9 @@ const viewMap: Record<string, string> = {
 };
 
 const server = Bun.serve({
-  port: PORT,
+  port: config.APP_PORT,
 
   routes: {
-    "/": async (req) => {
-      const url = new URL(req.url)
-      const viewParam = url.searchParams.get('view')
-
-      if (viewParam) {
-        const mappedView = viewMap[viewParam.toLowerCase()]
-        if (mappedView) {
-          currentView = mappedView
-        }
-      }
-
-      return new Response(await Bun.file('./public/index.html').text(), {
-        headers: { 'Content-Type': 'text/html' }
-      })
-    },
     "/favicon.ico": new Response(await Bun.file('./public/favicon.ico').bytes(), {
       headers: { 'Content-Type': 'image/x-icon' }
     }),
@@ -233,12 +217,28 @@ const server = Bun.serve({
   },
 
   // Handle WebSocket upgrades and unmatched routes
-  fetch(req, server) {
+  async fetch(req, server) {
     const url = new URL(req.url);
 
     // Try to upgrade to WebSocket if requested
     if (server.upgrade(req)) {
       return; // Important: return undefined for successful WebSocket upgrades
+    }
+
+    // Handle root path
+    if (url.pathname === "/") {
+      const viewParam = url.searchParams.get('view')
+
+      if (viewParam) {
+        const mappedView = viewMap[viewParam.toLowerCase()]
+        if (mappedView) {
+          currentView = mappedView
+        }
+      }
+
+      return new Response(await Bun.file('./public/index.html').text(), {
+        headers: { 'Content-Type': 'text/html' }
+      })
     }
 
     // If not a WebSocket request and no route matched, return 404

@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite'
+import { config } from './config';
 
-const dbPath = Bun.env.DATABASE_PATH || 'calendars.db';
-const db = new Database(dbPath, { create: true })
+const db = new Database(config.APP_DATABASE_PATH, { create: true })
 
 db.run(`
   CREATE TABLE IF NOT EXISTS calendars (
