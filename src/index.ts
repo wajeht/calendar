@@ -224,10 +224,7 @@ const server = Bun.serve({
     if (url.pathname === "/ws") {
       const upgradeHeader = req.headers.get("upgrade");
       if (upgradeHeader === "websocket") {
-        console.log("WebSocket upgrade attempt on /ws from:", req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown");
-        const success = server.upgrade(req);
-        console.log("WebSocket upgrade result:", success);
-        if (success) {
+        if (server.upgrade(req)) {
           return; // Important: return undefined for successful WebSocket upgrades
         }
       }
@@ -237,10 +234,7 @@ const server = Bun.serve({
     // Try to upgrade to WebSocket if requested on any path
     const upgradeHeader = req.headers.get("upgrade");
     if (upgradeHeader === "websocket") {
-      console.log("WebSocket upgrade attempt from:", req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown");
-      const success = server.upgrade(req);
-      console.log("WebSocket upgrade result:", success);
-      if (success) {
+      if (server.upgrade(req)) {
         return; // Important: return undefined for successful WebSocket upgrades
       }
     }
@@ -272,25 +266,15 @@ const server = Bun.serve({
     
     open(ws) {
       ws.subscribe("calendar")
-      console.log("WebSocket client connected from:", ws.remoteAddress)
-      
-      // Send initial message immediately
-      const message = JSON.stringify({ type: 'changeView', view: currentView });
-      const result = ws.send(message);
-      console.log("Initial message sent, result:", result, "bytes:", message.length);
+      ws.send(JSON.stringify({ type: 'changeView', view: currentView }));
     },
 
     message(ws, message) {
-      console.log(`Received from ${ws.remoteAddress}: ${message}`)
+      // Handle incoming messages if needed
     },
 
     close(ws, code, message) {
       ws.unsubscribe("calendar")
-      console.log(`WebSocket client disconnected: code=${code}, message=${message}, address=${ws.remoteAddress}`)
-    },
-
-    error(ws, error) {
-      console.error("WebSocket error:", error, "from:", ws.remoteAddress)
     }
   }
 })
