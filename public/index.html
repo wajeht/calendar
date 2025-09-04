@@ -619,19 +619,20 @@
             const wsUrl = `${protocol}//${window.location.host}/`;
             
             try {
+                console.log('Attempting WebSocket connection to:', wsUrl);
                 ws = new WebSocket(wsUrl);
                 
                 // Set a timeout for connection
                 let connectionTimeout = setTimeout(() => {
                     if (ws.readyState !== WebSocket.OPEN) {
                         ws.close();
-                        console.log('WebSocket not available - calendar continues without live updates');
+                        console.log('WebSocket connection timeout - calendar continues without live updates');
                     }
-                }, 3000);
+                }, 5000);
                 
                 ws.onopen = () => {
                     clearTimeout(connectionTimeout);
-                    console.log('WebSocket connected for live view updates');
+                    console.log('WebSocket connected successfully for live view updates');
                 };
                 
                 ws.onmessage = (event) => {
@@ -644,19 +645,19 @@
                             }
                         }
                     } catch (error) {
-                        // Silently ignore parse errors
+                        console.warn('Failed to parse WebSocket message:', error);
                     }
                 };
                 
-                ws.onerror = () => {
-                    // Silently fail - WebSocket is optional
+                ws.onerror = (error) => {
+                    console.log('WebSocket error occurred - this is optional functionality', error);
                 };
                 
-                ws.onclose = () => {
-                    // Don't reconnect - if it fails once, leave it
+                ws.onclose = (event) => {
+                    console.log(`WebSocket closed: code=${event.code}, reason=${event.reason || 'none'}, wasClean=${event.wasClean}`);
                 };
             } catch (e) {
-                console.log('WebSocket not supported in this environment');
+                console.log('WebSocket not supported in this environment:', e);
             }
         }
 

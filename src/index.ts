@@ -221,8 +221,14 @@ const server = Bun.serve({
     const url = new URL(req.url);
 
     // Try to upgrade to WebSocket if requested
-    if (server.upgrade(req)) {
-      return; // Important: return undefined for successful WebSocket upgrades
+    const upgradeHeader = req.headers.get("upgrade");
+    if (upgradeHeader === "websocket") {
+      console.log("WebSocket upgrade attempt from:", req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown");
+      const success = server.upgrade(req);
+      console.log("WebSocket upgrade result:", success);
+      if (success) {
+        return; // Important: return undefined for successful WebSocket upgrades
+      }
     }
 
     // Handle root path
@@ -248,17 +254,21 @@ const server = Bun.serve({
   websocket: {
     open(ws) {
       ws.subscribe("calendar")
-      console.log("WebSocket client connected")
+      console.log("WebSocket client connected from:", ws.remoteAddress)
       ws.send(JSON.stringify({ type: 'changeView', view: currentView }))
     },
 
     message(ws, message) {
-      console.log(`Received: ${message}`)
+      console.log(`Received from ${ws.remoteAddress}: ${message}`)
     },
 
-    close(ws) {
+    close(ws, code, message) {
       ws.unsubscribe("calendar")
-      console.log("WebSocket client disconnected")
+      console.log(`WebSocket client disconnected: code=${code}, message=${message}, address=${ws.remoteAddress}`)
+    },
+
+    error(ws, error) {
+      console.error("WebSocket error:", error, "from:", ws.remoteAddress)
     }
   }
 })
