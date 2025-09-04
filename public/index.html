@@ -611,13 +611,6 @@
         let wsConnectionAttempted = false;
         
         function connectWebSocket() {
-            // Disable WebSocket in production - known issue with reverse proxy SSL termination
-            // Works perfectly in local development
-            if (window.location.protocol === 'https:') {
-                console.log('WebSocket disabled in production (HTTPS) - calendar works normally without live updates');
-                return;
-            }
-            
             // Only try once to avoid spamming connection attempts
             if (wsConnectionAttempted) {
                 return;

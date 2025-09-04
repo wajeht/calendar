@@ -222,18 +222,21 @@ const server = Bun.serve({
 
     // Handle explicit /ws endpoint for WebSocket
     if (url.pathname === "/ws") {
-      const upgradeHeader = req.headers.get("upgrade");
-      if (upgradeHeader === "websocket") {
-        if (server.upgrade(req)) {
-          return; // Important: return undefined for successful WebSocket upgrades
-        }
+      // Always try to upgrade on /ws path
+      if (server.upgrade(req)) {
+        return; // Important: return undefined for successful WebSocket upgrades
       }
-      return new Response("WebSocket endpoint - use WebSocket protocol", { status: 426 });
+      // If upgrade fails, return error
+      return new Response("WebSocket upgrade failed", { status: 500 });
     }
 
-    // Try to upgrade to WebSocket if requested on any path
+    // Also try to upgrade on root path for backward compatibility
     const upgradeHeader = req.headers.get("upgrade");
-    if (upgradeHeader === "websocket") {
+    const connectionHeader = req.headers.get("connection");
+    
+    // Check for WebSocket upgrade request (handle various proxy configurations)
+    if ((upgradeHeader && upgradeHeader.toLowerCase() === "websocket") ||
+        (connectionHeader && connectionHeader.toLowerCase().includes("upgrade"))) {
       if (server.upgrade(req)) {
         return; // Important: return undefined for successful WebSocket upgrades
       }
@@ -260,21 +263,38 @@ const server = Bun.serve({
   },
 
   websocket: {
+    // WebSocket configuration for better proxy compatibility
+    maxPayloadLength: 16 * 1024 * 1024, // 16 MB
     idleTimeout: 120,
-    sendPings: true,
-    perMessageDeflate: false,
+    sendPings: false, // Disable pings as they might not work through proxies
+    publishToSelf: true,
+    perMessageDeflate: false, // Disable compression for better compatibility
+    closeOnBackpressureLimit: false,
     
     open(ws) {
       ws.subscribe("calendar")
-      ws.send(JSON.stringify({ type: 'changeView', view: currentView }));
+      // Send initial message
+      try {
+        ws.send(JSON.stringify({ type: 'changeView', view: currentView }));
+        console.log("WebSocket client connected and initial message sent");
+      } catch (e) {
+        console.error("Failed to send initial WebSocket message:", e);
+      }
     },
 
     message(ws, message) {
-      // Handle incoming messages if needed
+      // Echo back for testing
+      console.log("WebSocket message received:", message);
+      ws.send(`Echo: ${message}`);
     },
 
     close(ws, code, message) {
       ws.unsubscribe("calendar")
+      console.log(`WebSocket closed: code=${code}, reason=${message || 'none'}`);
+    },
+    
+    error(ws, error) {
+      console.error("WebSocket error:", error);
     }
   }
 })
