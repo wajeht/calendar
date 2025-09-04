@@ -220,7 +220,21 @@ const server = Bun.serve({
   async fetch(req, server) {
     const url = new URL(req.url);
 
-    // Try to upgrade to WebSocket if requested
+    // Handle explicit /ws endpoint for WebSocket
+    if (url.pathname === "/ws") {
+      const upgradeHeader = req.headers.get("upgrade");
+      if (upgradeHeader === "websocket") {
+        console.log("WebSocket upgrade attempt on /ws from:", req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown");
+        const success = server.upgrade(req);
+        console.log("WebSocket upgrade result:", success);
+        if (success) {
+          return; // Important: return undefined for successful WebSocket upgrades
+        }
+      }
+      return new Response("WebSocket endpoint - use WebSocket protocol", { status: 426 });
+    }
+
+    // Try to upgrade to WebSocket if requested on any path
     const upgradeHeader = req.headers.get("upgrade");
     if (upgradeHeader === "websocket") {
       console.log("WebSocket upgrade attempt from:", req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown");
