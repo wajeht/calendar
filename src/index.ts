@@ -145,6 +145,26 @@ const server = Bun.serve({
         }
 
         return Response.json({ success: true })
+      },
+
+      PATCH: async (req: any) => {
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) {
+          return Response.json({ error: 'Invalid ID' }, { status: 400 })
+        }
+
+        try {
+          const body = await req.json()
+          const success = CalendarDB.update(id, body)
+          
+          if (!success) {
+            return Response.json({ error: 'Calendar not found or no changes made' }, { status: 404 })
+          }
+
+          return Response.json({ success: true })
+        } catch (error: any) {
+          return Response.json({ error: error.message }, { status: 400 })
+        }
       }
     },
 
