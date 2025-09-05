@@ -785,6 +785,9 @@
         function toggleAutoRefresh() {
             const checkbox = document.getElementById('auto-refresh');
             
+            // Save preference
+            localStorage.setItem('autoRefreshEnabled', checkbox.checked ? 'true' : 'false');
+            
             if (checkbox.checked) {
                 // Start auto-refresh
                 autoRefreshInterval = setInterval(() => {
@@ -914,6 +917,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             initCalendar();
             connectWebSocket();
+            
+            // Load and apply auto-refresh preference
+            const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
+            const checkbox = document.getElementById('auto-refresh');
+            if (checkbox) {
+                checkbox.checked = autoRefreshEnabled;
+                if (autoRefreshEnabled) {
+                    // Start auto-refresh without showing message
+                    autoRefreshInterval = setInterval(() => {
+                        refreshAllCalendars();
+                    }, REFRESH_INTERVAL);
+                }
+            }
         });
     </script>
 </body>
