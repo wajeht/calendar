@@ -136,7 +136,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            min-width: 0; /* Enable flex item shrinking */
+            min-width: 0;
         }
         .calendar-item input[type="checkbox"] {
             width: 16px;
@@ -159,7 +159,7 @@
         }
         .calendar-url-wrapper {
             flex: 1;
-            min-width: 0; /* Critical for text truncation */
+            min-width: 0;
             display: flex;
             align-items: center;
         }
@@ -257,7 +257,7 @@
         .event-modal-close:hover {
             background: #da190b;
         }
-        
+
         /* Password Modal */
         .password-modal-overlay {
             display: none;
@@ -343,7 +343,7 @@
     <div class="settings-modal" id="settingsModal">
         <button class="settings-modal-close" onclick="closeSettingsModal()">×</button>
         <h2>Calendar Settings</h2>
-        
+
         <div class="control-group">
             <h3>Add New Calendar</h3>
             <div class="input-group">
@@ -368,7 +368,7 @@
                 <p style="color: #999; text-align: center; padding: 20px;">No calendars added yet</p>
             </div>
         </div>
-        
+
         <div id="message" style="display: none;"></div>
     </div>
 
@@ -414,7 +414,7 @@
             const calendarEl = document.getElementById('calendar');
 
             calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek',  // Changed to week view
+                initialView: 'timeGridWeek',
                 firstDay: 1, // Start week on Monday (0=Sunday, 1=Monday)
                 headerToolbar: {
                     left: 'prev,next today',
@@ -465,12 +465,12 @@
                             textColor: 'white'
                         };
                         const eventSource = calendar.addEventSource(source);
-                        eventSources.push({ 
-                            id: cal.id, 
-                            url: cal.url, 
-                            proxyUrl: proxyUrl, 
-                            color: cal.color, 
-                            source: eventSource, 
+                        eventSources.push({
+                            id: cal.id,
+                            url: cal.url,
+                            proxyUrl: proxyUrl,
+                            color: cal.color,
+                            source: eventSource,
                             visible: true,
                             lastUpdate: new Date(),
                             status: 'fresh'
@@ -479,7 +479,6 @@
                     updateActiveCalendarsList();
                 }
             } catch {
-                // If API fails, try localStorage as fallback
                 loadSavedCalendars();
             }
         }
@@ -491,13 +490,11 @@
                 return;
             }
 
-            // Convert webcal:// to https:// for proxy
             const originalUrl = url;
             if (url.startsWith('webcal://')) {
                 url = url.replace('webcal://', 'https://');
             }
 
-            // Use proxy to avoid CORS issues
             const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
 
             const color = getRandomColor();
@@ -517,7 +514,6 @@
 
             const eventSource = calendar.addEventSource(source);
 
-            // Save to database
             try {
                 const response = await fetch('/api/calendars', {
                     method: 'POST',
@@ -528,40 +524,39 @@
                 });
                 if (response.ok) {
                     const saved = await response.json();
-                    eventSources.push({ 
-                        id: saved.id, 
-                        url: originalUrl, 
-                        proxyUrl: proxyUrl, 
-                        color: color, 
-                        source: eventSource, 
+                    eventSources.push({
+                        id: saved.id,
+                        url: originalUrl,
+                        proxyUrl: proxyUrl,
+                        color: color,
+                        source: eventSource,
                         visible: true,
                         lastUpdate: new Date(),
                         status: 'fresh'
                     });
                 } else {
-                    eventSources.push({ 
-                        url: originalUrl, 
-                        proxyUrl: proxyUrl, 
-                        color: color, 
-                        source: eventSource, 
+                    eventSources.push({
+                        url: originalUrl,
+                        proxyUrl: proxyUrl,
+                        color: color,
+                        source: eventSource,
                         visible: true,
                         lastUpdate: new Date(),
                         status: 'fresh'
                     });
                 }
             } catch {
-                eventSources.push({ 
-                    url: originalUrl, 
-                    proxyUrl: proxyUrl, 
-                    color: color, 
-                    source: eventSource, 
+                eventSources.push({
+                    url: originalUrl,
+                    proxyUrl: proxyUrl,
+                    color: color,
+                    source: eventSource,
                     visible: true,
                     lastUpdate: new Date(),
                     status: 'fresh'
                 });
             }
 
-            // Also save to localStorage as backup
             saveCalendars();
 
             document.getElementById('calendar-url').value = '';
@@ -571,14 +566,12 @@
         async function removeCalendar(index) {
             const source = eventSources[index];
 
-            // Remove from database if it has an ID
             if (source.id) {
                 try {
                     await fetch(`/api/calendars/${source.id}`, {
                         method: 'DELETE'
                     });
                 } catch {
-                    // Continue with local removal
                 }
             }
 
@@ -601,7 +594,6 @@
             source.visible = !source.visible;
 
             if (source.visible) {
-                // Re-add the source
                 const calSource = {
                     url: source.proxyUrl,
                     format: 'ics',
@@ -610,7 +602,6 @@
                 };
                 source.source = calendar.addEventSource(calSource);
             } else {
-                // Remove the source
                 if (source.source) {
                     source.source.remove();
                 }
@@ -627,9 +618,9 @@
             }
 
             container.innerHTML = eventSources.map((es, index) => {
-                const timeSinceUpdate = es.lastUpdate ? 
+                const timeSinceUpdate = es.lastUpdate ?
                     Math.floor((new Date() - es.lastUpdate) / 60000) : 0;
-                
+
                 return `
                 <div class="calendar-item">
                     <input type="checkbox" ${es.visible ? 'checked' : ''} onchange="toggleCalendar(${index})">
@@ -637,8 +628,8 @@
                     <div class="calendar-url-wrapper">
                         <span class="calendar-url-text" title="${es.url}">${es.url}</span>
                         <span class="last-update">
-                            ${es.lastUpdate ? 
-                                `(${timeSinceUpdate === 0 ? 'now' : 
+                            ${es.lastUpdate ?
+                                `(${timeSinceUpdate === 0 ? 'now' :
                                 timeSinceUpdate + 'min'})` : ''}
                         </span>
                     </div>
@@ -700,7 +691,6 @@
             }, 5000);
         }
 
-        // Settings modal functions
         function openSettingsModal() {
             document.getElementById('settingsModal').classList.add('show');
             document.getElementById('settingsModalOverlay').classList.add('show');
@@ -711,24 +701,20 @@
             document.getElementById('settingsModalOverlay').classList.remove('show');
         }
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             // Cmd/Ctrl + C for settings
             if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
                 e.preventDefault();
                 openSettingsModal();
             }
-            // Escape to close modals
             if (e.key === 'Escape') {
                 closeSettingsModal();
                 closeEventModal();
             }
         });
 
-        // Close settings modal on overlay click
         document.getElementById('settingsModalOverlay').addEventListener('click', closeSettingsModal);
 
-        // Hide hint after 5 seconds
         setTimeout(() => {
             const hint = document.querySelector('.keyboard-hint');
             if (hint) hint.style.display = 'none';
@@ -740,10 +726,8 @@
             const titleEl = document.getElementById('eventTitle');
             const detailsEl = document.getElementById('eventDetails');
 
-            // Set title
             titleEl.textContent = event.title || 'Event Details';
 
-            // Format date and time
             const formatDate = (date) => {
                 if (!date) return 'N/A';
                 return date.toLocaleString('en-US', {
@@ -756,7 +740,6 @@
                 });
             };
 
-            // Build details HTML
             let detailsHTML = '';
 
             if (event.allDay) {
@@ -806,11 +789,9 @@
 
             detailsEl.innerHTML = detailsHTML;
 
-            // Show modal
             modal.classList.add('show');
             overlay.classList.add('show');
 
-            // Close on overlay click
             overlay.onclick = closeEventModal;
         }
 
@@ -819,28 +800,23 @@
             document.getElementById('eventModalOverlay').classList.remove('show');
         }
 
-        // (Escape key handling is already in the keyboard shortcuts section above)
 
-        // Refresh individual calendar
         async function refreshCalendar(index) {
             const source = eventSources[index];
             const btn = document.getElementById(`refresh-${index}`);
-            
+
             if (!source || !source.visible) return;
-            
-            // Show refreshing state
+
             if (btn) {
                 btn.classList.add('refreshing');
                 btn.textContent = 'Refreshing...';
             }
-            
+
             try {
-                // Remove old source
                 if (source.source) {
                     source.source.remove();
                 }
-                
-                // Re-add with fresh data
+
                 const calSource = {
                     url: source.proxyUrl,
                     format: 'ics',
@@ -857,11 +833,11 @@
                         showError(`Failed to refresh calendar: ${source.url}`);
                     }
                 };
-                
+
                 source.source = calendar.addEventSource(calSource);
                 source.lastUpdate = new Date();
                 source.status = 'fresh';
-                
+
             } catch (error) {
                 source.status = 'error';
                 showError(`Error refreshing calendar: ${error.message}`);
@@ -874,47 +850,39 @@
             }
         }
 
-        // Refresh all calendars
         async function refreshAllCalendars() {
             const visibleCalendars = eventSources
                 .map((es, index) => ({ ...es, index }))
                 .filter(es => es.visible);
-            
+
             if (visibleCalendars.length === 0) {
                 showError('No calendars to refresh');
                 return;
             }
-            
-            // Show loading state
+
             showMessage('Refreshing all calendars...');
-            
-            // Refresh each calendar
+
             for (const cal of visibleCalendars) {
                 await refreshCalendar(cal.index);
             }
-            
+
             showMessage(`All calendars refreshed at ${new Date().toLocaleTimeString()}`);
         }
 
-        // Toggle auto-refresh
         function toggleAutoRefresh() {
             const checkbox = document.getElementById('auto-refresh');
-            
-            // Save preference
+
             localStorage.setItem('autoRefreshEnabled', checkbox.checked ? 'true' : 'false');
-            
+
             if (checkbox.checked) {
-                // Start auto-refresh
                 autoRefreshInterval = setInterval(() => {
                     refreshAllCalendars();
                 }, REFRESH_INTERVAL);
-                
-                // Also refresh immediately
+
                 refreshAllCalendars();
-                
+
                 showMessage('Auto-refresh enabled (every 5 minutes)');
             } else {
-                // Stop auto-refresh
                 if (autoRefreshInterval) {
                     clearInterval(autoRefreshInterval);
                     autoRefreshInterval = null;
@@ -923,7 +891,6 @@
             }
         }
 
-        // Show temporary message
         function showMessage(message) {
             const container = document.getElementById('message');
             container.style.display = 'block';
@@ -934,25 +901,19 @@
             }, 3000);
         }
 
-        // Update calendar list every minute to show fresh time
         setInterval(() => {
             updateActiveCalendarsList();
         }, 60000);
 
-        // Change calendar color
         async function changeCalendarColor(index, newColor) {
             const source = eventSources[index];
             if (!source) return;
-            
-            // Update color in memory
+
             source.color = newColor;
-            
-            // Update calendar source with new color
+
             if (source.visible && source.source) {
-                // Remove old source
                 source.source.remove();
-                
-                // Re-add with new color
+
                 const calSource = {
                     url: source.proxyUrl,
                     format: 'ics',
@@ -961,8 +922,7 @@
                 };
                 source.source = calendar.addEventSource(calSource);
             }
-            
-            // Update database if calendar has ID
+
             if (source.id) {
                 try {
                     await fetch(`/api/calendars/${source.id}`, {
@@ -976,11 +936,9 @@
                     console.error('Failed to update color in database:', error);
                 }
             }
-            
-            // Save to localStorage
+
             saveCalendars();
-            
-            // Update display
+
             updateActiveCalendarsList();
         }
 
@@ -1025,11 +983,10 @@
             } catch (e) {}
         }
 
-        // Password protection with secure cookies
         async function checkPassword() {
             const password = document.getElementById('password-input').value;
             const rememberMe = document.getElementById('remember-me').checked;
-            
+
             try {
                 const response = await fetch('/api/auth', {
                     method: 'POST',
@@ -1039,15 +996,15 @@
                     credentials: 'same-origin', // Important for cookies
                     body: JSON.stringify({ password, rememberMe })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.authenticated) {
-                    // Hide password modal
+
                     document.getElementById('passwordModal').classList.remove('show');
                     document.getElementById('passwordModalOverlay').classList.remove('show');
-                    
-                    // Initialize calendar
+
+
                     initializeApp();
                 } else {
                     document.getElementById('password-error').style.display = 'block';
@@ -1061,14 +1018,14 @@
                 showError('Authentication failed. Please try again.');
             }
         }
-        
+
         async function checkAuth() {
             try {
                 const response = await fetch('/api/auth', {
                     method: 'GET',
                     credentials: 'same-origin'
                 });
-                
+
                 const result = await response.json();
                 return result.authenticated;
             } catch (error) {
@@ -1076,18 +1033,16 @@
                 return false;
             }
         }
-        
+
         function initializeApp() {
             initCalendar();
             connectWebSocket();
-            
-            // Load and apply auto-refresh preference
+
             const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
             const checkbox = document.getElementById('auto-refresh');
             if (checkbox) {
                 checkbox.checked = autoRefreshEnabled;
                 if (autoRefreshEnabled) {
-                    // Start auto-refresh without showing message
                     autoRefreshInterval = setInterval(() => {
                         refreshAllCalendars();
                     }, REFRESH_INTERVAL);
@@ -1096,27 +1051,23 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check authentication status
             try {
                 const response = await fetch('/api/auth', {
                     method: 'GET',
                     credentials: 'same-origin'
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (!result.requiresAuth || result.authenticated) {
-                    // Either no auth required or already authenticated
                     initializeApp();
                 } else {
-                    // Show password modal
                     document.getElementById('passwordModal').classList.add('show');
                     document.getElementById('passwordModalOverlay').classList.add('show');
                     document.getElementById('password-input').focus();
                 }
             } catch (error) {
                 console.error('Auth check failed:', error);
-                // On error, show password modal to be safe
                 document.getElementById('passwordModal').classList.add('show');
                 document.getElementById('passwordModalOverlay').classList.add('show');
                 document.getElementById('password-input').focus();

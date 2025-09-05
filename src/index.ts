@@ -48,29 +48,27 @@ const server = Bun.serve({
         // Check if user is authenticated via cookie
         const cookieHeader = req.headers.get('cookie') || ''
         const hasAuthCookie = cookieHeader.includes('calendar_auth=')
-        
+
         // If no password is set, always authenticated
         if (!config.APP_PASSWORD) {
           return Response.json({ authenticated: true, requiresAuth: false })
         }
-        
-        return Response.json({ 
-          authenticated: hasAuthCookie, 
-          requiresAuth: true 
+
+        return Response.json({
+          authenticated: hasAuthCookie,
+          requiresAuth: true
         })
       }
-      
+
       if (req.method === 'POST') {
         try {
           const body = await req.json()
           const { password, rememberMe } = body
-          
-          // If no password is set, auth is disabled
+
           if (!config.APP_PASSWORD) {
             return Response.json({ authenticated: true })
           }
-          
-          // Check password
+
           if (password === config.APP_PASSWORD) {
             // Create secure httpOnly cookie
             const maxAge = rememberMe ? 30 * 24 * 60 * 60 : undefined // 30 days or session
@@ -80,11 +78,11 @@ const server = Bun.serve({
               'SameSite=Strict',
               'Path=/'
             ]
-            
+
             if (maxAge) {
               cookieOptions.push(`Max-Age=${maxAge}`)
             }
-            
+
             return new Response(JSON.stringify({ authenticated: true }), {
               status: 200,
               headers: {
@@ -93,13 +91,13 @@ const server = Bun.serve({
               }
             })
           }
-          
+
           return Response.json({ authenticated: false }, { status: 401 })
         } catch (error) {
           return Response.json({ error: 'Invalid request' }, { status: 400 })
         }
       }
-      
+
       if (req.method === 'DELETE') {
         // Logout - clear cookie
         return new Response(JSON.stringify({ success: true }), {
@@ -109,7 +107,7 @@ const server = Bun.serve({
           }
         })
       }
-      
+
       return new Response('Method not allowed', { status: 405 })
     },
 
@@ -226,7 +224,7 @@ const server = Bun.serve({
         try {
           const body = await req.json()
           const success = calendar.update(id, body)
-          
+
           if (!success) {
             return Response.json({ error: 'Calendar not found or no changes made' }, { status: 404 })
           }
