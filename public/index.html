@@ -32,19 +32,59 @@
             display: flex;
             flex-direction: column;
         }
-        .controls {
-            padding: 15px;
-            background: #f5f5f5;
+        .settings-modal-overlay {
             display: none;
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
-            border-bottom: 1px solid #ddd;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
         }
-        .controls.show {
+        .settings-modal-overlay.show {
             display: block;
+        }
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 2000;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .settings-modal.show {
+            display: block;
+        }
+        .settings-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .settings-modal-close:hover {
+            background: #da190b;
+        }
+        .settings-modal h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
         .control-group {
             margin-bottom: 15px;
@@ -54,10 +94,16 @@
             font-size: 14px;
         }
         .control-group input[type="text"] {
-            width: 70%;
-            padding: 8px;
+            flex: 1;
+            padding: 8px 12px;
             border: 1px solid #ddd;
             font-size: 14px;
+            margin-right: 10px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
         }
         .control-group button {
             padding: 8px 12px;
@@ -83,13 +129,14 @@
             width: 100vw;
         }
         .calendar-item {
-            padding: 8px;
-            margin: 5px 0;
-            background: white;
-            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 8px 0;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
             display: flex;
             align-items: center;
             gap: 10px;
+            min-width: 0; /* Enable flex item shrinking */
         }
         .calendar-item input[type="checkbox"] {
             width: 16px;
@@ -104,11 +151,22 @@
             padding: 0;
         }
         .calendar-url-text {
-            flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: 13px;
+            max-width: 100%;
+        }
+        .calendar-url-wrapper {
+            flex: 1;
+            min-width: 0; /* Critical for text truncation */
+            display: flex;
+            align-items: center;
+        }
+        .calendar-item .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
         }
         .info-message {
             padding: 10px;
@@ -124,7 +182,7 @@
             margin-bottom: 10px;
             font-size: 13px;
         }
-        .toggle-hint {
+        .keyboard-hint {
             position: fixed;
             bottom: 10px;
             right: 10px;
@@ -232,36 +290,42 @@
 </head>
 <body>
     <div class="container">
-        <div class="controls">
-            <div class="info-message" id="message">
-                <strong>Add Calendar by URL:</strong><br>
-                • Use webcal:// or https:// URLs from Google Calendar, Apple Calendar, Outlook, etc.<br>
-                • For Google Calendar: Settings → Integrate → Public/Secret address in iCal format<br>
-                • For Apple Calendar: Right-click calendar → Share Settings → Copy webcal:// URL
-            </div>
+        <div id="calendar"></div>
+        <div class="keyboard-hint">Press Cmd/Ctrl+C for calendar settings</div>
+    </div>
 
-            <div class="control-group">
+    <!-- Settings Modal -->
+    <div class="settings-modal-overlay" id="settingsModalOverlay"></div>
+    <div class="settings-modal" id="settingsModal">
+        <button class="settings-modal-close" onclick="closeSettingsModal()">×</button>
+        <h2>Calendar Settings</h2>
+        
+        <div class="control-group">
+            <h3>Add New Calendar</h3>
+            <div class="input-group">
                 <input type="text" id="calendar-url" placeholder="Enter calendar URL (webcal:// or https://)">
                 <button onclick="addCalendar()">Add Calendar</button>
             </div>
-
-            <div class="control-group">
-                <h3>Active Calendars</h3>
-                <div class="refresh-controls">
-                    <button onclick="refreshAllCalendars()">Refresh All</button>
-                    <label>
-                        <input type="checkbox" id="auto-refresh" onchange="toggleAutoRefresh()">
-                        Auto-refresh every 5 minutes
-                    </label>
-                </div>
-                <div id="active-calendars">
-                    <p>No calendars added yet</p>
-                </div>
-            </div>
+            <small style="color: #666; font-size: 12px;">
+                Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs
+            </small>
         </div>
 
-        <div id="calendar"></div>
-        <div class="toggle-hint">Press 'C' to toggle calendar settings</div>
+        <div class="control-group">
+            <h3>Active Calendars</h3>
+            <div class="refresh-controls" style="margin-bottom: 15px;">
+                <button onclick="refreshAllCalendars()">Refresh All</button>
+                <label style="margin-left: 15px;">
+                    <input type="checkbox" id="auto-refresh" onchange="toggleAutoRefresh()">
+                    Auto-refresh every 5 minutes
+                </label>
+            </div>
+            <div id="active-calendars" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
+                <p style="color: #999; text-align: center; padding: 20px;">No calendars added yet</p>
+            </div>
+        </div>
+        
+        <div id="message" style="display: none;"></div>
     </div>
 
     <!-- Event Details Modal -->
@@ -309,16 +373,8 @@
                     showEventDetails(info.event);
                 },
                 loading: function(isLoading) {
-                    const msg = document.getElementById('message');
                     if (isLoading) {
-                        msg.innerHTML = '<strong>Loading calendar...</strong>';
-                    } else {
-                        msg.innerHTML = `
-                            <strong>Add Calendar by URL:</strong><br>
-                            • Use webcal:// or https:// URLs from Google Calendar, Apple Calendar, Outlook, etc.<br>
-                            • For Google Calendar: Settings → Integrate → Public/Secret address in iCal format<br>
-                            • For Apple Calendar: Right-click calendar → Share Settings → Copy webcal:// URL
-                        `;
+                        console.log('Loading calendar...');
                     }
                 },
                 eventSourceFailure: function(error) {
@@ -518,16 +574,18 @@
                 <div class="calendar-item">
                     <input type="checkbox" ${es.visible ? 'checked' : ''} onchange="toggleCalendar(${index})">
                     <input type="color" value="${es.color}" onchange="changeCalendarColor(${index}, this.value)" title="Change calendar color">
-                    <span style="flex: 1; display: flex; align-items: center;">
+                    <div class="calendar-url-wrapper">
                         <span class="calendar-url-text" title="${es.url}">${es.url}</span>
                         <span class="last-update">
                             ${es.lastUpdate ? 
                                 `(${timeSinceUpdate === 0 ? 'now' : 
                                 timeSinceUpdate + 'min'})` : ''}
                         </span>
-                    </span>
-                    <button class="refresh-btn" onclick="refreshCalendar(${index})" id="refresh-${index}">↻</button>
-                    <button class="remove" onclick="removeCalendar(${index})">✕</button>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="refresh-btn" onclick="refreshCalendar(${index})" id="refresh-${index}">↻</button>
+                        <button class="remove" onclick="removeCalendar(${index})">✕</button>
+                    </div>
                 </div>
             `}).join('');
         }
@@ -574,30 +632,45 @@
 
         function showError(message) {
             const container = document.getElementById('message');
+            container.style.display = 'block';
             container.className = 'error-message';
             container.innerHTML = `<strong>Error:</strong> ${message}`;
             setTimeout(() => {
-                container.className = 'info-message';
-                container.innerHTML = `
-                    <strong>Add Calendar by URL:</strong><br>
-                    • Use webcal:// or https:// URLs from Google Calendar, Apple Calendar, Outlook, etc.<br>
-                    • For Google Calendar: Settings → Integrate → Public/Secret address in iCal format<br>
-                    • For Apple Calendar: Right-click calendar → Share Settings → Copy webcal:// URL
-                `;
+                container.style.display = 'none';
             }, 5000);
         }
 
-        // Keyboard shortcut to toggle settings
+        // Settings modal functions
+        function openSettingsModal() {
+            document.getElementById('settingsModal').classList.add('show');
+            document.getElementById('settingsModalOverlay').classList.add('show');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.remove('show');
+            document.getElementById('settingsModalOverlay').classList.remove('show');
+        }
+
+        // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'c' || e.key === 'C') {
-                const controls = document.querySelector('.controls');
-                controls.classList.toggle('show');
+            // Cmd/Ctrl + C for settings
+            if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+                e.preventDefault();
+                openSettingsModal();
+            }
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                closeSettingsModal();
+                closeEventModal();
             }
         });
 
+        // Close settings modal on overlay click
+        document.getElementById('settingsModalOverlay').addEventListener('click', closeSettingsModal);
+
         // Hide hint after 5 seconds
         setTimeout(() => {
-            const hint = document.querySelector('.toggle-hint');
+            const hint = document.querySelector('.keyboard-hint');
             if (hint) hint.style.display = 'none';
         }, 5000);
 
@@ -686,12 +759,7 @@
             document.getElementById('eventModalOverlay').classList.remove('show');
         }
 
-        // Close modal on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeEventModal();
-            }
-        });
+        // (Escape key handling is already in the keyboard shortcuts section above)
 
         // Refresh individual calendar
         async function refreshCalendar(index) {
@@ -758,27 +826,14 @@
             }
             
             // Show loading state
-            const msg = document.getElementById('message');
-            msg.innerHTML = '<strong>Refreshing all calendars...</strong>';
+            showMessage('Refreshing all calendars...');
             
             // Refresh each calendar
             for (const cal of visibleCalendars) {
                 await refreshCalendar(cal.index);
             }
             
-            msg.innerHTML = `
-                <strong>All calendars refreshed!</strong><br>
-                Last refresh: ${new Date().toLocaleTimeString()}
-            `;
-            
-            setTimeout(() => {
-                msg.innerHTML = `
-                    <strong>Add Calendar by URL:</strong><br>
-                    • Use webcal:// or https:// URLs from Google Calendar, Apple Calendar, Outlook, etc.<br>
-                    • For Google Calendar: Settings → Integrate → Public/Secret address in iCal format<br>
-                    • For Apple Calendar: Right-click calendar → Share Settings → Copy webcal:// URL
-                `;
-            }, 3000);
+            showMessage(`All calendars refreshed at ${new Date().toLocaleTimeString()}`);
         }
 
         // Toggle auto-refresh
@@ -811,15 +866,11 @@
         // Show temporary message
         function showMessage(message) {
             const container = document.getElementById('message');
+            container.style.display = 'block';
             container.className = 'info-message';
             container.innerHTML = `<strong>${message}</strong>`;
             setTimeout(() => {
-                container.innerHTML = `
-                    <strong>Add Calendar by URL:</strong><br>
-                    • Use webcal:// or https:// URLs from Google Calendar, Apple Calendar, Outlook, etc.<br>
-                    • For Google Calendar: Settings → Integrate → Public/Secret address in iCal format<br>
-                    • For Apple Calendar: Right-click calendar → Share Settings → Copy webcal:// URL
-                `;
+                container.style.display = 'none';
             }, 3000);
         }
 
