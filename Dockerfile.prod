@@ -1,37 +1,27 @@
-# Use the official Bun image with specific version
 FROM oven/bun:1.2.19-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package.json bun.lockb* ./
 
-# Install dependencies (if any)
 RUN bun install --frozen-lockfile || bun install
 
-# Copy source code
 COPY src ./src
 COPY public ./public
 COPY tsconfig.json ./
 
-# Build the TypeScript application
 RUN bun build ./src/index.ts --target=bun --outdir=./dist --minify
 
-# Create directory for SQLite database with proper permissions
 RUN mkdir -p /app/data && chmod 777 /app/data
 
-# Environment variables
 ENV APP_ENV=production
 ENV APP_PORT=80
 ENV APP_DATABASE_PATH=/app/data/calendars.db
+ENV APP_PASSWORD=password
 
-# Expose port 80
 EXPOSE 80
 
-# Add healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:80/healthz || exit 1
 
-# Run the compiled application
 CMD ["bun", "run", "./dist/index.js"]

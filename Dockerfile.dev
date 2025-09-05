@@ -1,28 +1,20 @@
-# Development Dockerfile with hot reload
 FROM oven/bun:1.2.19-alpine
 
-# Install additional tools for development
 RUN apk add --no-cache curl
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package.json bun.lockb* ./
 
-# Install dependencies
 RUN bun install
 
-# Create directory for SQLite database
 RUN mkdir -p /app/data && chmod 777 /app/data
 
-# Environment variables
 ENV APP_ENV=development
 ENV APP_PORT=80
 ENV APP_DATABASE_PATH=/app/data/calendars.db
+ENV APP_PASSWORD=password
 
-# Expose port 80
 EXPOSE 80
 
-# Use bun's built-in watch mode for hot reload
 CMD ["bun", "run", "--watch", "src/index.ts"]
