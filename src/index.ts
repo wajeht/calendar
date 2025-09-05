@@ -45,11 +45,9 @@ const server = Bun.serve({
 
     "/api/auth": async (req) => {
       if (req.method === 'GET') {
-        // Check if user is authenticated via cookie
         const cookieHeader = req.headers.get('cookie') || ''
         const hasAuthCookie = cookieHeader.includes('calendar_auth=')
 
-        // If no password is set, always authenticated
         if (!config.APP_PASSWORD) {
           return Response.json({ authenticated: true, requiresAuth: false })
         }
@@ -70,7 +68,6 @@ const server = Bun.serve({
           }
 
           if (password === config.APP_PASSWORD) {
-            // Create secure httpOnly cookie
             const maxAge = rememberMe ? 30 * 24 * 60 * 60 : undefined // 30 days or session
             const cookieOptions = [
               'calendar_auth=authenticated',
@@ -99,7 +96,6 @@ const server = Bun.serve({
       }
 
       if (req.method === 'DELETE') {
-        // Logout - clear cookie
         return new Response(JSON.stringify({ success: true }), {
           headers: {
             'Content-Type': 'application/json',
