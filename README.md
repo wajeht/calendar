@@ -1,4 +1,4 @@
-# Calendar App
+# 🗓️ Calendar
 
 A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.
 
@@ -12,11 +12,10 @@ bun install
 
 ```sh
 bun run dev
-# or with custom port
-APP_PORT=3000 bun run dev
+APP_PORT=80 bun run dev # or with custom port
 ```
 
-Open http://localhost:3000
+Open http://localhost:80
 
 ## Features
 
@@ -32,8 +31,9 @@ Open http://localhost:3000
 ## Environment Variables
 
 - `APP_PORT` - Server port (default: 80)
-- `APP_ENV` - Environment mode: 'development' or 'production' 
+- `APP_ENV` - Environment mode: 'development' or 'production'
 - `APP_DATABASE_PATH` - SQLite database path (default: calendars.db)
+- `APP_PASSWORD` - Password for the app (default: password)
 
 ## WebSocket Support
 
