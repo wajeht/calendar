@@ -1025,7 +1025,7 @@
             } catch (e) {}
         }
 
-        // Password protection
+        // Password protection with secure cookies
         async function checkPassword() {
             const password = document.getElementById('password-input').value;
             const rememberMe = document.getElementById('remember-me').checked;
@@ -1036,23 +1036,13 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ password })
+                    credentials: 'same-origin', // Important for cookies
+                    body: JSON.stringify({ password, rememberMe })
                 });
                 
                 const result = await response.json();
                 
                 if (result.authenticated) {
-                    if (rememberMe) {
-                        // Save auth token for 30 days
-                        const expires = new Date();
-                        expires.setDate(expires.getDate() + 30);
-                        localStorage.setItem('calendarAuth', 'authenticated');
-                        localStorage.setItem('calendarAuthExpiry', expires.getTime().toString());
-                    } else {
-                        // Just for this session
-                        sessionStorage.setItem('calendarAuth', 'authenticated');
-                    }
-                    
                     // Hide password modal
                     document.getElementById('passwordModal').classList.remove('show');
                     document.getElementById('passwordModalOverlay').classList.remove('show');
@@ -1068,36 +1058,23 @@
                 }
             } catch (error) {
                 console.error('Auth error:', error);
-                // If auth endpoint fails, assume no auth required
-                sessionStorage.setItem('calendarAuth', 'authenticated');
-                document.getElementById('passwordModal').classList.remove('show');
-                document.getElementById('passwordModalOverlay').classList.remove('show');
-                initializeApp();
+                showError('Authentication failed. Please try again.');
             }
         }
         
-        function checkAuth() {
-            // Check session storage first
-            if (sessionStorage.getItem('calendarAuth') === 'authenticated') {
-                return true;
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                });
+                
+                const result = await response.json();
+                return result.authenticated;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                return false;
             }
-            
-            // Check localStorage with expiry
-            const auth = localStorage.getItem('calendarAuth');
-            const expiry = localStorage.getItem('calendarAuthExpiry');
-            
-            if (auth === 'authenticated' && expiry) {
-                const expiryTime = parseInt(expiry);
-                if (new Date().getTime() < expiryTime) {
-                    return true;
-                } else {
-                    // Clear expired auth
-                    localStorage.removeItem('calendarAuth');
-                    localStorage.removeItem('calendarAuthExpiry');
-                }
-            }
-            
-            return false;
         }
         
         function initializeApp() {
@@ -1119,35 +1096,27 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-            // First check if auth is even required
+            // Check authentication status
             try {
                 const response = await fetch('/api/auth', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ password: '' })
+                    method: 'GET',
+                    credentials: 'same-origin'
                 });
                 
                 const result = await response.json();
                 
-                if (result.authenticated) {
-                    // No password required
+                if (!result.requiresAuth || result.authenticated) {
+                    // Either no auth required or already authenticated
                     initializeApp();
-                    return;
+                } else {
+                    // Show password modal
+                    document.getElementById('passwordModal').classList.add('show');
+                    document.getElementById('passwordModalOverlay').classList.add('show');
+                    document.getElementById('password-input').focus();
                 }
             } catch (error) {
-                // If auth check fails, proceed without auth
-                initializeApp();
-                return;
-            }
-            
-            // Auth is required, check if already authenticated
-            if (checkAuth()) {
-                // Already authenticated
-                initializeApp();
-            } else {
-                // Show password modal
+                console.error('Auth check failed:', error);
+                // On error, show password modal to be safe
                 document.getElementById('passwordModal').classList.add('show');
                 document.getElementById('passwordModalOverlay').classList.add('show');
                 document.getElementById('password-input').focus();
