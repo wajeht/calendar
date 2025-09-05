@@ -1,5 +1,5 @@
 import { config } from './config';
-import { CalendarDB } from './db'
+import { calendar } from './db'
 
 let currentView = 'timeGridWeek';
 
@@ -126,7 +126,7 @@ const server = Bun.serve({
       };
 
       try {
-        const calendars = CalendarDB.getAll();
+        const calendars = calendar.getAll();
         health.checks.database = 'healthy';
         health.checks.database_calendars_count = calendars.length;
       } catch (error: any) {
@@ -177,15 +177,15 @@ const server = Bun.serve({
 
     "/api/calendars": {
       GET: () => {
-        const calendars = CalendarDB.getAll()
+        const calendars = calendar.getAll()
         return Response.json(calendars)
       },
 
       POST: async (req) => {
         try {
           const body = await req.json()
-          const calendar = CalendarDB.add(body)
-          return Response.json(calendar, { status: 201 })
+          const newCalendar = calendar.add(body)
+          return Response.json(newCalendar, { status: 201 })
         } catch (error: any) {
           return Response.json({ error: error.message }, { status: 400 })
         }
@@ -209,7 +209,7 @@ const server = Bun.serve({
           return Response.json({ error: 'Invalid ID' }, { status: 400 })
         }
 
-        const success = CalendarDB.remove(id)
+        const success = calendar.remove(id)
         if (!success) {
           return Response.json({ error: 'Calendar not found' }, { status: 404 })
         }
@@ -225,7 +225,7 @@ const server = Bun.serve({
 
         try {
           const body = await req.json()
-          const success = CalendarDB.update(id, body)
+          const success = calendar.update(id, body)
           
           if (!success) {
             return Response.json({ error: 'Calendar not found or no changes made' }, { status: 404 })

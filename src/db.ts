@@ -21,15 +21,15 @@ export interface Calendar {
   created_at?: string
 }
 
-export const CalendarDB = {
+export const calendar = {
   getAll(): Calendar[] {
     return db.query('SELECT * FROM calendars ORDER BY created_at DESC').all() as Calendar[]
   },
 
-  add(calendar: Omit<Calendar, 'id' | 'created_at'>): Calendar {
+  add(data: Omit<Calendar, 'id' | 'created_at'>): Calendar {
     const stmt = db.prepare('INSERT INTO calendars (url, color, name) VALUES (?, ?, ?)')
-    const result = stmt.run(calendar.url, calendar.color, calendar.name || null)
-    return { ...calendar, id: result.lastInsertRowid as number }
+    const result = stmt.run(data.url, data.color, data.name || null)
+    return { ...data, id: result.lastInsertRowid as number }
   },
 
   remove(id: number): boolean {
@@ -38,21 +38,21 @@ export const CalendarDB = {
     return result.changes > 0
   },
 
-  update(id: number, calendar: Partial<Omit<Calendar, 'id' | 'created_at'>>): boolean {
+  update(id: number, data: Partial<Omit<Calendar, 'id' | 'created_at'>>): boolean {
     const fields = []
     const values = []
 
-    if (calendar.url !== undefined) {
+    if (data.url !== undefined) {
       fields.push('url = ?')
-      values.push(calendar.url)
+      values.push(data.url)
     }
-    if (calendar.color !== undefined) {
+    if (data.color !== undefined) {
       fields.push('color = ?')
-      values.push(calendar.color)
+      values.push(data.color)
     }
-    if (calendar.name !== undefined) {
+    if (data.name !== undefined) {
       fields.push('name = ?')
-      values.push(calendar.name)
+      values.push(data.name)
     }
 
     if (fields.length === 0) return false
