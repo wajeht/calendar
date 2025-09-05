@@ -257,6 +257,50 @@
         .event-modal-close:hover {
             background: #da190b;
         }
+        
+        /* Password Modal */
+        .password-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 3000;
+        }
+        .password-modal-overlay.show {
+            display: block;
+        }
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 3001;
+            max-width: 400px;
+            width: 90%;
+        }
+        .password-modal.show {
+            display: block;
+        }
+        .password-modal h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .password-modal input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
         .last-update {
             font-size: 11px;
             color: #999;
@@ -326,6 +370,22 @@
         </div>
         
         <div id="message" style="display: none;"></div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="password-modal-overlay" id="passwordModalOverlay"></div>
+    <div class="password-modal" id="passwordModal">
+        <h2>Calendar Access</h2>
+        <div class="password-content">
+            <p style="margin-bottom: 20px; color: #666;">This calendar is password protected</p>
+            <input type="password" id="password-input" placeholder="Enter password" onkeyup="if(event.key==='Enter') checkPassword()">
+            <label style="display: block; margin-top: 15px; font-size: 13px;">
+                <input type="checkbox" id="remember-me" checked>
+                Remember me for 30 days
+            </label>
+            <button onclick="checkPassword()" style="margin-top: 15px; width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer;">Access Calendar</button>
+            <div id="password-error" style="color: #dc3545; margin-top: 10px; display: none;">Incorrect password</div>
+        </div>
     </div>
 
     <!-- Event Details Modal -->
@@ -965,7 +1025,82 @@
             } catch (e) {}
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        // Password protection
+        async function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.authenticated) {
+                    if (rememberMe) {
+                        // Save auth token for 30 days
+                        const expires = new Date();
+                        expires.setDate(expires.getDate() + 30);
+                        localStorage.setItem('calendarAuth', 'authenticated');
+                        localStorage.setItem('calendarAuthExpiry', expires.getTime().toString());
+                    } else {
+                        // Just for this session
+                        sessionStorage.setItem('calendarAuth', 'authenticated');
+                    }
+                    
+                    // Hide password modal
+                    document.getElementById('passwordModal').classList.remove('show');
+                    document.getElementById('passwordModalOverlay').classList.remove('show');
+                    
+                    // Initialize calendar
+                    initializeApp();
+                } else {
+                    document.getElementById('password-error').style.display = 'block';
+                    document.getElementById('password-input').value = '';
+                    setTimeout(() => {
+                        document.getElementById('password-error').style.display = 'none';
+                    }, 3000);
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                // If auth endpoint fails, assume no auth required
+                sessionStorage.setItem('calendarAuth', 'authenticated');
+                document.getElementById('passwordModal').classList.remove('show');
+                document.getElementById('passwordModalOverlay').classList.remove('show');
+                initializeApp();
+            }
+        }
+        
+        function checkAuth() {
+            // Check session storage first
+            if (sessionStorage.getItem('calendarAuth') === 'authenticated') {
+                return true;
+            }
+            
+            // Check localStorage with expiry
+            const auth = localStorage.getItem('calendarAuth');
+            const expiry = localStorage.getItem('calendarAuthExpiry');
+            
+            if (auth === 'authenticated' && expiry) {
+                const expiryTime = parseInt(expiry);
+                if (new Date().getTime() < expiryTime) {
+                    return true;
+                } else {
+                    // Clear expired auth
+                    localStorage.removeItem('calendarAuth');
+                    localStorage.removeItem('calendarAuthExpiry');
+                }
+            }
+            
+            return false;
+        }
+        
+        function initializeApp() {
             initCalendar();
             connectWebSocket();
             
@@ -980,6 +1115,42 @@
                         refreshAllCalendars();
                     }, REFRESH_INTERVAL);
                 }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // First check if auth is even required
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: '' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.authenticated) {
+                    // No password required
+                    initializeApp();
+                    return;
+                }
+            } catch (error) {
+                // If auth check fails, proceed without auth
+                initializeApp();
+                return;
+            }
+            
+            // Auth is required, check if already authenticated
+            if (checkAuth()) {
+                // Already authenticated
+                initializeApp();
+            } else {
+                // Show password modal
+                document.getElementById('passwordModal').classList.add('show');
+                document.getElementById('passwordModalOverlay').classList.add('show');
+                document.getElementById('password-input').focus();
             }
         });
     </script>

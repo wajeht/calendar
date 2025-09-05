@@ -43,6 +43,31 @@ const server = Bun.serve({
       headers: { 'Content-Type': 'text/plain' }
     }),
 
+    "/api/auth": async (req) => {
+      if (req.method !== 'POST') {
+        return new Response('Method not allowed', { status: 405 })
+      }
+      
+      try {
+        const body = await req.json()
+        const { password } = body
+        
+        // If no password is set, auth is disabled
+        if (!config.APP_PASSWORD) {
+          return Response.json({ authenticated: true })
+        }
+        
+        // Check password
+        if (password === config.APP_PASSWORD) {
+          return Response.json({ authenticated: true })
+        }
+        
+        return Response.json({ authenticated: false }, { status: 401 })
+      } catch (error) {
+        return Response.json({ error: 'Invalid request' }, { status: 400 })
+      }
+    },
+
     "/healthz": async () => {
       const health: any = {
         status: 'healthy',
@@ -247,7 +272,6 @@ const server = Bun.serve({
     }
 
     if (url.pathname === "/") {
-
       return new Response(await Bun.file('./public/index.html').text(), {
         headers: { 'Content-Type': 'text/html' }
       })
