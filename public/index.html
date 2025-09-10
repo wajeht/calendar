@@ -335,7 +335,7 @@
 <body>
     <div class="container">
         <div id="calendar"></div>
-        <div class="keyboard-hint">Press Cmd/Ctrl+C for calendar settings</div>
+        <div class="keyboard-hint">Press Cmd/Ctrl+K for calendar settings</div>
     </div>
 
     <!-- Settings Modal -->
@@ -346,6 +346,9 @@
 
         <div class="control-group">
             <h3>Add New Calendar</h3>
+            <div class="input-group">
+                <input type="text" id="calendar-name" placeholder="Calendar name (optional)">
+            </div>
             <div class="input-group">
                 <input type="text" id="calendar-url" placeholder="Enter calendar URL (webcal:// or https://)">
                 <button onclick="addCalendar()">Add Calendar</button>
@@ -470,6 +473,7 @@
                             url: cal.url,
                             proxyUrl: proxyUrl,
                             color: cal.color,
+                            name: cal.name,
                             source: eventSource,
                             visible: true,
                             lastUpdate: new Date(),
@@ -485,6 +489,7 @@
 
         async function addCalendar() {
             let url = document.getElementById('calendar-url').value.trim();
+            let name = document.getElementById('calendar-name').value.trim();
             if (!url) {
                 showError('Please enter a calendar URL');
                 return;
@@ -520,7 +525,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ url: originalUrl, color: color })
+                    body: JSON.stringify({ url: originalUrl, color: color, name: name || null })
                 });
                 if (response.ok) {
                     const saved = await response.json();
@@ -529,6 +534,7 @@
                         url: originalUrl,
                         proxyUrl: proxyUrl,
                         color: color,
+                        name: name || null,
                         source: eventSource,
                         visible: true,
                         lastUpdate: new Date(),
@@ -539,6 +545,7 @@
                         url: originalUrl,
                         proxyUrl: proxyUrl,
                         color: color,
+                        name: name || null,
                         source: eventSource,
                         visible: true,
                         lastUpdate: new Date(),
@@ -550,6 +557,7 @@
                     url: originalUrl,
                     proxyUrl: proxyUrl,
                     color: color,
+                    name: name || null,
                     source: eventSource,
                     visible: true,
                     lastUpdate: new Date(),
@@ -560,6 +568,7 @@
             saveCalendars();
 
             document.getElementById('calendar-url').value = '';
+            document.getElementById('calendar-name').value = '';
             updateActiveCalendarsList();
         }
 
@@ -621,12 +630,15 @@
                 const timeSinceUpdate = es.lastUpdate ?
                     Math.floor((new Date() - es.lastUpdate) / 60000) : 0;
 
+                const displayName = es.name || es.url;
+                const titleText = es.name ? `${es.name} (${es.url})` : es.url;
+
                 return `
                 <div class="calendar-item">
                     <input type="checkbox" ${es.visible ? 'checked' : ''} onchange="toggleCalendar(${index})">
                     <input type="color" value="${es.color}" onchange="changeCalendarColor(${index}, this.value)" title="Change calendar color">
                     <div class="calendar-url-wrapper">
-                        <span class="calendar-url-text" title="${es.url}">${es.url}</span>
+                        <span class="calendar-url-text" title="${titleText}">${displayName}</span>
                         <span class="last-update">
                             ${es.lastUpdate ?
                                 `(${timeSinceUpdate === 0 ? 'now' :
@@ -644,7 +656,8 @@
         function saveCalendars() {
             const data = eventSources.map(es => ({
                 url: es.url,
-                color: es.color
+                color: es.color,
+                name: es.name
             }));
             localStorage.setItem('savedCalendars', JSON.stringify(data));
         }
@@ -667,7 +680,7 @@
                             textColor: 'white'
                         };
                         const eventSource = calendar.addEventSource(source);
-                        eventSources.push({ url: cal.url, proxyUrl: proxyUrl, color: cal.color, source: eventSource, visible: true });
+                        eventSources.push({ url: cal.url, proxyUrl: proxyUrl, color: cal.color, name: cal.name, source: eventSource, visible: true });
                     });
                     updateActiveCalendarsList();
                 } catch (e) {
@@ -702,8 +715,8 @@
         }
 
         document.addEventListener('keydown', function(e) {
-            // Cmd/Ctrl + C for settings
-            if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+            // Cmd/Ctrl + K for settings
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                 e.preventDefault();
                 openSettingsModal();
             }
@@ -778,7 +791,8 @@
             if (event.source) {
                 const sourceCalendar = eventSources.find(es => es.proxyUrl === event.source.url);
                 if (sourceCalendar) {
-                    detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${sourceCalendar.url}</div>`;
+                    const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
+                    detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${calendarDisplayName}</div>`;
                 }
             }
 

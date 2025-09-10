@@ -178,6 +178,29 @@ const server = Bun.serve({
       POST: async (req) => {
         try {
           const body = await req.json()
+
+          // Validate required fields
+          if (!body.url || typeof body.url !== 'string') {
+            return Response.json({ error: 'URL is required and must be a string' }, { status: 400 })
+          }
+
+          if (!body.color || typeof body.color !== 'string') {
+            return Response.json({ error: 'Color is required and must be a string' }, { status: 400 })
+          }
+
+          // Validate optional name field
+          if (body.name !== undefined && body.name !== null && typeof body.name !== 'string') {
+            return Response.json({ error: 'Name must be a string' }, { status: 400 })
+          }
+
+          // Trim name if provided
+          if (body.name && typeof body.name === 'string') {
+            body.name = body.name.trim()
+            if (body.name === '') {
+              body.name = null
+            }
+          }
+
           const newCalendar = calendar.add(body)
           return Response.json(newCalendar, { status: 201 })
         } catch (error: any) {
@@ -219,6 +242,29 @@ const server = Bun.serve({
 
         try {
           const body = await req.json()
+
+          // Validate fields if provided
+          if (body.url !== undefined && (typeof body.url !== 'string' || !body.url)) {
+            return Response.json({ error: 'URL must be a non-empty string' }, { status: 400 })
+          }
+
+          if (body.color !== undefined && (typeof body.color !== 'string' || !body.color)) {
+            return Response.json({ error: 'Color must be a non-empty string' }, { status: 400 })
+          }
+
+          // Validate name field if provided
+          if (body.name !== undefined && body.name !== null && typeof body.name !== 'string') {
+            return Response.json({ error: 'Name must be a string' }, { status: 400 })
+          }
+
+          // Trim name if provided
+          if (body.name && typeof body.name === 'string') {
+            body.name = body.name.trim()
+            if (body.name === '') {
+              body.name = null
+            }
+          }
+
           const success = calendar.update(id, body)
 
           if (!success) {
