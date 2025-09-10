@@ -15,7 +15,7 @@
     <link rel="manifest" href="/site.webmanifest">
 
     <style>
-       .fc .fc-toolbar { 
+       .fc .fc-toolbar {
            padding: 10px !important;
         }
         * {
@@ -270,7 +270,7 @@
             text-decoration: underline;
         }
 
-        /* Password Modal */
+        /* Global Password Modal */
         .password-modal-overlay {
             display: none;
             position: fixed;
@@ -312,7 +312,12 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
+            box-sizing: border-box;
         }
+
+        /* Auth status CSS removed per user request */
+
+
         .last-update {
             font-size: 11px;
             color: #999;
@@ -453,11 +458,7 @@
         <div class="control-group">
             <h3>Active Calendars</h3>
             <div class="refresh-controls" style="margin-bottom: 15px;">
-                <button onclick="refreshAllCalendars()">Refresh All</button>
-                <label style="margin-left: 15px;">
-                    <input type="checkbox" id="auto-refresh" onchange="toggleAutoRefresh()">
-                    Auto-refresh every 5 minutes
-                </label>
+                <button onclick="refreshAllCalendars()">Refresh All Calendars</button>
             </div>
             <div id="active-calendars" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
                 <p style="color: #999; text-align: center; padding: 20px;">No calendars added yet</p>
@@ -467,18 +468,15 @@
         <div id="message" style="display: none;"></div>
     </div>
 
-    <!-- Password Modal -->
+
+    <!-- Global Password Modal -->
     <div class="password-modal-overlay" id="passwordModalOverlay"></div>
     <div class="password-modal" id="passwordModal">
-        <h2>Calendar Access</h2>
+        <h2>Authentication Required</h2>
         <div class="password-content">
-            <p style="margin-bottom: 20px; color: #666;">This calendar is password protected</p>
+            <p style="margin-bottom: 20px; color: #666;">Enter password to manage calendars</p>
             <input type="password" id="password-input" placeholder="Enter password" onkeyup="if(event.key==='Enter') checkPassword()">
-            <label style="display: block; margin-top: 15px; font-size: 13px;">
-                <input type="checkbox" id="remember-me" checked>
-                Remember me for 30 days
-            </label>
-            <button onclick="checkPassword()" style="margin-top: 15px; width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer;">Access Calendar</button>
+            <button onclick="checkPassword()" style="margin-top: 15px; width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px;">Login</button>
             <div id="password-error" style="color: #dc3545; margin-top: 10px; display: none;">Incorrect password</div>
         </div>
     </div>
@@ -505,6 +503,37 @@
         let autoRefreshInterval = null;
         const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes default
 
+        const DEBUG = true;
+
+        const log = {
+            getTimestamp: () => {
+                const now = new Date();
+                const hours = now.getHours();
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const hour12 = hours % 12 || 12; // Convert to 12-hour format
+                return `${hour12}:${minutes}:${seconds} ${ampm}`;
+            },
+            debug: (...args) => {
+                if (DEBUG && isAuthenticated) {
+                    console.log(`[${log.getTimestamp()}] [DEBUG]`, ...args);
+                }
+            },
+            error: (...args) => {
+                if (DEBUG && isAuthenticated) {
+                    console.error(`[${log.getTimestamp()}] [ERROR]`, ...args);
+                }
+            },
+            public: (...args) => {
+                if (DEBUG) {
+                    console.log(`[${log.getTimestamp()}] [PUBLIC]`, ...args);
+                }
+            }
+        };
+
+        let isAuthenticated = false;
+
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
 
@@ -525,15 +554,36 @@
                 eventSources: [],
                 eventClick: function(info) {
                     info.jsEvent.preventDefault();
+
+                    // Check if details should be hidden for this calendar
+                    // Try to match by the event source URL
+                    const eventSourceUrl = info.event.source?.url || info.event.source?.internalEventSource?.meta?.url;
+                    log.debug('Event source URL:', eventSourceUrl, 'Event color:', info.event.backgroundColor);
+
+                    const sourceCalendar = eventSources.find(es => {
+                        // Match by proxy URL or color
+                        return es.proxyUrl === eventSourceUrl ||
+                               es.color === info.event.backgroundColor ||
+                               (es.source && es.source.url === eventSourceUrl);
+                    });
+
+                    log.debug('Found calendar:', sourceCalendar, 'Auth:', isAuthenticated);
+
+                    // If not authenticated and calendar has hide details flag, don't show modal
+                    if (!isAuthenticated && sourceCalendar && sourceCalendar.details === 1) {
+                        log.public('Details hidden for public view');
+                        return;
+                    }
+
                     showEventDetails(info.event);
                 },
                 loading: function(isLoading) {
                     if (isLoading) {
-                        console.log('Loading calendar...');
+                        log.debug('Loading calendar...');
                     }
                 },
                 eventSourceFailure: function(error) {
-                    console.error('Calendar load failed:', error);
+                    log.error('Calendar load failed:', error);
                     showError('Failed to load calendar. Make sure the URL is correct and accessible.');
                 }
             });
@@ -548,38 +598,64 @@
                 if (response.ok) {
                     const calendars = await response.json();
                     calendars.forEach(cal => {
+                        log.debug('Loading calendar:', cal.name || cal.url, 'details value:', cal.details, 'type:', typeof cal.details);
                         let url = cal.url;
                         if (url.startsWith('webcal://')) {
                             url = url.replace('webcal://', 'https://');
                         }
                         const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-                        const source = {
-                            url: proxyUrl,
-                            format: 'ics',
-                            color: cal.color,
-                            textColor: 'white'
-                        };
-                        const eventSource = calendar.addEventSource(source);
+
+                        // Only add to calendar view if not hidden
+                        let eventSource = null;
+                        if (!cal.hidden) {
+                            // Hide labels only if: not authenticated AND calendar has hide_labels_public flag
+                            const shouldHideDetails = !isAuthenticated && cal.details === 1;
+                            log.debug('Should hide details?', shouldHideDetails, 'for calendar:', cal.name || cal.url, 'Auth:', isAuthenticated, 'Hide for public:', cal.details);
+
+                            const source = {
+                                url: proxyUrl,
+                                format: 'ics',
+                                color: cal.color,
+                                textColor: 'white',
+                                displayEventTime: shouldHideDetails ? false : true
+                            };
+
+                            if (shouldHideDetails) {
+                                log.debug('Hiding details for calendar:', cal.name || cal.url);
+                                // Try using eventDataTransform to modify events
+                                source.eventDataTransform = function(eventData) {
+                                    // Clear the title to hide details
+                                    eventData.title = '';
+                                    return eventData;
+                                };
+                            }
+
+                            eventSource = calendar.addEventSource(source);
+                        }
+
                         eventSources.push({
                             id: cal.id,
                             url: cal.url,
                             proxyUrl: proxyUrl,
                             color: cal.color,
                             name: cal.name,
+                            hidden: cal.hidden,
+                            details: cal.details,
                             source: eventSource,
-                            visible: true,
+                            visible: !cal.hidden,
                             lastUpdate: new Date(),
                             status: 'fresh'
                         });
                     });
                     updateActiveCalendarsList();
                 }
-            } catch {
-                loadSavedCalendars();
+            } catch (error) {
+                log.error('Failed to load calendars from database:', error);
             }
         }
 
         async function addCalendar() {
+
             let url = document.getElementById('calendar-url').value.trim();
             let name = document.getElementById('calendar-name').value.trim();
             if (!url) {
@@ -601,10 +677,10 @@
                 color: color,
                 textColor: 'white',
                 success: function() {
-                    console.log('Successfully loaded calendar from: ' + originalUrl);
+                    log.debug('Successfully loaded calendar from: ' + originalUrl);
                 },
                 failure: function(error) {
-                    console.error('Failed to load calendar:', error);
+                    log.error('Failed to load calendar:', error);
                     showError('Failed to load calendar from: ' + originalUrl);
                 }
             };
@@ -614,30 +690,49 @@
             try {
                 const response = await fetch('/api/calendars', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ url: originalUrl, color: color, name: name || null })
-                });
-                if (response.ok) {
-                    const saved = await response.json();
-                    eventSources.push({
-                        id: saved.id,
+                    body: JSON.stringify({
                         url: originalUrl,
-                        proxyUrl: proxyUrl,
                         color: color,
                         name: name || null,
-                        source: eventSource,
-                        visible: true,
-                        lastUpdate: new Date(),
-                        status: 'fresh'
-                    });
+                        hidden: 0,
+                        details: 0
+                    })
+                });
+
+                if (response.status === 401) {
+                    if (!isAuthenticated) {
+                        showPasswordModal();
+                    }
+                    return;
+                }
+
+                if (response.ok) {
+                    const saved = await response.json();
+                        eventSources.push({
+                            id: saved.id,
+                            url: originalUrl,
+                            proxyUrl: proxyUrl,
+                            color: color,
+                            name: name || null,
+                            hidden: saved.hidden || 0,
+                            details: saved.details || 0,
+                            source: eventSource,
+                            visible: true,
+                            lastUpdate: new Date(),
+                            status: 'fresh'
+                        });
                 } else {
                     eventSources.push({
                         url: originalUrl,
                         proxyUrl: proxyUrl,
                         color: color,
                         name: name || null,
+                        hidden: 0,
+                        details: 0,
                         source: eventSource,
                         visible: true,
                         lastUpdate: new Date(),
@@ -650,6 +745,8 @@
                     proxyUrl: proxyUrl,
                     color: color,
                     name: name || null,
+                    hidden: 0,
+                    details: 0,
                     source: eventSource,
                     visible: true,
                     lastUpdate: new Date(),
@@ -657,21 +754,28 @@
                 });
             }
 
-            saveCalendars();
-
             document.getElementById('calendar-url').value = '';
             document.getElementById('calendar-name').value = '';
             updateActiveCalendarsList();
         }
 
         async function removeCalendar(index) {
+
             const source = eventSources[index];
 
             if (source.id) {
                 try {
-                    await fetch(`/api/calendars/${source.id}`, {
-                        method: 'DELETE'
+                    const response = await fetch(`/api/calendars/${source.id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
                     });
+
+                    if (response.status === 401) {
+                        if (!isAuthenticated) {
+                            showPasswordModal();
+                        }
+                        return;
+                    }
                 } catch {
                 }
             }
@@ -686,7 +790,6 @@
                 });
             }
             eventSources.splice(index, 1);
-            saveCalendars();
             updateActiveCalendarsList();
         }
 
@@ -695,12 +798,25 @@
             source.visible = !source.visible;
 
             if (source.visible) {
+                // Hide details only for public/unauthenticated users if flag is set
+                const shouldHideDetails = !isAuthenticated && source.details === 1;
+
                 const calSource = {
                     url: source.proxyUrl,
                     format: 'ics',
                     color: source.color,
-                    textColor: 'white'
+                    textColor: 'white',
+                    displayEventTime: shouldHideDetails ? false : true
                 };
+
+                if (shouldHideDetails) {
+                    log.debug('Toggling calendar with details hidden:', source.name || source.url);
+                    // Clear titles when hiding details
+                    calSource.eventDataTransform = function(eventData) {
+                        eventData.title = '';
+                        return eventData;
+                    };
+                }
                 source.source = calendar.addEventSource(calSource);
             } else {
                 if (source.source) {
@@ -752,6 +868,18 @@
                             <label for="edit-url-${index}">Calendar URL:</label>
                             <input type="text" id="edit-url-${index}" value="${es.url}" placeholder="Enter calendar URL">
                         </div>
+                        <div class="edit-form-group">
+                            <label>
+                                <input type="checkbox" id="edit-hidden-${index}" ${es.hidden ? 'checked' : ''}>
+                                Hide calendar (doesn't show up publicly)
+                            </label>
+                        </div>
+                        <div class="edit-form-group">
+                            <label>
+                                <input type="checkbox" id="edit-hide-details-${index}" ${es.details === 1 ? 'checked' : ''}>
+                                Hide details for public (show as time blocks only)
+                            </label>
+                        </div>
                         <div class="edit-form-buttons">
                             <button class="save-btn" onclick="saveCalendarEdit(${index})">Save</button>
                             <button class="cancel-btn" onclick="cancelCalendarEdit(${index})">Cancel</button>
@@ -761,41 +889,6 @@
             `}).join('');
         }
 
-        function saveCalendars() {
-            const data = eventSources.map(es => ({
-                url: es.url,
-                color: es.color,
-                name: es.name
-            }));
-            localStorage.setItem('savedCalendars', JSON.stringify(data));
-        }
-
-        function loadSavedCalendars() {
-            const saved = localStorage.getItem('savedCalendars');
-            if (saved) {
-                try {
-                    const calendars = JSON.parse(saved);
-                    calendars.forEach(cal => {
-                        let url = cal.url;
-                        if (url.startsWith('webcal://')) {
-                            url = url.replace('webcal://', 'https://');
-                        }
-                        const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-                        const source = {
-                            url: proxyUrl,
-                            format: 'ics',
-                            color: cal.color || getRandomColor(),
-                            textColor: 'white'
-                        };
-                        const eventSource = calendar.addEventSource(source);
-                        eventSources.push({ url: cal.url, proxyUrl: proxyUrl, color: cal.color, name: cal.name, source: eventSource, visible: true });
-                    });
-                    updateActiveCalendarsList();
-                } catch (e) {
-                    console.error('Error loading saved calendars:', e);
-                }
-            }
-        }
 
         function getRandomColor() {
             const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336', '#00BCD4', '#795548', '#607D8B'];
@@ -813,8 +906,14 @@
         }
 
         function openSettingsModal() {
+            if (!isAuthenticated) {
+                showPasswordModal();
+                return;
+            }
+
             document.getElementById('settingsModal').classList.add('show');
             document.getElementById('settingsModalOverlay').classList.add('show');
+            updateActiveCalendarsList();
         }
 
         function closeSettingsModal() {
@@ -831,6 +930,7 @@
             if (e.key === 'Escape') {
                 closeSettingsModal();
                 closeEventModal();
+                closePasswordModal();
             }
         });
 
@@ -994,11 +1094,15 @@
                     source.source.remove();
                 }
 
+                // Hide details only for public/unauthenticated users if flag is set
+                const shouldHideDetails = !isAuthenticated && source.details === 1;
+
                 const calSource = {
                     url: source.proxyUrl,
                     format: 'ics',
                     color: source.color,
                     textColor: 'white',
+                    displayEventTime: shouldHideDetails ? false : true,
                     success: function() {
                         source.lastUpdate = new Date();
                         source.status = 'fresh';
@@ -1010,6 +1114,15 @@
                         showError(`Failed to refresh calendar: ${source.url}`);
                     }
                 };
+
+                if (shouldHideDetails) {
+                    log.debug('Refreshing calendar with details hidden:', source.name || source.url);
+                    // Clear titles when hiding details
+                    calSource.eventDataTransform = function(eventData) {
+                        eventData.title = '';
+                        return eventData;
+                    };
+                }
 
                 source.source = calendar.addEventSource(calSource);
                 source.lastUpdate = new Date();
@@ -1049,22 +1162,10 @@
         function toggleAutoRefresh() {
             const checkbox = document.getElementById('auto-refresh');
 
-            localStorage.setItem('autoRefreshEnabled', checkbox.checked ? 'true' : 'false');
-
             if (checkbox.checked) {
-                autoRefreshInterval = setInterval(() => {
-                    refreshAllCalendars();
-                }, REFRESH_INTERVAL);
-
+                // Just use setTimeout for refresh instead of interval
                 refreshAllCalendars();
-
-                showMessage('Auto-refresh enabled (every 5 minutes)');
-            } else {
-                if (autoRefreshInterval) {
-                    clearInterval(autoRefreshInterval);
-                    autoRefreshInterval = null;
-                }
-                showMessage('Auto-refresh disabled');
+                showMessage('Calendars refreshed');
             }
         }
 
@@ -1104,13 +1205,14 @@
                 try {
                     await fetch(`/api/calendars/${source.id}`, {
                         method: 'PATCH',
+                        credentials: 'include',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ color: newColor })
                     });
                 } catch (error) {
-                    console.error('Failed to update color in database:', error);
+                    log.error('Failed to update color in database:', error);
                 }
             }
 
@@ -1142,7 +1244,7 @@
 
                 showMessage('Calendar URL copied to clipboard!');
             } catch (error) {
-                console.error('Failed to copy URL:', error);
+                log.error('Failed to copy URL:', error);
 
                 // Fallback for browsers that don't support clipboard API
                 const textArea = document.createElement('textarea');
@@ -1173,6 +1275,7 @@
         }
 
         function editCalendar(index) {
+
             const editForm = document.getElementById(`edit-form-${index}`);
             const isShowing = editForm.classList.contains('show');
 
@@ -1187,6 +1290,7 @@
             }
         }
 
+
         function cancelCalendarEdit(index) {
             const editForm = document.getElementById(`edit-form-${index}`);
             editForm.classList.remove('show');
@@ -1195,14 +1299,19 @@
             const source = eventSources[index];
             document.getElementById(`edit-name-${index}`).value = source.name || '';
             document.getElementById(`edit-url-${index}`).value = source.url;
+            document.getElementById(`edit-hidden-${index}`).checked = source.hidden || false;
+            document.getElementById(`edit-hide-details-${index}`).checked = source.details === 1;
         }
 
         async function saveCalendarEdit(index) {
+
             const source = eventSources[index];
             if (!source) return;
 
             const newName = document.getElementById(`edit-name-${index}`).value.trim();
             const newUrl = document.getElementById(`edit-url-${index}`).value.trim();
+            const isHidden = document.getElementById(`edit-hidden-${index}`).checked;
+            const isHideDetails = document.getElementById(`edit-hide-details-${index}`).checked;
 
             if (!newUrl) {
                 showError('Calendar URL is required');
@@ -1219,7 +1328,9 @@
 
             const updates = {
                 name: newName || null,
-                url: newUrl
+                url: newUrl,
+                hidden: isHidden ? 1 : 0,
+                details: isHideDetails ? 1 : 0
             };
 
             try {
@@ -1227,11 +1338,20 @@
                 if (source.id) {
                     const response = await fetch(`/api/calendars/${source.id}`, {
                         method: 'PATCH',
+                        credentials: 'include',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(updates)
                     });
+
+                    if (response.status === 401) {
+                        // Only show password modal if we don't have a password yet
+                        if (!isAuthenticated) {
+                            showPasswordModal();
+                        }
+                        return;
+                    }
 
                     if (!response.ok) {
                         throw new Error('Failed to update calendar');
@@ -1239,34 +1359,65 @@
                 }
 
                 // Update local data
+                const wasHidden = source.hidden;
+                const wasHideDetails = source.details;
                 source.name = updates.name;
+                source.hidden = updates.hidden;
+                source.details = updates.details;
                 const oldUrl = source.url;
                 source.url = updates.url;
 
-                // If URL changed, update the calendar source
-                if (oldUrl !== newUrl) {
-                    let url = newUrl;
-                    if (url.startsWith('webcal://')) {
-                        url = url.replace('webcal://', 'https://');
-                    }
-                    const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-                    source.proxyUrl = proxyUrl;
+                // Handle visibility changes
+                if (wasHidden !== updates.hidden) {
+                    if (updates.hidden) {
+                        // Calendar was visible, now hidden - remove from calendar view
+                        if (source.source) {
+                            source.source.remove();
+                            source.source = null;
+                            source.visible = false;
+                        }
+                    } else {
+                        // Calendar was hidden, now visible - add to calendar view
+                        if (!source.source) {
+                            let url = updates.url;
+                            if (url.startsWith('webcal://')) {
+                                url = url.replace('webcal://', 'https://');
+                            }
+                            const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
+                            source.proxyUrl = proxyUrl;
+                            const calSource = {
+                                url: proxyUrl,
+                                format: 'ics',
+                                color: source.color,
+                                textColor: 'white',
+                            };
 
-                    // Refresh the calendar source if it's visible
-                    if (source.visible && source.source) {
+                            source.source = calendar.addEventSource(calSource);
+                            source.visible = true;
+                        }
+                    }
+                }
+                // Handle details hiding changes for visible calendars
+                else if (!updates.hidden && (wasHideDetails !== updates.details || oldUrl !== newUrl)) {
+                    // Refresh the calendar source to apply details changes or URL changes
+                    if (source.source) {
                         source.source.remove();
+                        let url = updates.url;
+                        if (url.startsWith('webcal://')) {
+                            url = url.replace('webcal://', 'https://');
+                        }
+                        const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
+                        source.proxyUrl = proxyUrl;
                         const calSource = {
                             url: proxyUrl,
                             format: 'ics',
                             color: source.color,
-                            textColor: 'white'
+                            textColor: 'white',
                         };
+
                         source.source = calendar.addEventSource(calSource);
                     }
                 }
-
-                // Save to localStorage
-                saveCalendars();
 
                 // Hide edit form and refresh display
                 document.getElementById(`edit-form-${index}`).classList.remove('show');
@@ -1274,7 +1425,7 @@
 
                 showMessage('Calendar updated successfully!');
             } catch (error) {
-                console.error('Failed to update calendar:', error);
+                log.error('Failed to update calendar:', error);
                 showError('Failed to update calendar');
             }
         }
@@ -1320,95 +1471,85 @@
             } catch (e) {}
         }
 
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    isAuthenticated = data.authenticated;
+                }
+            } catch (error) {
+                log.error('Failed to check auth status:', error);
+            }
+        }
+
+        async function initializeApp() {
+            await checkAuthStatus();
+            initCalendar();
+            connectWebSocket();
+        }
+
+        // Global authentication functions
         async function checkPassword() {
             const password = document.getElementById('password-input').value;
-            const rememberMe = document.getElementById('remember-me').checked;
+            const errorEl = document.getElementById('password-error');
 
             try {
                 const response = await fetch('/api/auth', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
-                    credentials: 'same-origin', // Important for cookies
-                    body: JSON.stringify({ password, rememberMe })
+                    body: JSON.stringify({ password })
                 });
 
-                const result = await response.json();
-
-                if (result.authenticated) {
-
-                    document.getElementById('passwordModal').classList.remove('show');
-                    document.getElementById('passwordModalOverlay').classList.remove('show');
-
-
-                    initializeApp();
-                } else {
-                    document.getElementById('password-error').style.display = 'block';
-                    document.getElementById('password-input').value = '';
+                if (response.ok) {
+                    isAuthenticated = true;
+                    closePasswordModal();
+                    showMessage('Authentication successful');
+                    // Reload calendars to show labels after authentication
+                    refreshAllCalendars();
+                    // Now open the settings modal that the user wanted
                     setTimeout(() => {
-                        document.getElementById('password-error').style.display = 'none';
-                    }, 3000);
-                }
-            } catch (error) {
-                console.error('Auth error:', error);
-                showError('Authentication failed. Please try again.');
-            }
-        }
-
-        async function checkAuth() {
-            try {
-                const response = await fetch('/api/auth', {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                });
-
-                const result = await response.json();
-                return result.authenticated;
-            } catch (error) {
-                console.error('Auth check error:', error);
-                return false;
-            }
-        }
-
-        function initializeApp() {
-            initCalendar();
-            connectWebSocket();
-
-            const autoRefreshEnabled = localStorage.getItem('autoRefreshEnabled') === 'true';
-            const checkbox = document.getElementById('auto-refresh');
-            if (checkbox) {
-                checkbox.checked = autoRefreshEnabled;
-                if (autoRefreshEnabled) {
-                    autoRefreshInterval = setInterval(() => {
-                        refreshAllCalendars();
-                    }, REFRESH_INTERVAL);
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const response = await fetch('/api/auth', {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                });
-
-                const result = await response.json();
-
-                if (!result.requiresAuth || result.authenticated) {
-                    initializeApp();
+                        openSettingsModal();
+                    }, 100);
                 } else {
-                    document.getElementById('passwordModal').classList.add('show');
-                    document.getElementById('passwordModalOverlay').classList.add('show');
+                    errorEl.style.display = 'block';
+                    document.getElementById('password-input').value = '';
                     document.getElementById('password-input').focus();
                 }
             } catch (error) {
-                console.error('Auth check failed:', error);
-                document.getElementById('passwordModal').classList.add('show');
-                document.getElementById('passwordModalOverlay').classList.add('show');
-                document.getElementById('password-input').focus();
+                showError('Authentication failed');
             }
+        }
+
+        function showPasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            const overlay = document.getElementById('passwordModalOverlay');
+
+            modal.classList.add('show');
+            overlay.classList.add('show');
+
+            // Clear previous input and error
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-error').style.display = 'none';
+            document.getElementById('password-input').focus();
+
+            // Don't close on overlay click to force authentication
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('show');
+            document.getElementById('passwordModalOverlay').classList.remove('show');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
         });
     </script>
 </body>

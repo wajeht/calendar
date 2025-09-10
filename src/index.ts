@@ -3,6 +3,29 @@ import { calendar } from './db'
 
 let currentView = 'timeGridWeek';
 
+function checkAuth(req: Request): boolean {
+  const cookieHeader = req.headers.get('Cookie')
+  if (cookieHeader) {
+    const cookies = Object.fromEntries(
+      cookieHeader.split(';').map(c => {
+        const [key, value] = c.trim().split('=')
+        return [key, value]
+      })
+    )
+    if (cookies.auth === config.APP_PASSWORD) {
+      return true
+    }
+  }
+
+  const auth = req.headers.get('Authorization')
+  if (!auth) return false
+
+  const [type, token] = auth.split(' ')
+  if (type !== 'Bearer') return false
+
+  return token === config.APP_PASSWORD
+}
+
 const viewMap: Record<string, string> = {
   'month': 'dayGridMonth',
   'week': 'timeGridWeek',
@@ -43,69 +66,6 @@ const server = Bun.serve({
       headers: { 'Content-Type': 'text/plain' }
     }),
 
-    "/api/auth": async (req) => {
-      if (req.method === 'GET') {
-        const cookieHeader = req.headers.get('cookie') || ''
-        const hasAuthCookie = cookieHeader.includes('calendar_auth=')
-
-        if (!config.APP_PASSWORD) {
-          return Response.json({ authenticated: true, requiresAuth: false })
-        }
-
-        return Response.json({
-          authenticated: hasAuthCookie,
-          requiresAuth: true
-        })
-      }
-
-      if (req.method === 'POST') {
-        try {
-          const body = await req.json()
-          const { password, rememberMe } = body
-
-          if (!config.APP_PASSWORD) {
-            return Response.json({ authenticated: true })
-          }
-
-          if (password === config.APP_PASSWORD) {
-            const maxAge = rememberMe ? 30 * 24 * 60 * 60 : undefined // 30 days or session
-            const cookieOptions = [
-              'calendar_auth=authenticated',
-              'HttpOnly',
-              'SameSite=Strict',
-              'Path=/'
-            ]
-
-            if (maxAge) {
-              cookieOptions.push(`Max-Age=${maxAge}`)
-            }
-
-            return new Response(JSON.stringify({ authenticated: true }), {
-              status: 200,
-              headers: {
-                'Content-Type': 'application/json',
-                'Set-Cookie': cookieOptions.join('; ')
-              }
-            })
-          }
-
-          return Response.json({ authenticated: false }, { status: 401 })
-        } catch (error) {
-          return Response.json({ error: 'Invalid request' }, { status: 400 })
-        }
-      }
-
-      if (req.method === 'DELETE') {
-        return new Response(JSON.stringify({ success: true }), {
-          headers: {
-            'Content-Type': 'application/json',
-            'Set-Cookie': 'calendar_auth=; Max-Age=0; Path=/; HttpOnly'
-          }
-        })
-      }
-
-      return new Response('Method not allowed', { status: 405 })
-    },
 
     "/healthz": async () => {
       const health: any = {
@@ -169,44 +129,86 @@ const server = Bun.serve({
       }
     },
 
+    "/api/auth": {
+      GET: (req: any) => {
+        // Check if user is authenticated
+        const isAuth = checkAuth(req)
+        return Response.json({ authenticated: isAuth })
+      },
+
+      POST: async (req: any) => {
+        try {
+          const body = await req.json()
+          const { password } = body
+
+          if (!password) {
+            return Response.json({ error: 'Password is required' }, { status: 400 })
+          }
+
+          if (password === config.APP_PASSWORD) {
+            return Response.json({
+              success: true
+            }, {
+              headers: {
+                'Set-Cookie': `auth=${config.APP_PASSWORD}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400`
+              }
+            })
+          } else {
+            return Response.json({ error: 'Invalid password' }, { status: 401 })
+          }
+        } catch (error: any) {
+          return Response.json({ error: error.message }, { status: 400 })
+        }
+      }
+    },
+
     "/api/calendars": {
       GET: () => {
         const calendars = calendar.getAll()
         return Response.json(calendars)
       },
 
-      POST: async (req) => {
-        try {
-          const body = await req.json()
-
-          // Validate required fields
-          if (!body.url || typeof body.url !== 'string') {
-            return Response.json({ error: 'URL is required and must be a string' }, { status: 400 })
+        POST: async (req: any) => {
+          if (!checkAuth(req)) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 })
           }
 
-          if (!body.color || typeof body.color !== 'string') {
-            return Response.json({ error: 'Color is required and must be a string' }, { status: 400 })
-          }
+          try {
+            const body = await req.json()
 
-          // Validate optional name field
-          if (body.name !== undefined && body.name !== null && typeof body.name !== 'string') {
-            return Response.json({ error: 'Name must be a string' }, { status: 400 })
-          }
-
-          // Trim name if provided
-          if (body.name && typeof body.name === 'string') {
-            body.name = body.name.trim()
-            if (body.name === '') {
-              body.name = null
+            if (!body.url || typeof body.url !== 'string') {
+              return Response.json({ error: 'URL is required and must be a string' }, { status: 400 })
             }
-          }
 
-          const newCalendar = calendar.add(body)
-          return Response.json(newCalendar, { status: 201 })
-        } catch (error: any) {
-          return Response.json({ error: error.message }, { status: 400 })
-        }
-      },
+            if (!body.color || typeof body.color !== 'string') {
+              return Response.json({ error: 'Color is required and must be a string' }, { status: 400 })
+            }
+
+            if (body.name !== undefined && body.name !== null && typeof body.name !== 'string') {
+              return Response.json({ error: 'Name must be a string' }, { status: 400 })
+            }
+
+            if (body.hidden !== undefined && body.hidden !== 0 && body.hidden !== 1) {
+              return Response.json({ error: 'hidden must be 0 or 1' }, { status: 400 })
+            }
+
+            if (body.details !== undefined && body.details !== 0 && body.details !== 1) {
+              return Response.json({ error: 'details must be 0 or 1' }, { status: 400 })
+            }
+
+            if (body.name && typeof body.name === 'string') {
+              body.name = body.name.trim()
+              if (body.name === '') {
+                body.name = null
+              }
+            }
+
+            const newCalendar = calendar.add(body)
+            return Response.json(newCalendar, { status: 201 })
+          } catch (error: any) {
+            return Response.json({ error: error.message }, { status: 400 })
+          }
+        },
 
       OPTIONS: () => {
         return new Response(null, {
@@ -221,6 +223,10 @@ const server = Bun.serve({
 
     "/api/calendars/:id": {
       DELETE: (req: any) => {
+        if (!checkAuth(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const id = parseInt(req.params.id)
         if (isNaN(id)) {
           return Response.json({ error: 'Invalid ID' }, { status: 400 })
@@ -235,6 +241,10 @@ const server = Bun.serve({
       },
 
       PATCH: async (req: any) => {
+        if (!checkAuth(req)) {
+          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const id = parseInt(req.params.id)
         if (isNaN(id)) {
           return Response.json({ error: 'Invalid ID' }, { status: 400 })
@@ -243,7 +253,6 @@ const server = Bun.serve({
         try {
           const body = await req.json()
 
-          // Validate fields if provided
           if (body.url !== undefined && (typeof body.url !== 'string' || !body.url)) {
             return Response.json({ error: 'URL must be a non-empty string' }, { status: 400 })
           }
@@ -252,12 +261,18 @@ const server = Bun.serve({
             return Response.json({ error: 'Color must be a non-empty string' }, { status: 400 })
           }
 
-          // Validate name field if provided
           if (body.name !== undefined && body.name !== null && typeof body.name !== 'string') {
             return Response.json({ error: 'Name must be a string' }, { status: 400 })
           }
 
-          // Trim name if provided
+          if (body.hidden !== undefined && body.hidden !== 0 && body.hidden !== 1) {
+            return Response.json({ error: 'hidden must be 0 or 1' }, { status: 400 })
+          }
+
+          if (body.details !== undefined && body.details !== 0 && body.details !== 1) {
+            return Response.json({ error: 'details must be 0 or 1' }, { status: 400 })
+          }
+
           if (body.name && typeof body.name === 'string') {
             body.name = body.name.trim()
             if (body.name === '') {
@@ -316,7 +331,7 @@ const server = Bun.serve({
         })
       },
 
-      POST: async (req) => {
+      POST: async (req: any) => {
         try {
           const body = await req.json()
           const { view } = body
