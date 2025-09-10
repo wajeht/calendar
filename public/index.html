@@ -321,6 +321,20 @@
             background: #ffc107;
             cursor: wait;
         }
+        .copy-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            background: #545b62;
+        }
+        .copy-btn.copied {
+            background: #28a745;
+        }
         .refresh-controls {
             margin-bottom: 10px;
         }
@@ -646,6 +660,7 @@
                         </span>
                     </div>
                     <div class="action-buttons">
+                        <button class="copy-btn" onclick="copyCalendarUrl(${index})" id="copy-${index}" title="Copy URL">📋</button>
                         <button class="refresh-btn" onclick="refreshCalendar(${index})" id="refresh-${index}">↻</button>
                         <button class="remove" onclick="removeCalendar(${index})">✕</button>
                     </div>
@@ -954,6 +969,59 @@
             saveCalendars();
 
             updateActiveCalendarsList();
+        }
+
+        async function copyCalendarUrl(index) {
+            const source = eventSources[index];
+            if (!source) return;
+
+            const btn = document.getElementById(`copy-${index}`);
+
+            try {
+                await navigator.clipboard.writeText(source.url);
+
+                // Provide visual feedback
+                if (btn) {
+                    const originalText = btn.textContent;
+                    btn.textContent = '✓';
+                    btn.classList.add('copied');
+
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.classList.remove('copied');
+                    }, 1500);
+                }
+
+                showMessage('Calendar URL copied to clipboard!');
+            } catch (error) {
+                console.error('Failed to copy URL:', error);
+
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = source.url;
+                document.body.appendChild(textArea);
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                    showMessage('Calendar URL copied to clipboard!');
+
+                    if (btn) {
+                        const originalText = btn.textContent;
+                        btn.textContent = '✓';
+                        btn.classList.add('copied');
+
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.classList.remove('copied');
+                        }, 1500);
+                    }
+                } catch (fallbackError) {
+                    showError('Failed to copy URL to clipboard');
+                }
+
+                document.body.removeChild(textArea);
+            }
         }
 
         let ws;
