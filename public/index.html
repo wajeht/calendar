@@ -760,14 +760,36 @@
         function makeLinksClickable(text) {
             if (!text) return text;
 
-            // Regular expression to match URLs
-            const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/gi;
+            // Split text by whitespace to check each potential URL
+            const words = text.split(/(\s+)/);
 
-            return text.replace(urlRegex, function(url) {
-                // Clean up the URL (remove trailing punctuation that might not be part of the URL)
-                let cleanUrl = url.replace(/[.,;:!?]+$/, '');
-                return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-            });
+            return words.map(word => {
+                // Skip whitespace
+                if (/^\s+$/.test(word)) return word;
+
+                // Try to parse as URL, handling common punctuation at the end
+                let potentialUrl = word;
+                let trailingPunctuation = '';
+
+                // Extract trailing punctuation that's likely not part of the URL
+                const punctuationMatch = word.match(/^(.+?)([.,;:!?)\]}>]+)$/);
+                if (punctuationMatch) {
+                    potentialUrl = punctuationMatch[1];
+                    trailingPunctuation = punctuationMatch[2];
+                }
+
+                try {
+                    const url = new URL(potentialUrl);
+                    // Only convert http and https URLs to links
+                    if (url.protocol === 'http:' || url.protocol === 'https:') {
+                        return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialUrl}</a>${trailingPunctuation}`;
+                    }
+                } catch (e) {
+                    // Not a valid URL, return as-is
+                }
+
+                return word;
+            }).join('');
         }
 
         function showEventDetails(event) {
