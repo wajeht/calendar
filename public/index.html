@@ -257,6 +257,15 @@
         .event-modal-close:hover {
             background: #da190b;
         }
+        .event-detail a {
+            color: #007bff;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .event-detail a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
 
         /* Password Modal */
         .password-modal-overlay {
@@ -748,6 +757,19 @@
             if (hint) hint.style.display = 'none';
         }, 5000);
 
+        function makeLinksClickable(text) {
+            if (!text) return text;
+
+            // Regular expression to match URLs
+            const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`[\]]+)/gi;
+
+            return text.replace(urlRegex, function(url) {
+                // Clean up the URL (remove trailing punctuation that might not be part of the URL)
+                let cleanUrl = url.replace(/[.,;:!?]+$/, '');
+                return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            });
+        }
+
         function showEventDetails(event) {
             const modal = document.getElementById('eventModal');
             const overlay = document.getElementById('eventModalOverlay');
@@ -794,12 +816,14 @@
 
             // Location (if available in extended props)
             if (event.extendedProps && event.extendedProps.location) {
-                detailsHTML += `<div class="event-detail"><label>Location:</label> ${event.extendedProps.location}</div>`;
+                const locationWithLinks = makeLinksClickable(event.extendedProps.location);
+                detailsHTML += `<div class="event-detail"><label>Location:</label> ${locationWithLinks}</div>`;
             }
 
             // Description (if available in extended props)
             if (event.extendedProps && event.extendedProps.description) {
-                detailsHTML += `<div class="event-detail"><label>Description:</label><br>${event.extendedProps.description}</div>`;
+                const descriptionWithLinks = makeLinksClickable(event.extendedProps.description);
+                detailsHTML += `<div class="event-detail"><label>Description:</label><br>${descriptionWithLinks}</div>`;
             }
 
             // Calendar source
@@ -813,7 +837,7 @@
 
             // URL (if available)
             if (event.url) {
-                detailsHTML += `<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank">Open in calendar</a></div>`;
+                detailsHTML += `<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank" rel="noopener noreferrer">Open in calendar</a></div>`;
             }
 
             detailsEl.innerHTML = detailsHTML;
