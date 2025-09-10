@@ -344,6 +344,72 @@
         .copy-btn.copied {
             background: #28a745;
         }
+        .edit-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .edit-btn:hover {
+            background: #138496;
+        }
+        .calendar-edit-form {
+            display: none;
+            background: #f8f9fa;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .calendar-edit-form.show {
+            display: block;
+        }
+        .edit-form-group {
+            margin-bottom: 10px;
+        }
+        .edit-form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .edit-form-group input {
+            width: 100%;
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .edit-form-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .save-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .save-btn:hover {
+            background: #218838;
+        }
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .cancel-btn:hover {
+            background: #5a6268;
+        }
         .refresh-controls {
             margin-bottom: 10px;
         }
@@ -657,7 +723,7 @@
                 const titleText = es.name ? `${es.name} (${es.url})` : es.url;
 
                 return `
-                <div class="calendar-item">
+                <div class="calendar-item" id="calendar-item-${index}">
                     <input type="checkbox" ${es.visible ? 'checked' : ''} onchange="toggleCalendar(${index})">
                     <input type="color" value="${es.color}" onchange="changeCalendarColor(${index}, this.value)" title="Change calendar color">
                     <div class="calendar-url-wrapper">
@@ -669,9 +735,24 @@
                         </span>
                     </div>
                     <div class="action-buttons">
+                        <button class="edit-btn" onclick="editCalendar(${index})" id="edit-${index}" title="Edit calendar">✏️</button>
                         <button class="copy-btn" onclick="copyCalendarUrl(${index})" id="copy-${index}" title="Copy URL">📋</button>
                         <button class="refresh-btn" onclick="refreshCalendar(${index})" id="refresh-${index}">↻</button>
                         <button class="remove" onclick="removeCalendar(${index})">✕</button>
+                    </div>
+                    <div class="calendar-edit-form" id="edit-form-${index}">
+                        <div class="edit-form-group">
+                            <label for="edit-name-${index}">Calendar Name:</label>
+                            <input type="text" id="edit-name-${index}" value="${es.name || ''}" placeholder="Enter calendar name (optional)">
+                        </div>
+                        <div class="edit-form-group">
+                            <label for="edit-url-${index}">Calendar URL:</label>
+                            <input type="text" id="edit-url-${index}" value="${es.url}" placeholder="Enter calendar URL">
+                        </div>
+                        <div class="edit-form-buttons">
+                            <button class="save-btn" onclick="saveCalendarEdit(${index})">Save</button>
+                            <button class="cancel-btn" onclick="cancelCalendarEdit(${index})">Cancel</button>
+                        </div>
                     </div>
                 </div>
             `}).join('');
@@ -1085,6 +1166,113 @@
                 }
 
                 document.body.removeChild(textArea);
+            }
+        }
+
+        function editCalendar(index) {
+            const editForm = document.getElementById(`edit-form-${index}`);
+            const isShowing = editForm.classList.contains('show');
+
+            // Hide all other edit forms
+            document.querySelectorAll('.calendar-edit-form.show').forEach(form => {
+                form.classList.remove('show');
+            });
+
+            // Toggle this form
+            if (!isShowing) {
+                editForm.classList.add('show');
+            }
+        }
+
+        function cancelCalendarEdit(index) {
+            const editForm = document.getElementById(`edit-form-${index}`);
+            editForm.classList.remove('show');
+
+            // Reset form values to original
+            const source = eventSources[index];
+            document.getElementById(`edit-name-${index}`).value = source.name || '';
+            document.getElementById(`edit-url-${index}`).value = source.url;
+        }
+
+        async function saveCalendarEdit(index) {
+            const source = eventSources[index];
+            if (!source) return;
+
+            const newName = document.getElementById(`edit-name-${index}`).value.trim();
+            const newUrl = document.getElementById(`edit-url-${index}`).value.trim();
+
+            if (!newUrl) {
+                showError('Calendar URL is required');
+                return;
+            }
+
+            // Validate URL format
+            try {
+                new URL(newUrl);
+            } catch (e) {
+                showError('Please enter a valid URL');
+                return;
+            }
+
+            const updates = {
+                name: newName || null,
+                url: newUrl
+            };
+
+            try {
+                // Update in database if it has an ID
+                if (source.id) {
+                    const response = await fetch(`/api/calendars/${source.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updates)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update calendar');
+                    }
+                }
+
+                // Update local data
+                source.name = updates.name;
+                const oldUrl = source.url;
+                source.url = updates.url;
+
+                // If URL changed, update the calendar source
+                if (oldUrl !== newUrl) {
+                    let url = newUrl;
+                    if (url.startsWith('webcal://')) {
+                        url = url.replace('webcal://', 'https://');
+                    }
+                    const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
+                    source.proxyUrl = proxyUrl;
+
+                    // Refresh the calendar source if it's visible
+                    if (source.visible && source.source) {
+                        source.source.remove();
+                        const calSource = {
+                            url: proxyUrl,
+                            format: 'ics',
+                            color: source.color,
+                            textColor: 'white'
+                        };
+                        source.source = calendar.addEventSource(calSource);
+                    }
+                }
+
+                // Save to localStorage
+                saveCalendars();
+
+                // Hide edit form and refresh display
+                document.getElementById(`edit-form-${index}`).classList.remove('show');
+                updateActiveCalendarsList();
+
+                showMessage('Calendar updated successfully!');
+            } catch (error) {
+                console.error('Failed to update calendar:', error);
+                showError('Failed to update calendar');
             }
         }
 
