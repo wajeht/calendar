@@ -760,32 +760,48 @@
         function makeLinksClickable(text) {
             if (!text) return text;
 
-            // Split text by whitespace to check each potential URL
+            // Split text by whitespace to check each potential URL/contact
             const words = text.split(/(\s+)/);
 
             return words.map(word => {
                 // Skip whitespace
                 if (/^\s+$/.test(word)) return word;
 
-                // Try to parse as URL, handling common punctuation at the end
-                let potentialUrl = word;
+                // Try to parse as URL/contact, handling common punctuation at the end
+                let potentialContact = word;
                 let trailingPunctuation = '';
 
-                // Extract trailing punctuation that's likely not part of the URL
+                // Extract trailing punctuation that's likely not part of the URL/contact
                 const punctuationMatch = word.match(/^(.+?)([.,;:!?)\]}>]+)$/);
                 if (punctuationMatch) {
-                    potentialUrl = punctuationMatch[1];
+                    potentialContact = punctuationMatch[1];
                     trailingPunctuation = punctuationMatch[2];
                 }
 
+                // Check for email addresses
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                if (emailRegex.test(potentialContact)) {
+                    return `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
+                }
+
+                // Check for phone numbers (various formats)
+                const phoneRegex = /^(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
+                const phoneMatch = potentialContact.match(phoneRegex);
+                if (phoneMatch) {
+                    // Clean phone number for tel: link (remove formatting)
+                    const cleanPhone = potentialContact.replace(/[^\d+]/g, '');
+                    return `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
+                }
+
+                // Try to parse as URL
                 try {
-                    const url = new URL(potentialUrl);
-                    // Only convert http and https URLs to links
+                    const url = new URL(potentialContact);
+                    // Convert http and https URLs to links
                     if (url.protocol === 'http:' || url.protocol === 'https:') {
-                        return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialUrl}</a>${trailingPunctuation}`;
+                        return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
                     }
                 } catch (e) {
-                    // Not a valid URL, return as-is
+                    // Not a valid URL, continue checking other patterns
                 }
 
                 return word;
