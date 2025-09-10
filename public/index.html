@@ -853,7 +853,9 @@
                 const sourceCalendar = eventSources.find(es => es.proxyUrl === event.source.url);
                 if (sourceCalendar) {
                     const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
-                    detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${calendarDisplayName}</div>`;
+                    // Make the calendar URL clickable if it's showing the URL instead of a name
+                    const displayText = sourceCalendar.name ? calendarDisplayName : makeLinksClickable(calendarDisplayName);
+                    detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${displayText}</div>`;
                 }
             }
 
