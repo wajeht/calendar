@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 source .env
 
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
