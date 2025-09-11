@@ -8,7 +8,7 @@ on:
 env:
     PORT: 3000
     BUN_ENV: 'testing'
-    DATABASE_PATH: 'calendars.db'
+    DATABASE_PATH: 'calendar.db'
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
