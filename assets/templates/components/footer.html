@@ -1,43 +1,10 @@
 {{define "footer"}}
-<!-- Settings Modal -->
-<div class="settings-modal-overlay" id="settingsModalOverlay"></div>
-<div class="settings-modal" id="settingsModal">
-    <button class="settings-modal-close" onclick="closeSettingsModal()">×</button>
-    <h2>Calendar Settings</h2>
-
-    <div class="control-group">
-        <h3>Add New Calendar</h3>
-        <div class="input-group">
-            <input type="text" id="calendar-name" placeholder="Calendar name (optional)">
-        </div>
-        <div class="input-group">
-            <input type="text" id="calendar-url" placeholder="Enter calendar URL (webcal:// or https://)">
-            <button onclick="addCalendar()">Add Calendar</button>
-        </div>
-        <small style="color: #666; font-size: 12px;">
-            Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs
-        </small>
-    </div>
-
-    <div class="control-group">
-        <h3>Active Calendars</h3>
-        <div class="refresh-controls" style="margin-bottom: 15px;">
-            <button onclick="refreshAllCalendars()">Refresh All Calendars</button>
-        </div>
-        <div id="active-calendars" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
-            <p style="color: #999; text-align: center; padding: 20px;">No calendars added yet</p>
-        </div>
-    </div>
-
-    <div id="message" style="display: none;"></div>
-</div>
-
 <!-- Global Password Modal -->
 <div class="password-modal-overlay" id="passwordModalOverlay"></div>
 <div class="password-modal" id="passwordModal">
     <h2>Authentication Required</h2>
     <div class="password-content">
-        <p style="margin-bottom: 20px; color: #666;">Enter password to manage calendars</p>
+        <p style="margin-bottom: 20px; color: #666;">Enter password to access settings</p>
         <input type="password" id="password-input" placeholder="Enter password" onkeyup="if(event.key==='Enter') checkPassword()">
         <button onclick="checkPassword()" style="margin-top: 15px; width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px;">Login</button>
         <div id="password-error" style="color: #dc3545; margin-top: 10px; display: none;">Incorrect password</div>
@@ -47,7 +14,7 @@
 <!-- Event Details Modal -->
 <div class="event-modal-overlay" id="eventModalOverlay"></div>
 <div class="event-modal" id="eventModal">
-    <button class="event-modal-close" onclick="closeEventModal()">×</button>
+    <button class="event-modal-close" onclick="closeEventModal()">Ã—</button>
     <h2 id="eventTitle">Event Details</h2>
     <div id="eventDetails"></div>
 </div>
@@ -63,9 +30,6 @@
 <script>
     let calendar;
     let eventSources = [];
-    let autoRefreshInterval = null;
-    const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes default
-
     const DEBUG = true;
 
     const log = {
@@ -75,7 +39,7 @@
             const minutes = now.getMinutes().toString().padStart(2, '0');
             const seconds = now.getSeconds().toString().padStart(2, '0');
             const ampm = hours >= 12 ? 'PM' : 'AM';
-            const hour12 = hours % 12 || 12; // Convert to 12-hour format
+            const hour12 = hours % 12 || 12;
             return `${hour12}:${minutes}:${seconds} ${ampm}`;
         },
         debug: (...args) => {
@@ -102,7 +66,7 @@
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'timeGridWeek',
-            firstDay: 1, // Start week on Monday (0=Sunday, 1=Monday)
+            firstDay: 1,
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
@@ -118,13 +82,10 @@
             eventClick: function(info) {
                 info.jsEvent.preventDefault();
 
-                // Check if details should be hidden for this calendar
-                // Try to match by the event source URL
                 const eventSourceUrl = info.event.source?.url || info.event.source?.internalEventSource?.meta?.url;
                 log.debug('Event source URL:', eventSourceUrl, 'Event color:', info.event.backgroundColor);
 
                 const sourceCalendar = eventSources.find(es => {
-                    // Match by proxy URL or color
                     return es.proxyUrl === eventSourceUrl ||
                            es.color === info.event.backgroundColor ||
                            (es.source && es.source.url === eventSourceUrl);
@@ -132,7 +93,6 @@
 
                 log.debug('Found calendar:', sourceCalendar, 'Auth:', isAuthenticated);
 
-                // If not authenticated and calendar has hide details flag, don't show modal
                 if (!isAuthenticated && sourceCalendar && sourceCalendar.details === 1) {
                     log.public('Details hidden for public view');
                     return;
@@ -147,7 +107,6 @@
             },
             eventSourceFailure: function(error) {
                 log.error('Calendar load failed:', error);
-                showError('Failed to load calendar. Make sure the URL is correct and accessible.');
             }
         });
 
@@ -168,10 +127,8 @@
                     }
                     const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
 
-                    // Only add to calendar view if not hidden
                     let eventSource = null;
                     if (!cal.hidden) {
-                        // Hide labels only if: not authenticated AND calendar has hide_labels_public flag
                         const shouldHideDetails = !isAuthenticated && cal.details === 1;
                         log.debug('Should hide details?', shouldHideDetails, 'for calendar:', cal.name || cal.url, 'Auth:', isAuthenticated, 'Hide for public:', cal.details);
 
@@ -185,9 +142,7 @@
 
                         if (shouldHideDetails) {
                             log.debug('Hiding details for calendar:', cal.name || cal.url);
-                            // Try using eventDataTransform to modify events
                             source.eventDataTransform = function(eventData) {
-                                // Clear the title to hide details
                                 eventData.title = '';
                                 return eventData;
                             };
@@ -210,345 +165,47 @@
                         status: 'fresh'
                     });
                 });
-                updateActiveCalendarsList();
             }
         } catch (error) {
             log.error('Failed to load calendars from database:', error);
         }
     }
 
-    async function addCalendar() {
-
-        let url = document.getElementById('calendar-url').value.trim();
-        let name = document.getElementById('calendar-name').value.trim();
-        if (!url) {
-            showError('Please enter a calendar URL');
-            return;
-        }
-
-        const originalUrl = url;
-        if (url.startsWith('webcal://')) {
-            url = url.replace('webcal://', 'https://');
-        }
-
-        const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-
-        const color = getRandomColor();
-        const source = {
-            url: proxyUrl,
-            format: 'ics',
-            color: color,
-            textColor: 'white',
-            success: function() {
-                log.debug('Successfully loaded calendar from: ' + originalUrl);
-            },
-            failure: function(error) {
-                log.error('Failed to load calendar:', error);
-                showError('Failed to load calendar from: ' + originalUrl);
-            }
-        };
-
-        const eventSource = calendar.addEventSource(source);
-
-        try {
-            const response = await fetch('/api/calendars', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: originalUrl,
-                    color: color,
-                    name: name || null,
-                    hidden: 0,
-                    details: 0
-                })
-            });
-
-            if (response.status === 401) {
-                if (!isAuthenticated) {
-                    showPasswordModal();
-                }
-                return;
-            }
-
-            if (response.ok) {
-                const saved = await response.json();
-                    eventSources.push({
-                        id: saved.id,
-                        url: originalUrl,
-                        proxyUrl: proxyUrl,
-                        color: color,
-                        name: name || null,
-                        hidden: saved.hidden || 0,
-                        details: saved.details || 0,
-                        source: eventSource,
-                        visible: true,
-                        lastUpdate: new Date(),
-                        status: 'fresh'
-                    });
-            } else {
-                eventSources.push({
-                    url: originalUrl,
-                    proxyUrl: proxyUrl,
-                    color: color,
-                    name: name || null,
-                    hidden: 0,
-                    details: 0,
-                    source: eventSource,
-                    visible: true,
-                    lastUpdate: new Date(),
-                    status: 'fresh'
-                });
-            }
-        } catch {
-            eventSources.push({
-                url: originalUrl,
-                proxyUrl: proxyUrl,
-                color: color,
-                name: name || null,
-                hidden: 0,
-                details: 0,
-                source: eventSource,
-                visible: true,
-                lastUpdate: new Date(),
-                status: 'fresh'
-            });
-        }
-
-        document.getElementById('calendar-url').value = '';
-        document.getElementById('calendar-name').value = '';
-        updateActiveCalendarsList();
-    }
-
-    async function removeCalendar(index) {
-
-        const source = eventSources[index];
-
-        if (source.id) {
-            try {
-                const response = await fetch(`/api/calendars/${source.id}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-
-                if (response.status === 401) {
-                    if (!isAuthenticated) {
-                        showPasswordModal();
-                    }
-                    return;
-                }
-            } catch {
-            }
-        }
-
-        if (source.source) {
-            source.source.remove();
-        } else {
-            calendar.getEventSources().forEach(es => {
-                if (es.url === source.proxyUrl) {
-                    es.remove();
-                }
-            });
-        }
-        eventSources.splice(index, 1);
-        updateActiveCalendarsList();
-    }
-
-    function toggleCalendar(index) {
-        const source = eventSources[index];
-        source.visible = !source.visible;
-
-        if (source.visible) {
-            // Hide details only for public/unauthenticated users if flag is set
-            const shouldHideDetails = !isAuthenticated && source.details === 1;
-
-            const calSource = {
-                url: source.proxyUrl,
-                format: 'ics',
-                color: source.color,
-                textColor: 'white',
-                displayEventTime: shouldHideDetails ? false : true
-            };
-
-            if (shouldHideDetails) {
-                log.debug('Toggling calendar with details hidden:', source.name || source.url);
-                // Clear titles when hiding details
-                calSource.eventDataTransform = function(eventData) {
-                    eventData.title = '';
-                    return eventData;
-                };
-            }
-            source.source = calendar.addEventSource(calSource);
-        } else {
-            if (source.source) {
-                source.source.remove();
-            }
-        }
-
-        saveCalendars();
-    }
-
-    function updateActiveCalendarsList() {
-        const container = document.getElementById('active-calendars');
-        if (eventSources.length === 0) {
-            container.innerHTML = '<p>No calendars added yet</p>';
-            return;
-        }
-
-        container.innerHTML = eventSources.map((es, index) => {
-            const timeSinceUpdate = es.lastUpdate ?
-                Math.floor((new Date() - es.lastUpdate) / 60000) : 0;
-
-            const displayName = es.name || es.url;
-            const titleText = es.name ? `${es.name} (${es.url})` : es.url;
-
-            return `
-            <div class="calendar-item" id="calendar-item-${index}">
-                <input type="checkbox" ${es.visible ? 'checked' : ''} onchange="toggleCalendar(${index})">
-                <input type="color" value="${es.color}" onchange="changeCalendarColor(${index}, this.value)" title="Change calendar color">
-                <div class="calendar-url-wrapper">
-                    <span class="calendar-url-text" title="${titleText}">${displayName}</span>
-                    <span class="last-update">
-                        ${es.lastUpdate ?
-                            `(${timeSinceUpdate === 0 ? 'now' :
-                            timeSinceUpdate + 'min'})` : ''}
-                    </span>
-                </div>
-                <div class="action-buttons">
-                    <button class="edit-btn" onclick="editCalendar(${index})" id="edit-${index}" title="Edit calendar"></button>
-                    <button class="copy-btn" onclick="copyCalendarUrl(${index})" id="copy-${index}" title="Copy URL">=Ë</button>
-                    <button class="refresh-btn" onclick="refreshCalendar(${index})" id="refresh-${index}">»</button>
-                    <button class="remove" onclick="removeCalendar(${index})"></button>
-                </div>
-                <div class="calendar-edit-form" id="edit-form-${index}">
-                    <div class="edit-form-group">
-                        <label for="edit-name-${index}">Calendar Name:</label>
-                        <input type="text" id="edit-name-${index}" value="${es.name || ''}" placeholder="Enter calendar name (optional)">
-                    </div>
-                    <div class="edit-form-group">
-                        <label for="edit-url-${index}">Calendar URL:</label>
-                        <input type="text" id="edit-url-${index}" value="${es.url}" placeholder="Enter calendar URL">
-                    </div>
-                    <div class="edit-form-group">
-                        <label>
-                            <input type="checkbox" id="edit-hidden-${index}" ${es.hidden ? 'checked' : ''}>
-                            Hide calendar (doesn't show up publicly)
-                        </label>
-                    </div>
-                    <div class="edit-form-group">
-                        <label>
-                            <input type="checkbox" id="edit-hide-details-${index}" ${es.details === 1 ? 'checked' : ''}>
-                            Hide details for public (show as time blocks only)
-                        </label>
-                    </div>
-                    <div class="edit-form-buttons">
-                        <button class="save-btn" onclick="saveCalendarEdit(${index})">Save</button>
-                        <button class="cancel-btn" onclick="cancelCalendarEdit(${index})">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
-    }
-
-
-    function getRandomColor() {
-        const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336', '#00BCD4', '#795548', '#607D8B'];
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-    function showError(message) {
-        const container = document.getElementById('message');
-        container.style.display = 'block';
-        container.className = 'error-message';
-        container.innerHTML = `<strong>Error:</strong> ${message}`;
-        setTimeout(() => {
-            container.style.display = 'none';
-        }, 5000);
-    }
-
-    function openSettingsModal() {
-        if (!isAuthenticated) {
-            showPasswordModal();
-            return;
-        }
-
-        document.getElementById('settingsModal').classList.add('show');
-        document.getElementById('settingsModalOverlay').classList.add('show');
-        updateActiveCalendarsList();
-    }
-
-    function closeSettingsModal() {
-        document.getElementById('settingsModal').classList.remove('show');
-        document.getElementById('settingsModalOverlay').classList.remove('show');
-    }
-
-    document.addEventListener('keydown', function(e) {
-        // Cmd/Ctrl + K for settings
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-            e.preventDefault();
-            openSettingsModal();
-        }
-        if (e.key === 'Escape') {
-            closeSettingsModal();
-            closeEventModal();
-            closePasswordModal();
-        }
-    });
-
-    document.getElementById('settingsModalOverlay').addEventListener('click', closeSettingsModal);
-
-    setTimeout(() => {
-        const hint = document.querySelector('.keyboard-hint');
-        if (hint) hint.style.display = 'none';
-    }, 5000);
-
     function makeLinksClickable(text) {
         if (!text) return text;
 
-        // Split text by whitespace to check each potential URL/contact
         const words = text.split(/(\s+)/);
 
         return words.map(word => {
-            // Skip whitespace
             if (/^\s+$/.test(word)) return word;
 
-            // Try to parse as URL/contact, handling common punctuation at the end
             let potentialContact = word;
             let trailingPunctuation = '';
 
-            // Extract trailing punctuation that's likely not part of the URL/contact
             const punctuationMatch = word.match(/^(.+?)([.,;:!?)\]}>]+)$/);
             if (punctuationMatch) {
                 potentialContact = punctuationMatch[1];
                 trailingPunctuation = punctuationMatch[2];
             }
 
-            // Check for email addresses
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (emailRegex.test(potentialContact)) {
                 return `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
             }
 
-            // Check for phone numbers (various formats)
             const phoneRegex = /^(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
             const phoneMatch = potentialContact.match(phoneRegex);
             if (phoneMatch) {
-                // Clean phone number for tel: link (remove formatting)
                 const cleanPhone = potentialContact.replace(/[^\d+]/g, '');
                 return `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
             }
 
-            // Try to parse as URL
             try {
                 const url = new URL(potentialContact);
-                // Convert http and https URLs to links
                 if (url.protocol === 'http:' || url.protocol === 'https:') {
                     return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
                 }
             } catch (e) {
-                // Not a valid URL, continue checking other patterns
             }
 
             return word;
@@ -587,9 +244,8 @@
             detailsHTML += `<div class="event-detail"><label>End:</label> ${formatDate(event.end)}</div>`;
         }
 
-        // Duration
         if (event.start && event.end && !event.allDay) {
-            const duration = (event.end - event.start) / 1000 / 60; // minutes
+            const duration = (event.end - event.start) / 1000 / 60;
             if (duration < 60) {
                 detailsHTML += `<div class="event-detail"><label>Duration:</label> ${duration} minutes</div>`;
             } else {
@@ -599,30 +255,25 @@
             }
         }
 
-        // Location (if available in extended props)
         if (event.extendedProps && event.extendedProps.location) {
             const locationWithLinks = makeLinksClickable(event.extendedProps.location);
             detailsHTML += `<div class="event-detail"><label>Location:</label> ${locationWithLinks}</div>`;
         }
 
-        // Description (if available in extended props)
         if (event.extendedProps && event.extendedProps.description) {
             const descriptionWithLinks = makeLinksClickable(event.extendedProps.description);
             detailsHTML += `<div class="event-detail"><label>Description:</label><br>${descriptionWithLinks}</div>`;
         }
 
-        // Calendar source
         if (event.source) {
             const sourceCalendar = eventSources.find(es => es.proxyUrl === event.source.url);
             if (sourceCalendar) {
                 const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
-                // Make the calendar URL clickable if it's showing the URL instead of a name
                 const displayText = sourceCalendar.name ? calendarDisplayName : makeLinksClickable(calendarDisplayName);
                 detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${displayText}</div>`;
             }
         }
 
-        // URL (if available)
         if (event.url) {
             detailsHTML += `<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank" rel="noopener noreferrer">Open in calendar</a></div>`;
         }
@@ -640,358 +291,12 @@
         document.getElementById('eventModalOverlay').classList.remove('show');
     }
 
-
-    async function refreshCalendar(index) {
-        const source = eventSources[index];
-        const btn = document.getElementById(`refresh-${index}`);
-
-        if (!source || !source.visible) return;
-
-        if (btn) {
-            btn.classList.add('refreshing');
-            btn.textContent = 'Refreshing...';
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeEventModal();
+            closePasswordModal();
         }
-
-        try {
-            if (source.source) {
-                source.source.remove();
-            }
-
-            // Hide details only for public/unauthenticated users if flag is set
-            const shouldHideDetails = !isAuthenticated && source.details === 1;
-
-            const calSource = {
-                url: source.proxyUrl,
-                format: 'ics',
-                color: source.color,
-                textColor: 'white',
-                displayEventTime: shouldHideDetails ? false : true,
-                success: function() {
-                    source.lastUpdate = new Date();
-                    source.status = 'fresh';
-                    updateActiveCalendarsList();
-                },
-                failure: function() {
-                    source.status = 'error';
-                    updateActiveCalendarsList();
-                    showError(`Failed to refresh calendar: ${source.url}`);
-                }
-            };
-
-            if (shouldHideDetails) {
-                log.debug('Refreshing calendar with details hidden:', source.name || source.url);
-                // Clear titles when hiding details
-                calSource.eventDataTransform = function(eventData) {
-                    eventData.title = '';
-                    return eventData;
-                };
-            }
-
-            source.source = calendar.addEventSource(calSource);
-            source.lastUpdate = new Date();
-            source.status = 'fresh';
-
-        } catch (error) {
-            source.status = 'error';
-            showError(`Error refreshing calendar: ${error.message}`);
-        } finally {
-            if (btn) {
-                btn.classList.remove('refreshing');
-                btn.textContent = 'Refresh';
-            }
-            updateActiveCalendarsList();
-        }
-    }
-
-    async function refreshAllCalendars() {
-        const visibleCalendars = eventSources
-            .map((es, index) => ({ ...es, index }))
-            .filter(es => es.visible);
-
-        if (visibleCalendars.length === 0) {
-            showError('No calendars to refresh');
-            return;
-        }
-
-        showMessage('Refreshing all calendars...');
-
-        for (const cal of visibleCalendars) {
-            await refreshCalendar(cal.index);
-        }
-
-        showMessage(`All calendars refreshed at ${new Date().toLocaleTimeString()}`);
-    }
-
-    function toggleAutoRefresh() {
-        const checkbox = document.getElementById('auto-refresh');
-
-        if (checkbox.checked) {
-            // Just use setTimeout for refresh instead of interval
-            refreshAllCalendars();
-            showMessage('Calendars refreshed');
-        }
-    }
-
-    function showMessage(message) {
-        const container = document.getElementById('message');
-        container.style.display = 'block';
-        container.className = 'info-message';
-        container.innerHTML = `<strong>${message}</strong>`;
-        setTimeout(() => {
-            container.style.display = 'none';
-        }, 3000);
-    }
-
-    setInterval(() => {
-        updateActiveCalendarsList();
-    }, 60000);
-
-    async function changeCalendarColor(index, newColor) {
-        const source = eventSources[index];
-        if (!source) return;
-
-        source.color = newColor;
-
-        if (source.visible && source.source) {
-            source.source.remove();
-
-            const calSource = {
-                url: source.proxyUrl,
-                format: 'ics',
-                color: newColor,
-                textColor: 'white'
-            };
-            source.source = calendar.addEventSource(calSource);
-        }
-
-        if (source.id) {
-            try {
-                await fetch(`/api/calendars/${source.id}`, {
-                    method: 'PATCH',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ color: newColor })
-                });
-            } catch (error) {
-                log.error('Failed to update color in database:', error);
-            }
-        }
-
-        saveCalendars();
-
-        updateActiveCalendarsList();
-    }
-
-    async function copyCalendarUrl(index) {
-        const source = eventSources[index];
-        if (!source) return;
-
-        const btn = document.getElementById(`copy-${index}`);
-
-        try {
-            await navigator.clipboard.writeText(source.url);
-
-            // Provide visual feedback
-            if (btn) {
-                const originalText = btn.textContent;
-                btn.textContent = '';
-                btn.classList.add('copied');
-
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.classList.remove('copied');
-                }, 1500);
-            }
-
-            showMessage('Calendar URL copied to clipboard!');
-        } catch (error) {
-            log.error('Failed to copy URL:', error);
-
-            // Fallback for browsers that don't support clipboard API
-            const textArea = document.createElement('textarea');
-            textArea.value = source.url;
-            document.body.appendChild(textArea);
-            textArea.select();
-
-            try {
-                document.execCommand('copy');
-                showMessage('Calendar URL copied to clipboard!');
-
-                if (btn) {
-                    const originalText = btn.textContent;
-                    btn.textContent = '';
-                    btn.classList.add('copied');
-
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.classList.remove('copied');
-                    }, 1500);
-                }
-            } catch (fallbackError) {
-                showError('Failed to copy URL to clipboard');
-            }
-
-            document.body.removeChild(textArea);
-        }
-    }
-
-    function editCalendar(index) {
-
-        const editForm = document.getElementById(`edit-form-${index}`);
-        const isShowing = editForm.classList.contains('show');
-
-        // Hide all other edit forms
-        document.querySelectorAll('.calendar-edit-form.show').forEach(form => {
-            form.classList.remove('show');
-        });
-
-        // Toggle this form
-        if (!isShowing) {
-            editForm.classList.add('show');
-        }
-    }
-
-
-    function cancelCalendarEdit(index) {
-        const editForm = document.getElementById(`edit-form-${index}`);
-        editForm.classList.remove('show');
-
-        // Reset form values to original
-        const source = eventSources[index];
-        document.getElementById(`edit-name-${index}`).value = source.name || '';
-        document.getElementById(`edit-url-${index}`).value = source.url;
-        document.getElementById(`edit-hidden-${index}`).checked = source.hidden || false;
-        document.getElementById(`edit-hide-details-${index}`).checked = source.details === 1;
-    }
-
-    async function saveCalendarEdit(index) {
-
-        const source = eventSources[index];
-        if (!source) return;
-
-        const newName = document.getElementById(`edit-name-${index}`).value.trim();
-        const newUrl = document.getElementById(`edit-url-${index}`).value.trim();
-        const isHidden = document.getElementById(`edit-hidden-${index}`).checked;
-        const isHideDetails = document.getElementById(`edit-hide-details-${index}`).checked;
-
-        if (!newUrl) {
-            showError('Calendar URL is required');
-            return;
-        }
-
-        // Validate URL format
-        try {
-            new URL(newUrl);
-        } catch (e) {
-            showError('Please enter a valid URL');
-            return;
-        }
-
-        const updates = {
-            name: newName || null,
-            url: newUrl,
-            hidden: isHidden ? 1 : 0,
-            details: isHideDetails ? 1 : 0
-        };
-
-        try {
-            // Update in database if it has an ID
-            if (source.id) {
-                const response = await fetch(`/api/calendars/${source.id}`, {
-                    method: 'PATCH',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updates)
-                });
-
-                if (response.status === 401) {
-                    // Only show password modal if we don't have a password yet
-                    if (!isAuthenticated) {
-                        showPasswordModal();
-                    }
-                    return;
-                }
-
-                if (!response.ok) {
-                    throw new Error('Failed to update calendar');
-                }
-            }
-
-            // Update local data
-            const wasHidden = source.hidden;
-            const wasHideDetails = source.details;
-            source.name = updates.name;
-            source.hidden = updates.hidden;
-            source.details = updates.details;
-            const oldUrl = source.url;
-            source.url = updates.url;
-
-            // Handle visibility changes
-            if (wasHidden !== updates.hidden) {
-                if (updates.hidden) {
-                    // Calendar was visible, now hidden - remove from calendar view
-                    if (source.source) {
-                        source.source.remove();
-                        source.source = null;
-                        source.visible = false;
-                    }
-                } else {
-                    // Calendar was hidden, now visible - add to calendar view
-                    if (!source.source) {
-                        let url = updates.url;
-                        if (url.startsWith('webcal://')) {
-                            url = url.replace('webcal://', 'https://');
-                        }
-                        const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-                        source.proxyUrl = proxyUrl;
-                        const calSource = {
-                            url: proxyUrl,
-                            format: 'ics',
-                            color: source.color,
-                            textColor: 'white',
-                        };
-
-                        source.source = calendar.addEventSource(calSource);
-                        source.visible = true;
-                    }
-                }
-            }
-            // Handle details hiding changes for visible calendars
-            else if (!updates.hidden && (wasHideDetails !== updates.details || oldUrl !== newUrl)) {
-                // Refresh the calendar source to apply details changes or URL changes
-                if (source.source) {
-                    source.source.remove();
-                    let url = updates.url;
-                    if (url.startsWith('webcal://')) {
-                        url = url.replace('webcal://', 'https://');
-                    }
-                    const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-                    source.proxyUrl = proxyUrl;
-                    const calSource = {
-                        url: proxyUrl,
-                        format: 'ics',
-                        color: source.color,
-                        textColor: 'white',
-                    };
-
-                    source.source = calendar.addEventSource(calSource);
-                }
-            }
-
-            // Hide edit form and refresh display
-            document.getElementById(`edit-form-${index}`).classList.remove('show');
-            updateActiveCalendarsList();
-
-            showMessage('Calendar updated successfully!');
-        } catch (error) {
-            log.error('Failed to update calendar:', error);
-            showError('Failed to update calendar');
-        }
-    }
+    });
 
     let ws;
     let wsConnectionAttempted = false;
@@ -1034,7 +339,6 @@
         } catch (e) {}
     }
 
-
     async function checkAuthStatus() {
         try {
             const response = await fetch('/api/auth', {
@@ -1055,7 +359,6 @@
         connectWebSocket();
     }
 
-    // Global authentication functions
     async function checkPassword() {
         const password = document.getElementById('password-input').value;
         const errorEl = document.getElementById('password-error');
@@ -1073,20 +376,18 @@
             if (response.ok) {
                 isAuthenticated = true;
                 closePasswordModal();
-                showMessage('Authentication successful');
-                // Reload calendars to show labels after authentication
-                refreshAllCalendars();
-                // Now open the settings modal that the user wanted
-                setTimeout(() => {
-                    openSettingsModal();
-                }, 100);
+
+                // Redirect to settings page after successful authentication
+                window.location.href = '/settings';
             } else {
                 errorEl.style.display = 'block';
                 document.getElementById('password-input').value = '';
                 document.getElementById('password-input').focus();
             }
         } catch (error) {
-            showError('Authentication failed');
+            errorEl.style.display = 'block';
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-input').focus();
         }
     }
 
@@ -1097,19 +398,15 @@
         modal.classList.add('show');
         overlay.classList.add('show');
 
-        // Clear previous input and error
         document.getElementById('password-input').value = '';
         document.getElementById('password-error').style.display = 'none';
         document.getElementById('password-input').focus();
-
-        // Don't close on overlay click to force authentication
     }
 
     function closePasswordModal() {
         document.getElementById('passwordModal').classList.remove('show');
         document.getElementById('passwordModalOverlay').classList.remove('show');
     }
-
 
     document.addEventListener('DOMContentLoaded', () => {
         initializeApp();
