@@ -11,7 +11,7 @@ func GetString(key string, defaultValue string) string {
 		return defaultValue
 	}
 
-	return value;
+	return value
 }
 
 func GetInt(key string, defaultValue int) int {
@@ -27,5 +27,5 @@ func GetInt(key string, defaultValue int) int {
 		panic(err)
 	}
 
-	return intValue;
+	return intValue
 }

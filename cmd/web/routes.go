@@ -26,5 +26,6 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc("GET /{$}", app.handleCalendar)
 
-	return mux
+	return app.recoverPanic(app.securityHeaders(mux))
+
 }
