@@ -21,6 +21,9 @@
     <div id="eventDetails"></div>
 </div>
 
+<!-- Global Utilities -->
+<script src="/static/js/script.js"></script>
+
 <!-- External Libraries (Local) -->
 <script src="/static/js/ical.min.js"></script>
 <script src="/static/js/fullcalendar-core.min.js"></script>
@@ -30,39 +33,9 @@
 <script src="/static/js/fullcalendar-interaction.min.js"></script>
 <script src="/static/js/fullcalendar-icalendar.min.js"></script>
 
-<!-- Calendar Application Script (Inline) -->
 <script>
 let calendar;
 let eventSources = [];
-const DEBUG = true;
-
-const log = {
-    getTimestamp: () => {
-        const now = new Date();
-        const hours = now.getHours();
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const hour12 = hours % 12 || 12;
-        return `${hour12}:${minutes}:${seconds} ${ampm}`;
-    },
-    debug: (...args) => {
-        if (DEBUG && isAuthenticated) {
-            console.log(`[${log.getTimestamp()}] [DEBUG]`, ...args);
-        }
-    },
-    error: (...args) => {
-        if (DEBUG && isAuthenticated) {
-            console.error(`[${log.getTimestamp()}] [ERROR]`, ...args);
-        }
-    },
-    public: (...args) => {
-        if (DEBUG) {
-            console.log(`[${log.getTimestamp()}] [PUBLIC]`, ...args);
-        }
-    }
-};
-
 let isAuthenticated = false;
 
 function initCalendar() {
@@ -218,8 +191,7 @@ function makeLinksClickable(text) {
             if (url.protocol === 'http:' || url.protocol === 'https:') {
                 return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
             }
-        } catch (e) {
-        }
+        } catch (e) {}
 
         return word;
     }).join('');

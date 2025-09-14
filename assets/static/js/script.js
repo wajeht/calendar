@@ -1,5 +1,3 @@
-let calendar;
-let eventSources = [];
 const DEBUG = true;
 
 const log = {
@@ -13,13 +11,18 @@ const log = {
         return `${hour12}:${minutes}:${seconds} ${ampm}`;
     },
     debug: (...args) => {
-        if (DEBUG && isAuthenticated) {
+        if (DEBUG) {
             console.log(`[${log.getTimestamp()}] [DEBUG]`, ...args);
         }
     },
     error: (...args) => {
-        if (DEBUG && isAuthenticated) {
+        if (DEBUG) {
             console.error(`[${log.getTimestamp()}] [ERROR]`, ...args);
+        }
+    },
+    info: (...args) => {
+        if (DEBUG) {
+            console.log(`[${log.getTimestamp()}] [INFO]`, ...args);
         }
     },
     public: (...args) => {
@@ -29,313 +32,26 @@ const log = {
     }
 };
 
-let isAuthenticated = false;
-
-function initCalendar() {
-    const calendarEl = document.getElementById('calendar');
-
-    calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
-        firstDay: 1,
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
-        },
-        height: '100%',
-        nowIndicator: true,
-        expandRows: true,
-        editable: false,
-        selectable: true,
-        selectMirror: true,
-        eventSources: [],
-        eventClick: function(info) {
-            info.jsEvent.preventDefault();
-
-            const eventSourceUrl = info.event.source?.url || info.event.source?.internalEventSource?.meta?.url;
-            log.debug('Event source URL:', eventSourceUrl, 'Event color:', info.event.backgroundColor);
-
-            const sourceCalendar = eventSources.find(es => {
-                return es.proxyUrl === eventSourceUrl ||
-                       es.color === info.event.backgroundColor ||
-                       (es.source && es.source.url === eventSourceUrl);
-            });
-
-            log.debug('Found calendar:', sourceCalendar, 'Auth:', isAuthenticated);
-
-            if (!isAuthenticated && sourceCalendar && sourceCalendar.details === 1) {
-                log.public('Details hidden for public view');
-                return;
-            }
-
-            showEventDetails(info.event);
-        },
-        loading: function(isLoading) {
-            if (isLoading) {
-                log.debug('Loading calendar...');
-            }
-        },
-        eventSourceFailure: function(error) {
-            log.error('Calendar load failed:', error);
-        }
-    });
-
-    calendar.render();
-    loadCalendarsFromDB();
-}
-
-async function loadCalendarsFromDB() {
-    try {
-        const response = await fetch('/api/calendars');
-        if (response.ok) {
-            const calendars = await response.json();
-            calendars.forEach(cal => {
-                log.debug('Loading calendar:', cal.name || cal.url, 'details value:', cal.details, 'type:', typeof cal.details);
-                let url = cal.url;
-                if (url.startsWith('webcal://')) {
-                    url = url.replace('webcal://', 'https://');
-                }
-                const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-
-                let eventSource = null;
-                if (!cal.hidden) {
-                    const shouldHideDetails = !isAuthenticated && cal.details === 1;
-                    log.debug('Should hide details?', shouldHideDetails, 'for calendar:', cal.name || cal.url, 'Auth:', isAuthenticated, 'Hide for public:', cal.details);
-
-                    const source = {
-                        url: proxyUrl,
-                        format: 'ics',
-                        color: cal.color,
-                        textColor: 'white',
-                        displayEventTime: shouldHideDetails ? false : true
-                    };
-
-                    if (shouldHideDetails) {
-                        log.debug('Hiding details for calendar:', cal.name || cal.url);
-                        source.eventDataTransform = function(eventData) {
-                            eventData.title = '';
-                            return eventData;
-                        };
-                    }
-
-                    eventSource = calendar.addEventSource(source);
-                }
-
-                eventSources.push({
-                    id: cal.id,
-                    url: cal.url,
-                    proxyUrl: proxyUrl,
-                    color: cal.color,
-                    name: cal.name,
-                    hidden: cal.hidden,
-                    details: cal.details,
-                    source: eventSource,
-                    visible: !cal.hidden,
-                    lastUpdate: new Date(),
-                    status: 'fresh'
-                });
-            });
-        }
-    } catch (error) {
-        log.error('Failed to load calendars from database:', error);
-    }
-}
-
-function makeLinksClickable(text) {
-    if (!text) return text;
-
-    const words = text.split(/(\s+)/);
-
-    return words.map(word => {
-        if (/^\s+$/.test(word)) return word;
-
-        let potentialContact = word;
-        let trailingPunctuation = '';
-
-        const punctuationMatch = word.match(/^(.+?)([.,;:!?)\]}>]+)$/);
-        if (punctuationMatch) {
-            potentialContact = punctuationMatch[1];
-            trailingPunctuation = punctuationMatch[2];
-        }
-
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (emailRegex.test(potentialContact)) {
-            return `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
-        }
-
-        const phoneRegex = /^(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
-        const phoneMatch = potentialContact.match(phoneRegex);
-        if (phoneMatch) {
-            const cleanPhone = potentialContact.replace(/[^\d+]/g, '');
-            return `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
-        }
-
-        try {
-            const url = new URL(potentialContact);
-            if (url.protocol === 'http:' || url.protocol === 'https:') {
-                return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
-            }
-        } catch (e) {
-        }
-
-        return word;
-    }).join('');
-}
-
-function showEventDetails(event) {
-    const modal = document.getElementById('eventModal');
-    const overlay = document.getElementById('eventModalOverlay');
-    const titleEl = document.getElementById('eventTitle');
-    const detailsEl = document.getElementById('eventDetails');
-
-    titleEl.textContent = event.title || 'Event Details';
-
-    const formatDate = (date) => {
+const utils = {
+    formatDate: (date, allDay = false) => {
         if (!date) return 'N/A';
         return date.toLocaleString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            hour: event.allDay ? undefined : '2-digit',
-            minute: event.allDay ? undefined : '2-digit'
+            hour: allDay ? undefined : '2-digit',
+            minute: allDay ? undefined : '2-digit'
         });
-    };
+    },
 
-    let detailsHTML = '';
-
-    if (event.allDay) {
-        detailsHTML += `<div class="event-detail"><label>When:</label> All day event</div>`;
+    getRandomColor: () => {
+        const colors = ['#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#F44336', '#00BCD4', '#795548', '#607D8B'];
+        return colors[Math.floor(Math.random() * colors.length)];
     }
+};
 
-    detailsHTML += `<div class="event-detail"><label>Start:</label> ${formatDate(event.start)}</div>`;
+window.log = log;
+window.utils = utils;
 
-    if (event.end) {
-        detailsHTML += `<div class="event-detail"><label>End:</label> ${formatDate(event.end)}</div>`;
-    }
-
-    if (event.start && event.end && !event.allDay) {
-        const duration = (event.end - event.start) / 1000 / 60;
-        if (duration < 60) {
-            detailsHTML += `<div class="event-detail"><label>Duration:</label> ${duration} minutes</div>`;
-        } else {
-            const hours = Math.floor(duration / 60);
-            const mins = duration % 60;
-            detailsHTML += `<div class="event-detail"><label>Duration:</label> ${hours}h ${mins > 0 ? mins + 'm' : ''}</div>`;
-        }
-    }
-
-    if (event.extendedProps && event.extendedProps.location) {
-        const locationWithLinks = makeLinksClickable(event.extendedProps.location);
-        detailsHTML += `<div class="event-detail"><label>Location:</label> ${locationWithLinks}</div>`;
-    }
-
-    if (event.extendedProps && event.extendedProps.description) {
-        const descriptionWithLinks = makeLinksClickable(event.extendedProps.description);
-        detailsHTML += `<div class="event-detail"><label>Description:</label><br>${descriptionWithLinks}</div>`;
-    }
-
-    if (event.source) {
-        const sourceCalendar = eventSources.find(es => es.proxyUrl === event.source.url);
-        if (sourceCalendar) {
-            const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
-            const displayText = sourceCalendar.name ? calendarDisplayName : makeLinksClickable(calendarDisplayName);
-            detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${displayText}</div>`;
-        }
-    }
-
-    if (event.url) {
-        detailsHTML += `<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank" rel="noopener noreferrer">Open in calendar</a></div>`;
-    }
-
-    detailsEl.innerHTML = detailsHTML;
-
-    modal.classList.add('show');
-    overlay.classList.add('show');
-
-    overlay.onclick = closeEventModal;
-}
-
-function closeEventModal() {
-    document.getElementById('eventModal').classList.remove('show');
-    document.getElementById('eventModalOverlay').classList.remove('show');
-}
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeEventModal();
-        closePasswordModal();
-    }
-});
-
-async function checkAuthStatus() {
-    try {
-        const response = await fetch('/api/auth', {
-            credentials: 'include'
-        });
-        if (response.ok) {
-            const data = await response.json();
-            isAuthenticated = data.authenticated;
-        }
-    } catch (error) {
-        log.error('Failed to check auth status:', error);
-    }
-}
-
-async function initializeApp() {
-    await checkAuthStatus();
-    initCalendar();
-}
-
-async function checkPassword() {
-    const password = document.getElementById('password-input').value;
-    const errorEl = document.getElementById('password-error');
-
-    try {
-        const response = await fetch('/api/auth', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ password })
-        });
-
-        if (response.ok) {
-            isAuthenticated = true;
-            closePasswordModal();
-
-            // Redirect to settings page after successful authentication
-            window.location.href = '/settings';
-        } else {
-            errorEl.style.display = 'block';
-            document.getElementById('password-input').value = '';
-            document.getElementById('password-input').focus();
-        }
-    } catch (error) {
-        errorEl.style.display = 'block';
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-input').focus();
-    }
-}
-
-function showPasswordModal() {
-    const modal = document.getElementById('passwordModal');
-    const overlay = document.getElementById('passwordModalOverlay');
-
-    modal.classList.add('show');
-    overlay.classList.add('show');
-
-    document.getElementById('password-input').value = '';
-    document.getElementById('password-error').style.display = 'none';
-    document.getElementById('password-input').focus();
-}
-
-function closePasswordModal() {
-    document.getElementById('passwordModal').classList.remove('show');
-    document.getElementById('passwordModalOverlay').classList.remove('show');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
-});
+log.info('Global utilities loaded');
