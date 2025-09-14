@@ -2,8 +2,14 @@ package main
 
 import "net/http"
 
-func handleCalendar(r http.ResponseWriter, w *http.Request) {
+func handleHelathz(w http.ResponseWriter, r *http.Request) {
 }
 
-func handleSettings(r http.ResponseWriter, w *http.Request) {
+func handleCalendar(w http.ResponseWriter, r *http.Request) {
+}
+
+func handleSettings(w http.ResponseWriter, r *http.Request) {
+}
+
+func handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 }
