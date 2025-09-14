@@ -41,7 +41,7 @@ func (app *application) handleHealthz(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "page/calendar.html")
+	err := response.Page(w, http.StatusOK, data, "pages/calendar.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -50,7 +50,7 @@ func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleSettings(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "page/settings.html")
+	err := response.Page(w, http.StatusOK, data, "pages/settings.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
