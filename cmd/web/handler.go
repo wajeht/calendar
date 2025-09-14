@@ -20,6 +20,17 @@ func (app *application) handleFavicon(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (app *application) handleWebmanifest(w http.ResponseWriter, r *http.Request) {
+	f, err := assets.EmbeddedFiles.Open("static/site.webmanifest")
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "application/json")
+	io.Copy(w, f)
+}
+
 func (app *application) handleRobots(w http.ResponseWriter, r *http.Request) {
 	f, err := assets.EmbeddedFiles.Open("static/robots.txt")
 	if err != nil {
