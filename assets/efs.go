@@ -3,4 +3,4 @@ package assets
 import "embed"
 
 //go:embed "static" "migrations"
-var Embeddedfiles embed.FS
+var EmbeddedFiles embed.FS

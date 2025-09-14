@@ -5,23 +5,25 @@ import (
 	"log/slog"
 	"os"
 	"runtime/debug"
+	"sync"
 
 	"github.com/wajeht/calendar/internal/env"
 )
 
 type config struct {
-	appUrl string
-	appPort int
+	appUrl      string
+	appPort     int
 	appPassword string
 }
 
-type application struct  {
+type application struct {
 	config config
 	logger *slog.Logger
+	wg     sync.WaitGroup
 }
 
-func main(){
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}));
+func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
 	err := run(logger)
 	if err != nil {
@@ -34,9 +36,9 @@ func main(){
 func run(logger *slog.Logger) error {
 	var cfg config
 
-	cfg.appUrl = env.GetString("APP_URL", "http://localhost");
-	cfg.appPort = env.GetInt("APP_PORT", 80);
-	cfg.appPassword = env.GetString("APP_PASSWORD", "password");
+	cfg.appUrl = env.GetString("APP_URL", "http://localhost")
+	cfg.appPort = env.GetInt("APP_PORT", 80)
+	cfg.appPassword = env.GetString("APP_PASSWORD", "password")
 
 	flag.Parse()
 
