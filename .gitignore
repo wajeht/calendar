@@ -64,7 +64,8 @@ tmp
 # Go workspace file
 go.work
 go.work.sum
-db.sqlite*
+calendar.sqlite*
+db.sqlite
 favicon*
 favicon
 
