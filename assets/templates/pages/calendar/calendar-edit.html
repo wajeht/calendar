@@ -1,0 +1,60 @@
+{{define "main"}}
+<div class="calendar-management">
+    <h1>Edit Calendar</h1>
+
+    <form action="/calendar/{{.Calendar.ID}}/edit" method="POST">
+        <div class="form-group">
+            <label for="name">Calendar Name (optional)</label>
+            <input type="text" id="name" name="name" value="{{.Calendar.Name}}" placeholder="My Calendar">
+        </div>
+
+        <div class="form-group">
+            <label for="url">Calendar URL</label>
+            <input type="url" id="url" name="url" value="{{.Calendar.URL}}" placeholder="webcal://example.com/calendar.ics" required>
+            <small>Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs</small>
+        </div>
+
+        <div class="form-group">
+            <label for="color">Calendar Color</label>
+            <input type="color" id="color" name="color" value="{{.Calendar.Color}}">
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="hidden" value="1" {{if .Calendar.Hidden}}checked{{end}}>
+                Hide calendar from public view
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="hide_details" value="1" {{if eq .Calendar.Details 1}}checked{{end}}>
+                Hide event details for public view (show as time blocks only)
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Calendar</button>
+            <a href="/settings" class="btn btn-secondary">Cancel</a>
+            <button type="button" class="btn btn-danger" onclick="deleteCalendar({{.Calendar.ID}})">Delete</button>
+        </div>
+    </form>
+</div>
+
+<script>
+function deleteCalendar(id) {
+    if (confirm('Are you sure you want to delete this calendar?')) {
+        fetch(`/calendar/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        }).then(response => {
+            if (response.ok) {
+                window.location.href = '/settings';
+            } else {
+                alert('Failed to delete calendar');
+            }
+        });
+    }
+}
+</script>
+{{end}}

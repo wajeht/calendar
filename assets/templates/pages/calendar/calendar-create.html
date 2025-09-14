@@ -1,0 +1,42 @@
+{{define "main"}}
+<div class="calendar-management">
+    <h1>Add New Calendar</h1>
+
+    <form action="/calendar/create" method="POST">
+        <div class="form-group">
+            <label for="name">Calendar Name (optional)</label>
+            <input type="text" id="name" name="name" placeholder="My Calendar">
+        </div>
+
+        <div class="form-group">
+            <label for="url">Calendar URL</label>
+            <input type="url" id="url" name="url" placeholder="webcal://example.com/calendar.ics" required>
+            <small>Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs</small>
+        </div>
+
+        <div class="form-group">
+            <label for="color">Calendar Color</label>
+            <input type="color" id="color" name="color" value="#2196F3">
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="hidden" value="1">
+                Hide calendar from public view
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="hide_details" value="1">
+                Hide event details for public view (show as time blocks only)
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Calendar</button>
+            <a href="/settings" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{{end}}

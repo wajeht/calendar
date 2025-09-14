@@ -41,7 +41,7 @@ func (app *application) handleHealthz(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "pages/calendar.html")
+	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-index.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -59,4 +59,41 @@ func (app *application) handleSettings(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleSettingsPost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("handleSettingsPost"))
+}
+
+// Calendar management handlers
+func (app *application) handleCalendarCreate(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-create.html")
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+}
+
+func (app *application) handleCalendarCreatePost(w http.ResponseWriter, r *http.Request) {
+	// TODO: Handle calendar creation
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("handleCalendarCreatePost"))
+}
+
+func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-edit.html")
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+}
+
+func (app *application) handleCalendarEditPost(w http.ResponseWriter, r *http.Request) {
+	// TODO: Handle calendar editing
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("handleCalendarEditPost"))
+}
+
+func (app *application) handleCalendarDelete(w http.ResponseWriter, r *http.Request) {
+	// TODO: Handle calendar deletion
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("handleCalendarDelete"))
 }
