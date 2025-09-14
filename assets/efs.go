@@ -2,5 +2,5 @@ package assets
 
 import "embed"
 
-//go:embed "static" "migrations"
+//go:embed "static" 
 var EmbeddedFiles embed.FS

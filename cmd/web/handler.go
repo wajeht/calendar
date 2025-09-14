@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/wajeht/calendar/assets"
+	"github.com/wajeht/calendar/internal/response"
 )
 
 func (app *application) handleFavicon(w http.ResponseWriter, r *http.Request) {
@@ -38,13 +39,21 @@ func (app *application) handleHealthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("handleCalendar"))
+	data := app.newTemplateData(r)
+
+	err := response.Page(w, http.StatusOK, data, "page/calendar.html")
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 }
 
 func (app *application) handleSettings(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("handleSettings"))
+	data := app.newTemplateData(r)
+
+	err := response.Page(w, http.StatusOK, data, "page/settings.html")
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 }
 
 func (app *application) handleSettingsPost(w http.ResponseWriter, r *http.Request) {
