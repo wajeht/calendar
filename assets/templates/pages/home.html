@@ -74,7 +74,16 @@ function initCalendar() {
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton'
+        },
+        customButtons: {
+            settingsButton: {
+                text: 'settings',
+                hint: 'Manage Calendars',
+                click: function() {
+                    window.location.href = '/calendars';
+                }
+            }
         },
         height: '100%',
         nowIndicator: true,
