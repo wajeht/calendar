@@ -22,7 +22,7 @@ func PageWithHeaders(w http.ResponseWriter, status int, data any, headers http.H
 }
 
 func PageWithLayoutAndHeaders(w http.ResponseWriter, status int, data any, headers http.Header, layout string, pagePath string) error {
-	patterns := []string{"layouts/" + layout, "components/*.html", pagePath}
+	patterns := []string{"layouts/" + layout, "layouts/partials/*.html", "components/*.html", pagePath}
 
 	return NamedTemplateWithHeaders(w, status, data, headers, "layout", patterns...)
 }

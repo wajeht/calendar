@@ -1,7 +1,8 @@
 {{define "main"}}
-<div class="error-container">
-    <h1>{{.Status}} Error</h1>
-    <p>{{.Message}}</p>
-    <a href="/">Go Home</a>
-</div>
+<section style="display: flex; justify-content: center; align-items: center; height: 100%;">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+        <h2 style="margin: 0; padding-right: 40px; border-right: solid;">{{.Status}}</h2>
+        <p style="margin: 0; padding-left: 20px;">{{.Message}}</p>
+    </div>
+</section>
 {{end}}
