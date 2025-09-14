@@ -56,7 +56,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 
 	data := app.newTemplateData(r)
 
-	err := response.PageWithLayout(w, http.StatusOK, data, "home.html", "pages/home.html")
+	err := response.NamedTemplate(w, http.StatusOK, data, "home.html", "pages/home.html", "layouts/partials/*.html", "components/*.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
