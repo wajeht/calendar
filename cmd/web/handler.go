@@ -65,7 +65,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleCalendarIndex(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-index.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/index.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -74,7 +74,7 @@ func (app *application) handleCalendarIndex(w http.ResponseWriter, r *http.Reque
 func (app *application) handleCalendarCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-create.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/create.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -88,7 +88,7 @@ func (app *application) handleCalendarStore(w http.ResponseWriter, r *http.Reque
 func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-edit.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/edit.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
