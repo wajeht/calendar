@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"runtime/debug"
+
+	"github.com/wajeht/calendar/internal/env"
 )
 
 type config struct {
@@ -32,9 +34,9 @@ func main(){
 func run(logger *slog.Logger) error {
 	var cfg config
 
-	cfg.appUrl = "http://localhost";
-	cfg.appPort = 80;
-	cfg.appPassword = "password";
+	cfg.appUrl = env.GetString("APP_URL", "http://localhost");
+	cfg.appPort = env.GetInt("APP_PORT", 80);
+	cfg.appPassword = env.GetString("APP_PASSWORD", "password");
 
 	flag.Parse()
 
