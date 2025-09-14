@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func (app *application) newTemplateData(r *http.Request) map[string]any {
 	data := map[string]any{
 		"RequestPath": r.URL.Path,
+		"Year":        time.Now().Year(),
 	}
 
 	return data
