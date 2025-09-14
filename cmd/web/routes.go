@@ -19,11 +19,11 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /site.webmanifest", app.handleWebmanifest)
 	mux.HandleFunc("GET /healthz", app.handleHealthz)
 
-	mux.HandleFunc("GET /calendars", app.handleCalendar)
+	mux.HandleFunc("GET /calendars", app.handleCalendarIndex)
 	mux.HandleFunc("GET /calendars/create", app.handleCalendarCreate)
-	mux.HandleFunc("POST /calendars", app.handleCalendarCreatePost)
+	mux.HandleFunc("POST /calendars", app.handleCalendarStore)
 	mux.HandleFunc("GET /calendars/{id}/edit", app.handleCalendarEdit)
-	mux.HandleFunc("POST /calendars/{id}", app.handleCalendarEditPost)
+	mux.HandleFunc("POST /calendars/{id}", app.handleCalendarUpdate)
 	mux.HandleFunc("DELETE /calendars/{id}", app.handleCalendarDelete)
 
 	mux.HandleFunc("GET /api/auth", app.handleAPIAuth)

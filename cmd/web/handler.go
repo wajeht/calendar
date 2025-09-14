@@ -62,7 +62,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleCalendarIndex(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
 	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-index.html")
@@ -80,9 +80,9 @@ func (app *application) handleCalendarCreate(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (app *application) handleCalendarCreatePost(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleCalendarStore(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("handleCalendarCreatePost"))
+	w.Write([]byte("TODO: handleCalendarStore"))
 }
 
 func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Request) {
@@ -94,14 +94,14 @@ func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func (app *application) handleCalendarEditPost(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleCalendarUpdate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("handleCalendarEditPost"))
+	w.Write([]byte("TODO: handleCalendarUpdate"))
 }
 
 func (app *application) handleCalendarDelete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("handleCalendarDelete"))
+	w.Write([]byte("TODO: handleCalendarDelete"))
 }
 
 func (app *application) handleAPIAuth(w http.ResponseWriter, r *http.Request) {
