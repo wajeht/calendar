@@ -28,7 +28,7 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc("GET /api/auth", app.handleAPIAuth)
 	mux.HandleFunc("POST /api/auth", app.handleAPIAuthPost)
-	mux.HandleFunc("GET /api/calendars", app.handleAPICalendars)
+	mux.HandleFunc("GET /api/calendars", app.handleAPICalendar)
 	mux.HandleFunc("GET /api/proxy-ical", app.handleAPIProxyIcal)
 
 	mux.HandleFunc("GET /", app.handleHome)

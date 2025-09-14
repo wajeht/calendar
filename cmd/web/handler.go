@@ -115,7 +115,7 @@ func (app *application) handleAPIAuthPost(w http.ResponseWriter, r *http.Request
 	w.Write([]byte(`{"error": "Authentication not implemented"}`))
 }
 
-func (app *application) handleAPICalendars(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleAPICalendar(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte("[]"))
 }
