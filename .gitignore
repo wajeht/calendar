@@ -10,6 +10,11 @@ bun.lockb
 # Database
 *.db
 calendars.db
+calendars.db-shm
+calendars.db-wal
+calendar.db
+calendar.db-shm
+calendar.db-wal
 data/
 
 # Build output
