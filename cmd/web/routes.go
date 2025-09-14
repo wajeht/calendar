@@ -16,6 +16,7 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc("GET /favicon.ico", app.handleFavicon)
 	mux.HandleFunc("GET /robots.txt", app.handleRobots)
+	mux.HandleFunc("GET /site.webmanifest", app.handleWebmanifest)
 	mux.HandleFunc("GET /healthz", app.handleHealthz)
 
 	mux.HandleFunc("GET /calendars", app.handleCalendar)
