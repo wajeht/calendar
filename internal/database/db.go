@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -21,7 +22,7 @@ type DB struct {
 	*sqlx.DB
 }
 
-func New(dsn string, automigrate bool) (*DB, error) {
+func New(dsn string, automigrate, vacuum bool) (*DB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
@@ -34,6 +35,10 @@ func New(dsn string, automigrate bool) (*DB, error) {
 	db.SetMaxIdleConns(25)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 	db.SetConnMaxLifetime(2 * time.Hour)
+
+	if err := optimizeSQLite(db.DB, vacuum); err != nil {
+		return nil, err
+	}
 
 	if automigrate {
 		iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
@@ -56,4 +61,35 @@ func New(dsn string, automigrate bool) (*DB, error) {
 	}
 
 	return &DB{db}, nil
+}
+
+func optimizeSQLite(db *sql.DB, vacuum bool) error {
+	pragmas := []string{
+		"PRAGMA foreign_keys = ON",
+		"PRAGMA journal_mode = WAL",
+		"PRAGMA synchronous = NORMAL",
+		"PRAGMA cache_size = -100000",
+		"PRAGMA temp_store = MEMORY",
+		"PRAGMA busy_timeout = 30000",
+		"PRAGMA wal_autocheckpoint = 1000",
+		"PRAGMA mmap_size = 268435456",
+		"PRAGMA page_size = 4096",
+		"PRAGMA locking_mode = NORMAL",
+		"PRAGMA optimize",
+		"ANALYZE",
+	}
+
+	for _, pragma := range pragmas {
+		if _, err := db.Exec(pragma); err != nil {
+			return err
+		}
+	}
+
+	if vacuum {
+		if _, err := db.Exec("VACUUM"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
