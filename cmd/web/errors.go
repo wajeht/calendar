@@ -23,13 +23,9 @@ func (app *application) reportServerError(r *http.Request, err error) {
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
 	app.reportServerError(r, err)
 
-	data := struct {
-		Status  int
-		Message string
-	}{
-		Status:  500,
-		Message: "The server encountered a problem and could not process your request",
-	}
+	data := app.newTemplateData(r)
+	data["Status"] = 500
+	data["Message"] = "The server encountered a problem and could not process your request"
 
 	renderErr := response.Page(w, http.StatusInternalServerError, data, "pages/error.html")
 	if renderErr != nil {
@@ -38,13 +34,9 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 }
 
 func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
-	data := struct {
-		Status  int
-		Message string
-	}{
-		Status:  404,
-		Message: "The requested resource could not be found",
-	}
+	data := app.newTemplateData(r)
+	data["Status"] = 404
+	data["Message"] = "The requested resource could not be found"
 
 	err := response.Page(w, http.StatusNotFound, data, "pages/error.html")
 	if err != nil {
@@ -53,13 +45,9 @@ func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err error) {
-	data := struct {
-		Status  int
-		Message string
-	}{
-		Status:  400,
-		Message: err.Error(),
-	}
+	data := app.newTemplateData(r)
+	data["Status"] = 400
+	data["Message"] = err.Error()
 
 	renderErr := response.Page(w, http.StatusBadRequest, data, "pages/error.html")
 	if renderErr != nil {
