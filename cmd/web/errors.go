@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/wajeht/calendar/internal/response"
 )
 
 func (app *application) reportServerError(r *http.Request, err error) {
@@ -21,15 +23,46 @@ func (app *application) reportServerError(r *http.Request, err error) {
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
 	app.reportServerError(r, err)
 
-	message := "The server encountered a problem and could not process your request"
-	http.Error(w, message, http.StatusInternalServerError)
+	data := struct {
+		Status  int
+		Message string
+	}{
+		Status:  500,
+		Message: "The server encountered a problem and could not process your request",
+	}
+
+	renderErr := response.Page(w, http.StatusInternalServerError, data, "pages/error.html")
+	if renderErr != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
-	message := "The requested resource could not be found"
-	http.Error(w, message, http.StatusNotFound)
+	data := struct {
+		Status  int
+		Message string
+	}{
+		Status:  404,
+		Message: "The requested resource could not be found",
+	}
+
+	err := response.Page(w, http.StatusNotFound, data, "pages/error.html")
+	if err != nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	}
 }
 
 func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err error) {
-	http.Error(w, err.Error(), http.StatusBadRequest)
+	data := struct {
+		Status  int
+		Message string
+	}{
+		Status:  400,
+		Message: err.Error(),
+	}
+
+	renderErr := response.Page(w, http.StatusBadRequest, data, "pages/error.html")
+	if renderErr != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+	}
 }

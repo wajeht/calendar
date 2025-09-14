@@ -1,0 +1,23 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body>
+    {{template "main" .}}
+
+    <!-- Main Application Script -->
+    <script src="/static/js/script.js"></script>
+
+    <!-- FullCalendar Scripts -->
+    <script src="/static/js/ical.min.js"></script>
+    <script src="/static/js/fullcalendar-core.min.js"></script>
+    <script src="/static/js/fullcalendar-daygrid.min.js"></script>
+    <script src="/static/js/fullcalendar-timegrid.min.js"></script>
+    <script src="/static/js/fullcalendar-list.min.js"></script>
+    <script src="/static/js/fullcalendar-interaction.min.js"></script>
+    <script src="/static/js/fullcalendar-icalendar.min.js"></script>
+</body>
+</html>
+{{end}}

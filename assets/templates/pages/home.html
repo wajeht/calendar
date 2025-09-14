@@ -1,19 +1,7 @@
 {{define "main"}}
 <div id="calendar"></div>
 
-<!-- Global Password Modal -->
-<div class="password-modal-overlay" id="passwordModalOverlay"></div>
-<div class="password-modal" id="passwordModal">
-    <h2>Authentication Required</h2>
-    <div class="password-content">
-        <p style="margin-bottom: 20px; color: #666;">Enter password to access settings</p>
-        <input type="password" id="password-input" placeholder="Enter password" onkeyup="if(event.key==='Enter') checkPassword()">
-        <button onclick="checkPassword()" style="margin-top: 15px; width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px;">Login</button>
-        <div id="password-error" style="color: #dc3545; margin-top: 10px; display: none;">Incorrect password</div>
-    </div>
-</div>
-
-<!-- Event Details Modal -->
+<!-- Event Details Modal (FullCalendar specific) -->
 <div class="event-modal-overlay" id="eventModalOverlay"></div>
 <div class="event-modal" id="eventModal">
     <button class="event-modal-close" onclick="closeEventModal()">×</button>
@@ -21,17 +9,7 @@
     <div id="eventDetails"></div>
 </div>
 
-<!-- Global Utilities -->
-<script src="/static/js/script.js"></script>
-
-<!-- External Libraries (Local) -->
-<script src="/static/js/ical.min.js"></script>
-<script src="/static/js/fullcalendar-core.min.js"></script>
-<script src="/static/js/fullcalendar-daygrid.min.js"></script>
-<script src="/static/js/fullcalendar-timegrid.min.js"></script>
-<script src="/static/js/fullcalendar-list.min.js"></script>
-<script src="/static/js/fullcalendar-interaction.min.js"></script>
-<script src="/static/js/fullcalendar-icalendar.min.js"></script>
+{{template "password-modal" .}}
 
 <script>
 let calendar;

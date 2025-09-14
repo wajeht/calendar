@@ -52,7 +52,7 @@ func (app *application) handleHealthz(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "pages/home.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "home.html", "pages/home.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -61,7 +61,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-index.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-index.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -70,7 +70,7 @@ func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleCalendarCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-create.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-create.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -85,7 +85,7 @@ func (app *application) handleCalendarCreatePost(w http.ResponseWriter, r *http.
 func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
-	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-edit.html")
+	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/calendar-edit.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -101,4 +101,31 @@ func (app *application) handleCalendarDelete(w http.ResponseWriter, r *http.Requ
 	// TODO: Handle calendar deletion
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("handleCalendarDelete"))
+}
+
+// API Handlers
+func (app *application) handleAPIAuth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	// For now, return unauthenticated
+	w.Write([]byte(`{"authenticated": false}`))
+}
+
+func (app *application) handleAPIAuthPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	// TODO: Implement actual authentication logic
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte(`{"error": "Authentication not implemented"}`))
+}
+
+func (app *application) handleAPICalendars(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	// Return empty array for now
+	w.Write([]byte("[]"))
+}
+
+func (app *application) handleAPIProxyIcal(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/calendar")
+	// TODO: Implement iCal proxy functionality
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte("iCal proxy not implemented"))
 }

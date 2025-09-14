@@ -10,11 +10,19 @@ import (
 )
 
 func Page(w http.ResponseWriter, status int, data any, pagePath string) error {
-	return PageWithHeaders(w, status, data, nil, pagePath)
+	return PageWithLayout(w, status, data, "public.html", pagePath)
+}
+
+func PageWithLayout(w http.ResponseWriter, status int, data any, layout string, pagePath string) error {
+	return PageWithLayoutAndHeaders(w, status, data, nil, layout, pagePath)
 }
 
 func PageWithHeaders(w http.ResponseWriter, status int, data any, headers http.Header, pagePath string) error {
-	patterns := []string{"layouts/*.html", "components/*.html", pagePath}
+	return PageWithLayoutAndHeaders(w, status, data, headers, "public.html", pagePath)
+}
+
+func PageWithLayoutAndHeaders(w http.ResponseWriter, status int, data any, headers http.Header, layout string, pagePath string) error {
+	patterns := []string{"layouts/" + layout, "components/*.html", pagePath}
 
 	return NamedTemplateWithHeaders(w, status, data, headers, "base", patterns...)
 }
