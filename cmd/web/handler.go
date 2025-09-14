@@ -38,7 +38,16 @@ func (app *application) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("ok"))
 }
 
-func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	err := response.Page(w, http.StatusOK, data, "pages/home.html")
+	if err != nil {
+		app.serverError(w, r, err)
+	}
+}
+
+func (app *application) handleCalendars(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
 	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-index.html")
@@ -47,21 +56,6 @@ func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) handleSettings(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
-
-	err := response.Page(w, http.StatusOK, data, "pages/settings.html")
-	if err != nil {
-		app.serverError(w, r, err)
-	}
-}
-
-func (app *application) handleSettingsPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("handleSettingsPost"))
-}
-
-// Calendar management handlers
 func (app *application) handleCalendarCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
