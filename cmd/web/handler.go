@@ -49,6 +49,11 @@ func (app *application) handleHealthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		app.notFound(w, r)
+		return
+	}
+
 	data := app.newTemplateData(r)
 
 	err := response.PageWithLayout(w, http.StatusOK, data, "home.html", "pages/home.html")

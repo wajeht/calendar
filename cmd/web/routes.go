@@ -26,14 +26,12 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("POST /calendars/{id}", app.handleCalendarEditPost)
 	mux.HandleFunc("DELETE /calendars/{id}", app.handleCalendarDelete)
 
-	// API routes
 	mux.HandleFunc("GET /api/auth", app.handleAPIAuth)
 	mux.HandleFunc("POST /api/auth", app.handleAPIAuthPost)
 	mux.HandleFunc("GET /api/calendars", app.handleAPICalendars)
 	mux.HandleFunc("GET /api/proxy-ical", app.handleAPIProxyIcal)
 
-	mux.HandleFunc("GET /{$}", app.handleHome)
+	mux.HandleFunc("GET /", app.handleHome)
 
 	return app.recoverPanic(app.securityHeaders(mux))
-
 }
