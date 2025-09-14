@@ -1,3 +1,79 @@
 {{define "main"}}
-<p>calendar index</p>
+
+<header>
+    <h1>Calendar Management</h1>
+    <nav>
+        <a href="/calendars/create">Add New Calendar</a>
+    </nav>
+</header>
+
+<main>
+    <section>
+        {{if .Calendars}}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>URL</th>
+                        <th>Color</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Calendars}}
+                    <tr>
+                        <td>
+                            {{if .Name}}{{.Name}}{{else}}<em>Unnamed</em>{{end}}
+                        </td>
+                        <td>
+                            <a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a>
+                        </td>
+                        <td>
+                            <span data-color="{{.Color}}">{{.Color}}</span>
+                        </td>
+                        <td>
+                            {{if .Hidden}}
+                                <span class="status-hidden">Hidden</span>
+                            {{else}}
+                                <span class="status-visible">Visible</span>
+                            {{end}}
+                            {{if .Details}}
+                                <span class="status-private">Private</span>
+                            {{end}}
+                        </td>
+                        <td>
+                            <a href="/calendars/{{.ID}}/edit">Edit</a>
+                            <button type="button" onclick="deleteCalendar({{.ID}})">Delete</button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        {{else}}
+            <p>No calendars found. <a href="/calendars/create">Add your first calendar</a></p>
+        {{end}}
+    </section>
+</main>
+
+<script>
+function deleteCalendar(id) {
+    if (confirm('Are you sure you want to delete this calendar?')) {
+        fetch(`/calendars/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting calendar');
+            }
+        })
+        .catch(error => {
+            alert('Error deleting calendar');
+        });
+    }
+}
+</script>
+
 {{end}}

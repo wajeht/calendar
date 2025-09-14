@@ -14,6 +14,7 @@ type Calendar struct {
 	Color     string    `db:"color"`
 	Hidden    bool      `db:"hidden"`
 	Details   bool      `db:"details"`
+	Data      *string   `db:"data"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
@@ -23,10 +24,10 @@ func (db *DB) InsertCalendar(name, url, color string, hidden, details bool) (int
 	defer cancel()
 
 	query := `
-		INSERT INTO calendars (name, url, color, hidden, details, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`
+		INSERT INTO calendars (name, url, color, hidden, details, data, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	result, err := db.ExecContext(ctx, query, name, url, color, hidden, details, time.Now(), time.Now())
+	result, err := db.ExecContext(ctx, query, name, url, color, hidden, details, nil, time.Now(), time.Now())
 	if err != nil {
 		return 0, err
 	}
@@ -73,11 +74,12 @@ func (db *DB) GetVisibleCalendars() ([]Calendar, error) {
 
 	var calendars []Calendar
 
-	query := `SELECT * FROM calendars WHERE hidden = 0 ORDER BY created_at ASC`
+	query := `SELECT * FROM calendars WHERE hidden = 0 AND data IS NOT NULL AND LENGTH(data) > 50 ORDER BY created_at ASC`
 
 	err := db.SelectContext(ctx, &calendars, query)
 	return calendars, err
 }
+
 
 func (db *DB) UpdateCalendar(id int, name, url, color string, hidden, details bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
@@ -89,6 +91,16 @@ func (db *DB) UpdateCalendar(id int, name, url, color string, hidden, details bo
 		WHERE id = ?`
 
 	_, err := db.ExecContext(ctx, query, name, url, color, hidden, details, time.Now(), id)
+	return err
+}
+
+func (db *DB) UpdateCalendarData(id int, data string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	query := `UPDATE calendars SET data = ?, updated_at = ? WHERE id = ?`
+
+	_, err := db.ExecContext(ctx, query, data, time.Now(), id)
 	return err
 }
 

@@ -154,8 +154,7 @@
                     log.debug('Event source URL:', eventSourceUrl, 'Event color:', info.event.backgroundColor);
 
                     const sourceCalendar = eventSources.find(es => {
-                        return es.proxyUrl === eventSourceUrl ||
-                            es.color === info.event.backgroundColor ||
+                        return es.color === info.event.backgroundColor ||
                             (es.source && es.source.url === eventSourceUrl);
                     });
 
@@ -182,61 +181,51 @@
             loadCalendarsFromDB();
         }
 
-        async function loadCalendarsFromDB() {
-            try {
-                const response = await fetch('/api/calendars');
-                if (response.ok) {
-                    const calendars = await response.json();
-                    calendars.forEach(cal => {
-                        log.debug('Loading calendar:', cal.name || cal.url, 'details value:', cal.details, 'type:', typeof cal.details);
-                        let url = cal.url;
-                        if (url.startsWith('webcal://')) {
-                            url = url.replace('webcal://', 'https://');
-                        }
-                        const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
+        function loadCalendarsFromDB() {
+            const calendarsJson = `{{.CalendarsJSON}}`;
+            const calendars = JSON.parse(calendarsJson);
+            console.log('Parsed calendars:', calendars, 'Type:', typeof calendars, 'IsArray:', Array.isArray(calendars));
 
-                        let eventSource = null;
-                        if (!cal.hidden) {
-                            const shouldHideDetails = !isAuthenticated && cal.details === 1;
-                            log.debug('Should hide details?', shouldHideDetails, 'for calendar:', cal.name || cal.url, 'Auth:', isAuthenticated, 'Hide for public:', cal.details);
+            calendars.forEach(cal => {
+                if (!cal) return;
 
-                            const source = {
-                                url: proxyUrl,
-                                format: 'ics',
-                                color: cal.color,
-                                textColor: 'white',
-                                displayEventTime: shouldHideDetails ? false : true
-                            };
+                log.debug('Loading calendar:', cal.Name || cal.URL);
 
-                            if (shouldHideDetails) {
-                                log.debug('Hiding details for calendar:', cal.name || cal.url);
-                                source.eventDataTransform = function (eventData) {
-                                    eventData.title = '';
-                                    return eventData;
-                                };
-                            }
+                const shouldHideDetails = !isAuthenticated && cal.Details;
 
-                            eventSource = calendar.addEventSource(source);
-                        }
+                const blob = new Blob([cal.Data], { type: 'text/calendar' });
+                const blobUrl = URL.createObjectURL(blob);
 
-                        eventSources.push({
-                            id: cal.id,
-                            url: cal.url,
-                            proxyUrl: proxyUrl,
-                            color: cal.color,
-                            name: cal.name,
-                            hidden: cal.hidden,
-                            details: cal.details,
-                            source: eventSource,
-                            visible: !cal.hidden,
-                            lastUpdate: new Date(),
-                            status: 'fresh'
-                        });
-                    });
+                const source = {
+                    url: blobUrl,
+                    format: 'ics',
+                    color: cal.Color,
+                    textColor: 'white',
+                    displayEventTime: !shouldHideDetails
+                };
+
+                if (shouldHideDetails) {
+                    source.eventDataTransform = function (eventData) {
+                        eventData.title = '';
+                        return eventData;
+                    };
                 }
-            } catch (error) {
-                log.error('Failed to load calendars from database:', error);
-            }
+
+                const eventSource = calendar.addEventSource(source);
+
+                eventSources.push({
+                    id: cal.ID,
+                    url: cal.URL,
+                    color: cal.Color,
+                    name: cal.Name,
+                    hidden: cal.Hidden,
+                    details: cal.Details,
+                    source: eventSource,
+                    visible: true,
+                    lastUpdate: new Date(),
+                    status: 'fresh'
+                });
+            });
         }
 
         function makeLinksClickable(text) {
@@ -333,7 +322,7 @@
             }
 
             if (event.source) {
-                const sourceCalendar = eventSources.find(es => es.proxyUrl === event.source.url);
+                const sourceCalendar = eventSources.find(es => es.source && es.source.url === event.source.url);
                 if (sourceCalendar) {
                     const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
                     const displayText = sourceCalendar.name ? calendarDisplayName : makeLinksClickable(calendarDisplayName);

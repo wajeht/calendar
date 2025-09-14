@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -56,16 +57,38 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 
 	data := app.newTemplateData(r)
 
-	err := response.NamedTemplate(w, http.StatusOK, data, "home.html", "pages/home.html", "layouts/partials/*.html", "components/*.html")
+	// Fetch calendars for the template
+	calendars, err := app.db.GetVisibleCalendars()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	// Convert to JSON for the template
+	calendarsJSON, err := json.Marshal(calendars)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	data["CalendarsJSON"] = string(calendarsJSON)
+
+	err = response.NamedTemplate(w, http.StatusOK, data, "home.html", "pages/home.html", "layouts/partials/*.html", "components/*.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
 }
 
 func (app *application) handleCalendarIndex(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
+	calendars, err := app.db.GetAllCalendars()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 
-	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/index.html")
+	data := app.newTemplateData(r)
+	data["Calendars"] = calendars
+
+	err = response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/index.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
@@ -81,8 +104,39 @@ func (app *application) handleCalendarCreate(w http.ResponseWriter, r *http.Requ
 }
 
 func (app *application) handleCalendarStore(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("TODO: handleCalendarStore"))
+	err := r.ParseForm()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	name := r.FormValue("name")
+	url := r.FormValue("url")
+	color := r.FormValue("color")
+	hidden := r.FormValue("hidden") == "1"
+	details := r.FormValue("hide_details") == "1"
+
+	if url == "" {
+		http.Error(w, "URL is required", http.StatusBadRequest)
+		return
+	}
+
+	if color == "" {
+		color = "#2196F3"
+	}
+
+	id, err := app.db.InsertCalendar(name, url, color, hidden, details)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	// Fetch calendar data in the background
+	app.backgroundTask(r, func() error {
+		return app.fetchCalendarData(id, url)
+	})
+
+	http.Redirect(w, r, "/calendars", http.StatusSeeOther)
 }
 
 func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Request) {
@@ -115,13 +169,4 @@ func (app *application) handleAPIAuthPost(w http.ResponseWriter, r *http.Request
 	w.Write([]byte(`{"error": "Authentication not implemented"}`))
 }
 
-func (app *application) handleAPICalendar(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte("[]"))
-}
 
-func (app *application) handleAPIProxyIcal(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/calendar")
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte("iCal proxy not implemented"))
-}

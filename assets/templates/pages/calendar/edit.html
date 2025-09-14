@@ -4,7 +4,7 @@
 <div>
     <h1>Edit Calendar</h1>
 
-    <form action="/calendar/{{.Calendar.ID}}/edit" method="POST">
+    <form action="/calendars/{{.Calendar.ID}}/edit" method="POST">
         <div>
             <label for="name">Calendar Name (optional)</label>
             <input type="text" id="name" name="name" value="{{.Calendar.Name}}" placeholder="My Calendar">
@@ -37,7 +37,7 @@
 
         <div>
             <button type="submit">Update Calendar</button>
-            <a href="/settings">Cancel</a>
+            <a href="/calendars">Cancel</a>
             <button type="button"onclick="deleteCalendar({{.Calendar.ID}})">Delete</button>
         </div>
     </form>
@@ -46,7 +46,7 @@
 <script>
 function deleteCalendar(id) {
     if (confirm('Are you sure you want to delete this calendar?')) {
-        fetch(`/calendar/${id}`, {
+        fetch(`/calendars/${id}`, {
             method: 'DELETE',
             credentials: 'include'
         }).then(response => {

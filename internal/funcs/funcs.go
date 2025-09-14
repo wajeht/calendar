@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"math"
@@ -36,6 +37,8 @@ var TemplateFuncs = template.FuncMap{
 	"pluralize": pluralize,
 	"slugify":   slugify,
 	"safeHTML":  safeHTML,
+	"deref":     deref,
+	"base64":    base64Encode,
 
 	// Slice functions
 	"join": strings.Join,
@@ -62,6 +65,17 @@ var TemplateFuncs = template.FuncMap{
 
 func eq(a, b interface{}) bool {
 	return a == b
+}
+
+func deref(p *string) string {
+	if p != nil {
+		return *p
+	}
+	return ""
+}
+
+func base64Encode(s string) string {
+	return base64.StdEncoding.EncodeToString([]byte(s))
 }
 
 func formatTime(format string, t time.Time) string {
