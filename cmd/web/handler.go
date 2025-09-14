@@ -57,20 +57,18 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 
 	data := app.newTemplateData(r)
 
-	// Fetch calendars for the template
 	calendars, err := app.db.GetVisibleCalendars()
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
 
-	// Convert to JSON for the template
 	calendarsJSON, err := json.Marshal(calendars)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
-	data["CalendarsJSON"] = string(calendarsJSON)
+	data["Calendars"] = string(calendarsJSON)
 
 	err = response.NamedTemplate(w, http.StatusOK, data, "home.html", "pages/home.html", "layouts/partials/*.html", "components/*.html")
 	if err != nil {
@@ -168,5 +166,3 @@ func (app *application) handleAPIAuthPost(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte(`{"error": "Authentication not implemented"}`))
 }
-
-

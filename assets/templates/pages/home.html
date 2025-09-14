@@ -182,9 +182,7 @@
         }
 
         function loadCalendarsFromDB() {
-            const calendarsJson = `{{.CalendarsJSON}}`;
-            const calendars = JSON.parse(calendarsJson);
-            console.log('Parsed calendars:', calendars, 'Type:', typeof calendars, 'IsArray:', Array.isArray(calendars));
+            const calendars = JSON.parse(`{{.Calendars}}`);
 
             calendars.forEach(cal => {
                 if (!cal) return;
