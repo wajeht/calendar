@@ -165,7 +165,7 @@
                         return;
                     }
 
-                    showEventDetails(info.event);
+                    openEventModal(info.event);
                 },
                 loading: function (isLoading) {
                     if (isLoading) {
@@ -178,10 +178,10 @@
             });
 
             calendar.render();
-            loadCalendarsFromDB();
+            loadCalendars();
         }
 
-        function loadCalendarsFromDB() {
+        function loadCalendars() {
             const calendars = JSON.parse(`{{.Calendars}}`);
 
             calendars.forEach(cal => {
@@ -226,7 +226,7 @@
             });
         }
 
-        function makeLinksClickable(text) {
+        function linkify(text) {
             if (!text) return text;
 
             const words = text.split(/(\s+)/);
@@ -266,7 +266,7 @@
             }).join('');
         }
 
-        function showEventDetails(event) {
+        function openEventModal(event) {
             const modal = document.getElementById('eventModal');
             const overlay = document.getElementById('eventModalOverlay');
             const titleEl = document.getElementById('eventTitle');
@@ -310,12 +310,12 @@
             }
 
             if (event.extendedProps && event.extendedProps.location) {
-                const locationWithLinks = makeLinksClickable(event.extendedProps.location);
+                const locationWithLinks = linkify(event.extendedProps.location);
                 detailsHTML += `<div class="event-detail"><label>Location:</label> ${locationWithLinks}</div>`;
             }
 
             if (event.extendedProps && event.extendedProps.description) {
-                const descriptionWithLinks = makeLinksClickable(event.extendedProps.description);
+                const descriptionWithLinks = linkify(event.extendedProps.description);
                 detailsHTML += `<div class="event-detail"><label>Description:</label><br>${descriptionWithLinks}</div>`;
             }
 
@@ -323,7 +323,7 @@
                 const sourceCalendar = eventSources.find(es => es.source && es.source.url === event.source.url);
                 if (sourceCalendar) {
                     const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
-                    const displayText = sourceCalendar.name ? calendarDisplayName : makeLinksClickable(calendarDisplayName);
+                    const displayText = sourceCalendar.name ? calendarDisplayName : linkify(calendarDisplayName);
                     detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${displayText}</div>`;
                 }
             }
@@ -351,7 +351,7 @@
             }
         });
 
-        async function checkAuthStatus() {
+        async function checkAuth() {
             try {
                 const response = await fetch('/api/auth', {
                     credentials: 'include'
@@ -365,13 +365,13 @@
             }
         }
 
-        async function initializeApp() {
-            await checkAuthStatus();
+        async function init() {
+            await checkAuth();
             initCalendar();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initializeApp();
+            init();
         });
     </script>
 
