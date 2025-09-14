@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/wajeht/calendar/assets"
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -36,6 +38,15 @@ func (app *application) neuter(next http.Handler) http.Handler {
 			app.notFound(w, r)
 			return
 		}
+
+		filePath := strings.TrimPrefix(r.URL.Path, "/")
+		f, err := assets.EmbeddedFiles.Open(filePath)
+		if err != nil {
+			app.notFound(w, r)
+			return
+		}
+		f.Close()
+
 		next.ServeHTTP(w, r)
 	})
 }
