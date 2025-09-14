@@ -18,7 +18,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /robots.txt", app.handleRobots)
 	mux.HandleFunc("GET /healthz", app.handleHealthz)
 
-	mux.HandleFunc("GET /calendars", app.handleCalendars)
+	mux.HandleFunc("GET /calendars", app.handleCalendar)
 	mux.HandleFunc("GET /calendars/create", app.handleCalendarCreate)
 	mux.HandleFunc("POST /calendars", app.handleCalendarCreatePost)
 	mux.HandleFunc("GET /calendars/{id}/edit", app.handleCalendarEdit)

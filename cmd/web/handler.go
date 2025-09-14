@@ -47,7 +47,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) handleCalendars(w http.ResponseWriter, r *http.Request) {
+func (app *application) handleCalendar(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
 	err := response.Page(w, http.StatusOK, data, "pages/calendar/calendar-index.html")
