@@ -121,7 +121,7 @@ func (app *application) handleCalendarStore(w http.ResponseWriter, r *http.Reque
 	}
 
 	if color == "" {
-		color = "#2196F3"
+		color = "#0084d1"
 	}
 
 	id, err := app.db.InsertCalendar(name, url, color, hidden, details)
@@ -189,7 +189,7 @@ func (app *application) handleCalendarUpdate(w http.ResponseWriter, r *http.Requ
 	}
 
 	if color == "" {
-		color = "#2196F3"
+		color = "#0084d1"
 	}
 
 	err = app.db.UpdateCalendar(id, name, url, color, hidden, details)
