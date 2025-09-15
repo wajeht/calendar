@@ -4,7 +4,7 @@
 <div>
     <h1>Edit Calendar</h1>
 
-    <form action="/calendars/{{.Calendar.ID}}/edit" method="POST">
+    <form action="/calendars/{{.Calendar.ID}}" method="POST">
         <div>
             <label for="name">Calendar Name (optional)</label>
             <input type="text" id="name" name="name" value="{{.Calendar.Name}}" placeholder="My Calendar">
