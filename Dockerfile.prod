@@ -1,42 +1,67 @@
-FROM golang:1.24-alpine AS builder
+# Build stage
+FROM golang:1.23-alpine AS builder
 
-RUN apk add --no-cache gcc musl-dev sqlite-dev
+# Install build dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    sqlite-dev \
+    git \
+    ca-certificates
 
 WORKDIR /app
 
+# Copy dependency files first for better caching
 COPY go.mod go.sum ./
 
-RUN go mod download
+# Download dependencies
+RUN go mod download && go mod verify
 
+# Copy source code
 COPY . .
 
-# Build with CGO enabled for SQLite
-RUN CGO_ENABLED=1 go build -o calendar . && \
-    ls -la /app/calendar
+# Build the application with optimizations
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -a -installsuffix cgo \
+    -o calendar \
+    ./cmd/web
 
-FROM alpine:latest
+# Runtime stage
+FROM alpine:3.19
 
-RUN apk --no-cache add ca-certificates sqlite
+# Install runtime dependencies
+RUN apk --no-cache add \
+    ca-certificates \
+    sqlite \
+    tzdata \
+    && rm -rf /var/cache/apk/*
 
-RUN addgroup -g 1001 -S calendar && adduser -S calendar -u 1001 -G calendar
+# Create non-root user
+RUN addgroup -g 1001 -S calendar && \
+    adduser -S calendar -u 1001 -G calendar -h /app
 
-# Create data directory for database
-RUN mkdir -p /data && chown calendar:calendar /data
+# Create data directory
+RUN mkdir -p /data && \
+    chown -R calendar:calendar /data
 
 WORKDIR /app
 
-# Copy and verify the binary
-COPY --chown=calendar:calendar --from=builder /app/calendar ./calendar
+# Copy binary with proper ownership
+COPY --from=builder --chown=calendar:calendar /app/calendar ./calendar
 
-# Make sure the binary is executable
-RUN ls -la /app/ && \
-    chmod +x /app/calendar
+# Ensure binary is executable
+RUN chmod +x ./calendar
 
+# Switch to non-root user
 USER calendar
 
+# Expose port
 EXPOSE 80
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/calendar.ico || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/healthz || exit 1
 
+# Run the application
 CMD ["./calendar"]
