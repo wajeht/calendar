@@ -165,8 +165,44 @@ func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) handleCalendarUpdate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("TODO: handleCalendarUpdate"))
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	err = r.ParseForm()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	name := r.FormValue("name")
+	url := r.FormValue("url")
+	color := r.FormValue("color")
+	hidden := r.FormValue("hidden") == "1"
+	details := r.FormValue("hide_details") == "1"
+
+	if url == "" {
+		http.Error(w, "URL is required", http.StatusBadRequest)
+		return
+	}
+
+	if color == "" {
+		color = "#2196F3"
+	}
+
+	err = app.db.UpdateCalendar(id, name, url, color, hidden, details)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.backgroundTask(r, func() error {
+		return app.fetchCalendarData(id, url)
+	})
+
+	http.Redirect(w, r, "/calendars", http.StatusSeeOther)
 }
 
 func (app *application) handleCalendarDelete(w http.ResponseWriter, r *http.Request) {
