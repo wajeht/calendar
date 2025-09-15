@@ -73,3 +73,4 @@ func (app *application) fetchCalendarData(calendarID int, url string) error {
 
 	return nil
 }
+

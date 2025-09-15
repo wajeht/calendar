@@ -30,7 +30,7 @@
 
         <div>
             <label>
-                <input type="checkbox" name="hide_details" value="1" {{if eq .Calendar.Details 1}}checked{{end}}>
+                <input type="checkbox" name="hide_details" value="1" {{if .Calendar.Details}}checked{{end}}>
                 Hide event details for public view (show as time blocks only)
             </label>
         </div>

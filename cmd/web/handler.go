@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/wajeht/calendar/assets"
 	"github.com/wajeht/calendar/internal/response"
@@ -138,9 +139,26 @@ func (app *application) handleCalendarStore(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) handleCalendarEdit(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 
-	err := response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/edit.html")
+	calendar, found, err := app.db.GetCalendar(id)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	if !found {
+		app.notFound(w, r)
+		return
+	}
+
+	data := app.newTemplateData(r)
+	data["Calendar"] = calendar
+
+	err = response.PageWithLayout(w, http.StatusOK, data, "settings.html", "pages/calendar/edit.html")
 	if err != nil {
 		app.serverError(w, r, err)
 	}
