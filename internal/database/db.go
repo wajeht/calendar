@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/wajeht/calendar/assets"
@@ -22,11 +24,16 @@ type DB struct {
 	*sqlx.DB
 }
 
-func New(dsn string, automigrate, vacuum bool) (*DB, error) {
+func New(dbPath string, automigrate, vacuum bool) (*DB, error) {
+	dir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	db, err := sqlx.ConnectContext(ctx, "sqlite3", dsn)
+	db, err := sqlx.ConnectContext(ctx, "sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +53,7 @@ func New(dsn string, automigrate, vacuum bool) (*DB, error) {
 			return nil, err
 		}
 
-		migrator, err := migrate.NewWithSourceInstance("iofs", iofsDriver, "sqlite3://"+dsn)
+		migrator, err := migrate.NewWithSourceInstance("iofs", iofsDriver, "sqlite3://"+dbPath)
 		if err != nil {
 			return nil, err
 		}

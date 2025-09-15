@@ -45,7 +45,7 @@ func run(logger *slog.Logger) error {
 	cfg.appUrl = env.GetString("APP_URL", "http://localhost")
 	cfg.appPort = env.GetInt("APP_PORT", 80)
 	cfg.appPassword = env.GetString("APP_PASSWORD", "password")
-	cfg.dbPath = env.GetString("DB_PATH", "calendar.sqlite")
+	cfg.dbPath = env.GetString("DB_PATH", "./data/calendar.sqlite")
 	cfg.dbAutomigrate = env.GetBool("DB_AUTOMIGRATE", true)
 
 	flag.Parse()
