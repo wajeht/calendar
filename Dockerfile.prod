@@ -20,17 +20,16 @@ RUN apk --no-cache add ca-certificates sqlite
 
 RUN addgroup -g 1001 -S calendar && adduser -S calendar -u 1001 -G calendar
 
-# Create data directory for database
-RUN mkdir -p /data && chown calendar:calendar /data
-
 WORKDIR /app
 
 # Copy and verify the binary
 COPY --chown=calendar:calendar --from=builder /app/calendar ./calendar
 
-# Make sure the binary is executable
-RUN ls -la /app/ && \
-    chmod +x /app/calendar
+# Create data directory and ensure proper ownership
+RUN mkdir -p /app/data && \
+    chown -R calendar:calendar /app && \
+    chmod +x /app/calendar && \
+    ls -la /app/
 
 USER calendar
 
