@@ -40,13 +40,14 @@ RUN apk --no-cache add \
 RUN addgroup -g 1001 -S calendar && \
     adduser -S calendar -u 1001 -G calendar -h /app
 
+# Create data directory for database files
+RUN mkdir -p /data && \
+    chown -R calendar:calendar /data
+
 WORKDIR /app
 
 # Copy binary with proper ownership
 COPY --from=builder --chown=calendar:calendar /app/calendar ./calendar
-
-# Ensure calendar user owns the app directory for database files
-RUN chown -R calendar:calendar /app
 
 # Ensure binary is executable
 RUN chmod +x ./calendar
