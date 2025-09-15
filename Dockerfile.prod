@@ -21,9 +21,8 @@ RUN go mod download && go mod verify
 COPY . .
 
 # Build the application with optimizations
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-    -ldflags='-w -s -extldflags "-static"' \
-    -a -installsuffix cgo \
+RUN CGO_ENABLED=1 go build \
+    -ldflags='-w -s' \
     -o calendar \
     ./cmd/web
 
