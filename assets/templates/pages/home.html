@@ -104,6 +104,12 @@
             color: #0056b3;
             text-decoration: underline;
         }
+
+        /* Non-business hours styling */
+        .fc-non-business {
+            background-color: #e9ecef !important;
+            opacity: 0.4;
+        }
     </style>
 
     <div class="event-modal-overlay" id="eventModalOverlay"></div>
@@ -146,6 +152,11 @@
                 editable: false,
                 selectable: false,
                 selectMirror: false,
+                businessHours: {
+                    daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
+                    startTime: '09:00',
+                    endTime: '17:00'
+                },
                 eventSources: [],
                 eventClick: function (info) {
                     info.jsEvent.preventDefault();
