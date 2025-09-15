@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build with CGO enabled for SQLite
-RUN CGO_ENABLED=1 go build -o calendar ./cmd/web && \
+RUN CGO_ENABLED=1 go build -ldflags='-w -s' -o calendar ./cmd/web && \
     ls -la /app/calendar
 
 FROM alpine:latest
