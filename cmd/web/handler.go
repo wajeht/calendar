@@ -244,3 +244,19 @@ func (app *application) handleAPIAuthPost(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte(`{"error": "Authentication not implemented"}`))
 }
+
+func (app *application) handleCalendarRefetch(w http.ResponseWriter, r *http.Request) {
+	calendars, err := app.db.GetAllCalendars()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	for _, calendar := range calendars {
+		app.backgroundTask(r, func() error {
+			return app.fetchCalendarData(calendar.ID, calendar.URL)
+		})
+	}
+
+	http.Redirect(w, r, "/calendars", http.StatusSeeOther)
+}

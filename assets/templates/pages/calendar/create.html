@@ -1,40 +1,45 @@
 {{define "main"}}
-<style></style>
+
+<h1>Add New Calendar</h1>
 
 <form action="/calendars" method="POST">
-    <div>
-        <label for="name">Calendar Name (optional)</label>
-        <input type="text" id="name" name="name" placeholder="My Calendar">
-    </div>
+    <fieldset>
+        <legend>Calendar Details</legend>
 
-    <div>
-        <label for="url">Calendar URL</label>
-        <input type="url" id="url" name="url" placeholder="webcal://example.com/calendar.ics" required>
-        <small>Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs</small>
-    </div>
+        <p>
+            <label for="name">Calendar Name (optional)</label>
+            <input type="text" id="name" name="name" placeholder="My Calendar">
+        </p>
 
-    <div>
-        <label for="color">Calendar Color</label>
-        <input type="color" id="color" name="color" value="#2196F3">
-    </div>
+        <p>
+            <label for="url">Calendar URL</label>
+            <input type="url" id="url" name="url" placeholder="webcal://example.com/calendar.ics" required>
+            <small>Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs</small>
+        </p>
 
-    <div>
-        <label>
-            <input type="checkbox" name="hidden" value="1">
-            Hide calendar from public view
-        </label>
-    </div>
+        <p>
+            <label for="color">Calendar Color</label>
+            <input type="color" id="color" name="color" value="#2196F3">
+        </p>
 
-    <div>
-        <label>
-            <input type="checkbox" name="hide_details" value="1">
-            Hide event details for public view (show as time blocks only)
-        </label>
-    </div>
+        <p>
+            <label>
+                <input type="checkbox" name="hidden" value="1">
+                Hide calendar from public view
+            </label>
+        </p>
 
-    <div>
+        <p>
+            <label>
+                <input type="checkbox" name="hide_details" value="1">
+                Hide event details for public view (show as time blocks only)
+            </label>
+        </p>
+    </fieldset>
+
+    <p>
         <button type="submit">Add Calendar</button>
         <a href="/calendars">Cancel</a>
-    </div>
+    </p>
 </form>
 {{end}}

@@ -1,43 +1,47 @@
 {{define "main"}}
-<style></style>
+
+<h1>Edit Calendar</h1>
 
 <form action="/calendars/{{.Calendar.ID}}" method="POST">
-    <div>
-        <label for="name">Calendar Name (optional)</label>
-        <input type="text" id="name" name="name" value="{{.Calendar.Name}}" placeholder="My Calendar">
-    </div>
+    <fieldset>
+        <legend>Calendar Details</legend>
 
-    <div>
-        <label for="url">Calendar URL</label>
-        <input type="url" id="url" name="url" value="{{.Calendar.URL}}" placeholder="webcal://example.com/calendar.ics"
-            required>
-        <small>Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs</small>
-    </div>
+        <p>
+            <label for="name">Calendar Name (optional)</label>
+            <input type="text" id="name" name="name" value="{{.Calendar.Name}}" placeholder="My Calendar">
+        </p>
 
-    <div>
-        <label for="color">Calendar Color</label>
-        <input type="color" id="color" name="color" value="{{.Calendar.Color}}">
-    </div>
+        <p>
+            <label for="url">Calendar URL</label>
+            <input type="url" id="url" name="url" value="{{.Calendar.URL}}" placeholder="webcal://example.com/calendar.ics" required>
+            <small>Supports Google Calendar, Apple Calendar, Outlook, and other iCal URLs</small>
+        </p>
 
-    <div>
-        <label>
-            <input type="checkbox" name="hidden" value="1" {{if .Calendar.Hidden}}checked{{end}}>
-            Hide calendar from public view
-        </label>
-    </div>
+        <p>
+            <label for="color">Calendar Color</label>
+            <input type="color" id="color" name="color" value="{{.Calendar.Color}}">
+        </p>
 
-    <div>
-        <label>
-            <input type="checkbox" name="hide_details" value="1" {{if .Calendar.Details}}checked{{end}}>
-            Hide event details for public view (show as time blocks only)
-        </label>
-    </div>
+        <p>
+            <label>
+                <input type="checkbox" name="hidden" value="1" {{if .Calendar.Hidden}}checked{{end}}>
+                Hide calendar from public view
+            </label>
+        </p>
 
-    <div>
+        <p>
+            <label>
+                <input type="checkbox" name="hide_details" value="1" {{if .Calendar.Details}}checked{{end}}>
+                Hide event details for public view (show as time blocks only)
+            </label>
+        </p>
+    </fieldset>
+
+    <p>
         <button type="submit">Update Calendar</button>
         <a href="/calendars">Cancel</a>
-        <button type="button" onclick="deleteCalendar({{.Calendar.ID}})">Delete</button>
-    </div>
+        <button type="button" onclick="deleteCalendar({{.Calendar.ID}})">Delete Calendar</button>
+    </p>
 </form>
 
 <script>

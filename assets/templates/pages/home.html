@@ -128,15 +128,45 @@
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
 
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            const dateParam = urlParams.get('date');
+
+            let initialView = 'timeGridWeek';
+            if (viewParam) {
+                switch(viewParam) {
+                    case 'month':
+                        initialView = 'dayGridMonth';
+                        break;
+                    case 'week':
+                        initialView = 'timeGridWeek';
+                        break;
+                    case 'day':
+                        initialView = 'timeGridDay';
+                        break;
+                    case 'list':
+                        initialView = 'listMonth';
+                        break;
+                }
+            }
+
             calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek',
+                initialView: initialView,
+                initialDate: dateParam || undefined,
                 firstDay: 1,
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton'
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton'
                 },
                 customButtons: {
+                    refetchButton: {
+                        text: 'refetch',
+                        hint: 'Refetch All Calendars',
+                        click: function () {
+                            refetchAllCalendars();
+                        }
+                    },
                     settingsButton: {
                         text: 'settings',
                         hint: 'Manage Calendars',
@@ -184,6 +214,9 @@
                 },
                 eventSourceFailure: function (error) {
                     log.error('Calendar load failed:', error);
+                },
+                datesSet: function() {
+                    updateURL();
                 }
             });
 
@@ -374,11 +407,58 @@
             }
         }
 
+        function refetchAllCalendars() {
+            if (confirm('Are you sure you want to refetch all calendar data? This may take a moment.')) {
+                fetch('/calendars/refetch', {
+                    method: 'POST'
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error refetching calendars');
+                        }
+                    })
+                    .catch(error => {
+                        alert('Error refetching calendars');
+                    });
+            }
+        }
+
         function init() {
             initCalendar();
             requestAnimationFrame(() => {
                 loadCalendars();
             });
+        }
+
+        function updateURL() {
+            const view = calendar.view;
+            const date = calendar.getDate();
+
+            let viewName;
+            switch(view.type) {
+                case 'dayGridMonth':
+                    viewName = 'month';
+                    break;
+                case 'timeGridWeek':
+                    viewName = 'week';
+                    break;
+                case 'timeGridDay':
+                    viewName = 'day';
+                    break;
+                case 'listMonth':
+                    viewName = 'list';
+                    break;
+                default:
+                    viewName = 'week';
+            }
+
+            const url = new URL(window.location);
+            url.searchParams.set('view', viewName);
+            url.searchParams.set('date', date.toISOString().split('T')[0]);
+
+            window.history.replaceState({}, '', url.toString());
         }
 
         document.addEventListener('DOMContentLoaded', () => {

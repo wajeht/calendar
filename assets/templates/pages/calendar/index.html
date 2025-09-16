@@ -1,5 +1,7 @@
 {{define "main"}}
 
+<p><a href="/calendars/create">Add Calendar</a></p>
+
 {{if .Calendars}}
 <table>
     <thead>
@@ -21,17 +23,11 @@
                 <a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a>
             </td>
             <td>
-                <input type="color" id="color" name="color" value="{{.Color}}" disabled>
+                <input type="color" value="{{.Color}}" disabled>
             </td>
             <td>
-                {{if .Hidden}}
-                <span class="status-hidden">Hidden</span>
-                {{else}}
-                <span class="status-visible">Visible</span>
-                {{end}}
-                {{if .Details}}
-                <span class="status-private">Private</span>
-                {{end}}
+                {{if .Hidden}}Hidden{{else}}Visible{{end}}
+                {{if .Details}} • Private{{end}}
             </td>
             <td>
                 <a href="/calendars/{{.ID}}/edit">Edit</a>

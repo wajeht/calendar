@@ -25,6 +25,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /calendars/{id}/edit", app.handleCalendarEdit)
 	mux.HandleFunc("POST /calendars/{id}", app.handleCalendarUpdate)
 	mux.HandleFunc("DELETE /calendars/{id}", app.handleCalendarDelete)
+	mux.HandleFunc("POST /calendars/refetch", app.handleCalendarRefetch)
 
 	mux.HandleFunc("GET /api/auth", app.handleAPIAuth)
 	mux.HandleFunc("POST /api/auth", app.handleAPIAuthPost)
