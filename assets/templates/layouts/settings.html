@@ -30,18 +30,22 @@
 
     .view-button.active {
         background-color: #1a252f !important;
-        font-weight: bold;
     }
 </style>
 
 <body style="display: flex; flex-direction: column; min-height: 100vh; padding: 0px;">
     <header
-        style="height: 87px; border-bottom: 1px solid #dddddd; display: flex; justify-content: space-between; padding: 10px;">
+        style="height: 87px; border-bottom: 1px solid #dddddd; display: flex; justify-content: space-between; padding: 11px;">
         <div style="display: flex; gap: 10px; height: fit-content;">
-            <button onclick="navigatePrev()" class="button"
-                style="background-color: #2c3e50; color: white;">&lt;</button>
-            <button onclick="navigateNext()" class="button"
-                style="background-color: #2c3e50; color: white;">&gt;</button>
+            <div style="display: flex; color:white; background-color: #2c3e50; border-radius: 5px;">
+                <button onclick="navigatePrev()" class="button" style="display: flex; justify-content: center; align-items: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="15" viewBox="0 0 320 512"><path fill="currentColor" d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256L246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg>
+                </button>
+                <button onclick="navigatePrev()" class="button" style="display: flex; justify-content: center; align-items: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="15" viewBox="0 0 320 512"><path fill="currentColor" d="M311.1 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L243.2 256L73.9 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z"/></svg>
+                </button>
+            </div>
+
             <button onclick="navigateToday()" class="button"
                 style="background-color: #76828d; color: white;">today</button>
         </div>
