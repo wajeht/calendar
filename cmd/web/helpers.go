@@ -38,17 +38,14 @@ func (app *application) backgroundTask(r *http.Request, fn func() error) {
 }
 
 func (app *application) fetchCalendarData(calendarID int, url string) error {
-	// Convert webcal:// to https://
 	if strings.HasPrefix(url, "webcal://") {
 		url = strings.Replace(url, "webcal://", "https://", 1)
 	}
 
-	// Create HTTP client with timeout
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	// Fetch the iCal data
 	resp, err := client.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch calendar data: %w", err)
@@ -59,13 +56,11 @@ func (app *application) fetchCalendarData(calendarID int, url string) error {
 		return fmt.Errorf("failed to fetch calendar data: HTTP %d", resp.StatusCode)
 	}
 
-	// Read the response body
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read calendar data: %w", err)
 	}
 
-	// Store the data in the database
 	err = app.db.UpdateCalendarData(calendarID, string(data))
 	if err != nil {
 		return fmt.Errorf("failed to save calendar data: %w", err)
@@ -73,4 +68,3 @@ func (app *application) fetchCalendarData(calendarID int, url string) error {
 
 	return nil
 }
-
