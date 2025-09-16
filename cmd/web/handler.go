@@ -247,8 +247,9 @@ func (app *application) handleCalendarRefetch(w http.ResponseWriter, r *http.Req
 	}
 
 	for _, calendar := range calendars {
+		cal := calendar
 		app.backgroundTask(r, func() error {
-			return app.fetchCalendarData(calendar.ID, calendar.URL)
+			return app.fetchCalendarData(cal.ID, cal.URL)
 		})
 	}
 
