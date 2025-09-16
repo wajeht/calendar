@@ -75,7 +75,7 @@ func (db *DB) GetVisibleCalendars() ([]Calendar, error) {
 
 	var calendars []Calendar
 
-	query := `SELECT * FROM calendars WHERE hidden = 0 AND data IS NOT NULL AND LENGTH(data) > 50 ORDER BY created_at ASC`
+	query := `SELECT * FROM calendars WHERE hidden = 0 AND data IS NOT NULL ORDER BY created_at ASC`
 
 	err := db.SelectContext(ctx, &calendars, query)
 	return calendars, err
