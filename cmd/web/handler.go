@@ -66,7 +66,9 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	calendarsJSON, err := json.Marshal(calendars)
+	calendarData := app.buildFullCalendarData(calendars, isAuthenticated)
+
+	calendarsJSON, err := json.Marshal(calendarData)
 	if err != nil {
 		app.serverError(w, r, err)
 		return

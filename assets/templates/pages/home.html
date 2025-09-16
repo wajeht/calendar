@@ -227,39 +227,22 @@
             const calendars = JSON.parse(`{{.Calendars}}`);
 
             calendars.forEach(cal => {
-                if (!cal || !cal.Data) return;
+                if (!cal || !cal.id) return;
 
-                log.debug('Loading calendar:', cal.Name || cal.URL);
+                log.debug('Loading calendar:', cal.name, 'with', cal.events.length, 'events');
 
-                const shouldHideDetails = !isAuthenticated && cal.Details;
-
-                const blob = new Blob([cal.Data], { type: 'text/calendar' });
-                const blobUrl = URL.createObjectURL(blob);
-
+                // Use events directly - FullCalendar will handle filtering
                 const source = {
-                    url: blobUrl,
-                    format: 'ics',
-                    color: cal.Color,
-                    textColor: 'white',
-                    displayEventTime: !shouldHideDetails
+                    events: cal.events,
+                    color: cal.color
                 };
-
-                if (shouldHideDetails) {
-                    source.eventDataTransform = function (eventData) {
-                        eventData.title = '';
-                        return eventData;
-                    };
-                }
 
                 const eventSource = calendar.addEventSource(source);
 
                 eventSources.push({
-                    id: cal.ID,
-                    url: cal.URL,
-                    color: cal.Color,
-                    name: cal.Name,
-                    hidden: cal.Hidden,
-                    details: cal.Details,
+                    id: cal.id,
+                    name: cal.name,
+                    color: cal.color,
                     source: eventSource,
                     visible: true,
                     lastUpdate: new Date(),

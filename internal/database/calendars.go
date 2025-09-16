@@ -15,6 +15,7 @@ type Calendar struct {
 	Hidden    bool      `db:"hidden"`
 	Details   bool      `db:"details"`
 	Data      *string   `db:"data"`
+	Events    *string   `db:"events"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
@@ -81,6 +82,7 @@ func (db *DB) GetVisibleCalendars() ([]Calendar, error) {
 }
 
 
+
 func (db *DB) UpdateCalendar(id int, name, url, color string, hidden, details bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -101,6 +103,16 @@ func (db *DB) UpdateCalendarData(id int, data string) error {
 	query := `UPDATE calendars SET data = ?, updated_at = ? WHERE id = ?`
 
 	_, err := db.ExecContext(ctx, query, data, time.Now(), id)
+	return err
+}
+
+func (db *DB) UpdateCalendarEvents(id int, events string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	query := `UPDATE calendars SET events = ?, updated_at = ? WHERE id = ?`
+
+	_, err := db.ExecContext(ctx, query, events, time.Now(), id)
 	return err
 }
 
