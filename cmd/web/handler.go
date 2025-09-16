@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/wajeht/calendar/assets"
+	"github.com/wajeht/calendar/internal/calendar"
 	"github.com/wajeht/calendar/internal/response"
 )
 
@@ -66,7 +67,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	calendarData := app.buildFullCalendarData(calendars, isAuthenticated)
+	calendarData := calendar.BuildFullCalendarData(calendars, isAuthenticated, app.logger)
 
 	calendarsJSON, err := json.Marshal(calendarData)
 	if err != nil {
