@@ -10,6 +10,8 @@ import (
 	"github.com/wajeht/calendar/internal/response"
 )
 
+const isAuthenticated = false
+
 func (app *application) handleFavicon(w http.ResponseWriter, r *http.Request) {
 	f, err := assets.EmbeddedFiles.Open("static/favicon.ico")
 	if err != nil {
@@ -70,6 +72,7 @@ func (app *application) handleHome(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data["Calendars"] = string(calendarsJSON)
+	data["IsAuthenticated"] = isAuthenticated
 
 	err = response.NamedTemplate(w, http.StatusOK, data, "home.html", "pages/home.html", "layouts/partials/*.html", "components/*.html")
 	if err != nil {

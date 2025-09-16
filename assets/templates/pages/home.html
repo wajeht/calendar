@@ -124,7 +124,7 @@
     <script>
         let calendar;
         let eventSources = [];
-        let isAuthenticated = false;
+        let isAuthenticated = {{.IsAuthenticated}};
 
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
@@ -171,7 +171,7 @@
 
                     log.debug('Found calendar:', sourceCalendar, 'Auth:', isAuthenticated);
 
-                    if (!isAuthenticated && sourceCalendar && sourceCalendar.details === 1) {
+                    if (!isAuthenticated && sourceCalendar && sourceCalendar.details) {
                         log.public('Details hidden for public view');
                         return;
                     }
@@ -196,7 +196,7 @@
             const calendars = JSON.parse(`{{.Calendars}}`);
 
             calendars.forEach(cal => {
-                if (!cal) return;
+                if (!cal || !cal.Data) return;
 
                 log.debug('Loading calendar:', cal.Name || cal.URL);
 
