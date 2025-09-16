@@ -25,6 +25,11 @@ format:
 	@go mod tidy -v
 	@go fmt ./...
 
+pull-prod-db:
+	@./scripts/db.sh pull
+
+push-prod-db:
+	@./scripts/db.sh push
 
 # ==================================================================================== #
 # SQL MIGRATIONS
