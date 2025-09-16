@@ -189,7 +189,6 @@
             });
 
             calendar.render();
-            loadCalendars();
         }
 
         function loadCalendars() {
@@ -376,9 +375,11 @@
             }
         }
 
-        async function init() {
-            await checkAuth();
+        function init() {
             initCalendar();
+            requestAnimationFrame(() => {
+                loadCalendars();
+            });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
