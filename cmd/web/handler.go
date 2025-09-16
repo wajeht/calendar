@@ -239,17 +239,6 @@ func (app *application) handleCalendarDelete(w http.ResponseWriter, r *http.Requ
 	http.Redirect(w, r, "/calendars", http.StatusSeeOther)
 }
 
-func (app *application) handleAPIAuth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"authenticated": false}`))
-}
-
-func (app *application) handleAPIAuthPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte(`{"error": "Authentication not implemented"}`))
-}
-
 func (app *application) handleCalendarRefetch(w http.ResponseWriter, r *http.Request) {
 	calendars, err := app.db.GetAllCalendars()
 	if err != nil {

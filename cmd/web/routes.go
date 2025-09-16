@@ -27,9 +27,6 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("DELETE /calendars/{id}", app.handleCalendarDelete)
 	mux.HandleFunc("POST /calendars/refetch", app.handleCalendarRefetch)
 
-	mux.HandleFunc("GET /api/auth", app.handleAPIAuth)
-	mux.HandleFunc("POST /api/auth", app.handleAPIAuthPost)
-
 	mux.HandleFunc("GET /", app.handleHome)
 
 	return app.recoverPanic(app.securityHeaders(mux))
