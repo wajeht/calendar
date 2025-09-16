@@ -113,19 +113,3 @@ func (db *DB) DeleteCalendar(id int) error {
 	_, err := db.ExecContext(ctx, query, id)
 	return err
 }
-
-func (db *DB) GetCalendarByURL(url string) (Calendar, bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	var calendar Calendar
-
-	query := `SELECT * FROM calendars WHERE url = ?`
-
-	err := db.GetContext(ctx, &calendar, query, url)
-	if errors.Is(err, sql.ErrNoRows) {
-		return Calendar{}, false, nil
-	}
-
-	return calendar, true, err
-}
