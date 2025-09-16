@@ -17,6 +17,7 @@ func (app *application) handleFavicon(w http.ResponseWriter, r *http.Request) {
 	f, err := assets.EmbeddedFiles.Open("static/favicon.ico")
 	if err != nil {
 		app.serverError(w, r, err)
+		return
 	}
 	defer f.Close()
 
@@ -28,6 +29,7 @@ func (app *application) handleWebmanifest(w http.ResponseWriter, r *http.Request
 	f, err := assets.EmbeddedFiles.Open("static/site.webmanifest")
 	if err != nil {
 		app.serverError(w, r, err)
+		return
 	}
 	defer f.Close()
 
