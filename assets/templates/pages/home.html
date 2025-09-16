@@ -123,7 +123,7 @@
     <script>
         let calendar;
         let eventSources = [];
-        let isAuthenticated = {{.IsAuthenticated}};
+        let isAuthenticated = {{.IsAuthenticated }};
 
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
@@ -134,7 +134,7 @@
 
             let initialView = 'timeGridWeek';
             if (viewParam) {
-                switch(viewParam) {
+                switch (viewParam) {
                     case 'month':
                         initialView = 'dayGridMonth';
                         break;
@@ -215,7 +215,7 @@
                 eventSourceFailure: function (error) {
                     log.error('Calendar load failed:', error);
                 },
-                datesSet: function() {
+                datesSet: function () {
                     updateURL();
                 }
             });
@@ -437,7 +437,7 @@
             const date = calendar.getDate();
 
             let viewName;
-            switch(view.type) {
+            switch (view.type) {
                 case 'dayGridMonth':
                     viewName = 'month';
                     break;

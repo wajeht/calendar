@@ -35,17 +35,19 @@
 </style>
 
 <body style="display: flex; flex-direction: column; min-height: 100vh; padding: 0px;">
-    <header style="height: 87px; border-bottom: 1px solid #dddddd; display: flex; justify-content: space-between; padding: 10px;">
-        <!-- left -->
+    <header
+        style="height: 87px; border-bottom: 1px solid #dddddd; display: flex; justify-content: space-between; padding: 10px;">
         <div style="display: flex; gap: 10px; height: fit-content;">
-            <button onclick="navigatePrev()" class="button" style="background-color: #2c3e50; color: white;">&lt;</button>
-            <button onclick="navigateNext()" class="button" style="background-color: #2c3e50; color: white;">&gt;</button>
-            <button onclick="navigateToday()" class="button" style="background-color: #76828d; color: white;">today</button>
+            <button onclick="navigatePrev()" class="button"
+                style="background-color: #2c3e50; color: white;">&lt;</button>
+            <button onclick="navigateNext()" class="button"
+                style="background-color: #2c3e50; color: white;">&gt;</button>
+            <button onclick="navigateToday()" class="button"
+                style="background-color: #76828d; color: white;">today</button>
         </div>
 
         <div id="date" class="date"></div>
 
-        <!-- right -->
         <div style="display: flex; gap: 10px; height: fit-content;">
             <div style="display: flex; color:white; background-color: #2c3e50; border-radius: 5px;">
                 <button onclick="changeView('month')" class="button view-button" data-view="month">month</button>
@@ -54,11 +56,13 @@
                 <button onclick="changeView('list')" class="button view-button" data-view="list">list</button>
             </div>
 
-            <button type="button" onclick="refetchAllCalendars()" class="button" style="background-color: #2c3e50; color: white; text-decoration: none;">
+            <button type="button" onclick="refetchAllCalendars()" class="button"
+                style="background-color: #2c3e50; color: white; text-decoration: none;">
                 refetch
             </button>
 
-            <a href="/calendars" class="button" style="background-color: #1a252f; color: white; text-decoration: none;">settings</a>
+            <a href="/calendars" class="button"
+                style="background-color: #1a252f; color: white; text-decoration: none;">settings</a>
         </div>
     </header>
 
@@ -122,7 +126,7 @@
 
             const date = new Date(currentDate);
 
-            switch(view) {
+            switch (view) {
                 case 'day':
                     date.setDate(date.getDate() - 1);
                     break;
@@ -147,7 +151,7 @@
 
             const date = new Date(currentDate);
 
-            switch(view) {
+            switch (view) {
                 case 'day':
                     date.setDate(date.getDate() + 1);
                     break;
@@ -200,12 +204,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', initializeActiveView);
-
-        </script>
-
+    </script>
 
     {{template "password-modal" .}}
-    {{template "footer" .}}
+
+    <div style="padding: 10px;">
+        {{template "footer" .}}
+    </div>
 </body>
 
 </html>
