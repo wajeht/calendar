@@ -130,7 +130,6 @@ func (app *application) handleCalendarStore(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Fetch calendar data in the background
 	app.backgroundTask(r, func() error {
 		return app.fetchCalendarData(id, url)
 	})
@@ -206,8 +205,30 @@ func (app *application) handleCalendarUpdate(w http.ResponseWriter, r *http.Requ
 }
 
 func (app *application) handleCalendarDelete(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("TODO: handleCalendarDelete"))
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	_, found, err := app.db.GetCalendar(id)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	if !found {
+		app.notFound(w, r)
+		return
+	}
+
+	err = app.db.DeleteCalendar(id)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, "/calendars", http.StatusSeeOther)
 }
 
 func (app *application) handleAPIAuth(w http.ResponseWriter, r *http.Request) {
