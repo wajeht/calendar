@@ -1,53 +1,50 @@
 {{define "main"}}
 
 <div>
-    <h1>Calendars</h1>
-    <div>
-        {{if .Calendars}}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>URL</th>
-                    <th>Color</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Calendars}}
-                <tr>
-                    <td>
-                        {{if .Name}}{{.Name}}{{else}}<em>Unnamed</em>{{end}}
-                    </td>
-                    <td>
-                        <a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a>
-                    </td>
-                    <td>
-                        <input type="color" id="color" name="color" value="{{.Color}}" disabled>
-                    </td>
-                    <td>
-                        {{if .Hidden}}
-                        <span class="status-hidden">Hidden</span>
-                        {{else}}
-                        <span class="status-visible">Visible</span>
-                        {{end}}
-                        {{if .Details}}
-                        <span class="status-private">Private</span>
-                        {{end}}
-                    </td>
-                    <td>
-                        <a href="/calendars/{{.ID}}/edit">Edit</a>
-                        <button type="button" onclick="deleteCalendar({{.ID}})">Delete</button>
-                    </td>
-                </tr>
-                {{end}}
-            </tbody>
-        </table>
-        {{else}}
-        <p>No calendars found. <a href="/calendars/create">Add your first calendar</a></p>
-        {{end}}
-    </div>
+    {{if .Calendars}}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Color</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Calendars}}
+            <tr>
+                <td>
+                    {{if .Name}}{{.Name}}{{else}}<em>Unnamed</em>{{end}}
+                </td>
+                <td>
+                    <a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a>
+                </td>
+                <td>
+                    <input type="color" id="color" name="color" value="{{.Color}}" disabled>
+                </td>
+                <td>
+                    {{if .Hidden}}
+                    <span class="status-hidden">Hidden</span>
+                    {{else}}
+                    <span class="status-visible">Visible</span>
+                    {{end}}
+                    {{if .Details}}
+                    <span class="status-private">Private</span>
+                    {{end}}
+                </td>
+                <td>
+                    <a href="/calendars/{{.ID}}/edit">Edit</a>
+                    <button type="button" onclick="deleteCalendar({{.ID}})">Delete</button>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p>No calendars found. <a href="/calendars/create">Add your first calendar</a></p>
+    {{end}}
 </div>
 
 <script>

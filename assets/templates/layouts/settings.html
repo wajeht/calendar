@@ -4,10 +4,91 @@
 
 {{template "head" .}}
 
-<body style="display: flex; flex-direction: column; min-height: 100vh;">
-    <main style="flex: 1;">
+<style>
+    .button {
+        background-color: transparent;
+        border: 1px solid transparent;
+        border-radius: 0.25em;
+        display: inline-block;
+        font-size: 1em;
+        font-weight: 400;
+        height: 38.8px;
+        line-height: 1.5;
+        padding: 0.4em 0.65em;
+        text-align: center;
+        user-select: none;
+        vertical-align: middle;
+    }
+
+    .date {
+        font-size: 1.75em;
+        font-weight: bold;
+        font-family: system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+    }
+</style>
+
+<body style="display: flex; flex-direction: column; min-height: 100vh; padding: 0px;">
+    <header style="height: 87px; border-bottom: 1px solid #dddddd; display: flex; justify-content: space-between; padding: 10px;">
+        <!-- left -->
+        <div style="display: flex; gap: 10px; height: fit-content;">
+
+            <a href="/" class="button" style="background-color: #2c3e50; color: white; text-decoration: none;">calendars</a>
+
+            <div style="background-color: #76828d; padding: 6.4px 10.4px; color: white; border-radius: 5px;">today</div>
+        </div>
+
+        <div id="date" class="date"></div>
+
+        <!-- right -->
+        <div style="display: flex; gap: 10px; height: fit-content;">
+            <div style="display: flex; color:white; background-color: #76828d; border-radius: 5px;">
+                <div class="button">month</div>
+                <div class="button">week</div>
+                <div class="button">day</div>
+                <div class="button">list</div>
+            </div>
+
+            <div class="button" style="background-color: #1a252f; color: white;">settings</div>
+        </div>
+    </header>
+
+    <main style="flex: 1; padding: 10px;">
         {{template "main" .}}
     </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const dateDiv = document.getElementById('date');
+            const today = new Date();
+
+            // find this week's Monday
+            const day = today.getDay(); // 0 = Sun, 1 = Mon ...
+            const diffToMonday = (day === 0 ? -6 : 1) - day;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + diffToMonday);
+
+            // this week's Sunday
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+
+            const monthStrStart = monday.toLocaleDateString("en-US", { month: "short" });
+            const monthStrEnd = sunday.toLocaleDateString("en-US", { month: "short" });
+            const startDay = monday.getDate();
+            const endDay = sunday.getDate();
+            const yearStr = sunday.getFullYear();
+
+            let text;
+            if (monthStrStart === monthStrEnd) {
+                text = `${monthStrStart} ${startDay} – ${endDay}, ${yearStr}`;
+            } else {
+                text = `${monthStrStart} ${startDay} – ${monthStrEnd} ${endDay}, ${yearStr}`;
+            }
+
+            dateDiv.textContent = text;
+        });
+        </script>
+
 
     {{template "password-modal" .}}
     {{template "footer" .}}
