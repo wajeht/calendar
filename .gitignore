@@ -66,8 +66,6 @@ go.work
 go.work.sum
 calendar.sqlite*
 db.sqlite
-favicon*
-favicon
 
 # env file
 .env
