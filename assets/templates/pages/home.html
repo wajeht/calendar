@@ -435,6 +435,8 @@
         function updateURL() {
             const view = calendar.view;
             const date = calendar.getDate();
+            const today = new Date().toISOString().split('T')[0];
+            const currentDate = date.toISOString().split('T')[0];
 
             let viewName;
             switch (view.type) {
@@ -456,7 +458,12 @@
 
             const url = new URL(window.location);
             url.searchParams.set('view', viewName);
-            url.searchParams.set('date', date.toISOString().split('T')[0]);
+
+            if (currentDate !== today) {
+                url.searchParams.set('date', currentDate);
+            } else {
+                url.searchParams.delete('date');
+            }
 
             window.history.replaceState({}, '', url.toString());
         }

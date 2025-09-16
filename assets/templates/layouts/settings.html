@@ -172,20 +172,19 @@
         function navigateToday() {
             const urlParams = new URLSearchParams(window.location.search);
             const view = urlParams.get('view') || 'week';
-            const today = new Date().toISOString().split('T')[0];
-            updateURL(view, today);
+            updateURL(view, null); // No date = today
         }
 
         function changeView(newView) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentDate = urlParams.get('date') || new Date().toISOString().split('T')[0];
-            updateURL(newView, currentDate);
+            updateURL(newView, null); // No date = current view's date
         }
 
         function updateURL(view, date) {
             const url = new URL(window.location.origin + '/');
             url.searchParams.set('view', view);
-            url.searchParams.set('date', date);
+            if (date) {
+                url.searchParams.set('date', date);
+            }
             window.location.href = url.toString();
         }
 
