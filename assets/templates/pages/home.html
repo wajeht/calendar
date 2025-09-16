@@ -436,20 +436,6 @@
             }
         });
 
-        async function checkAuth() {
-            try {
-                const response = await fetch('/api/auth', {
-                    credentials: 'include'
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    isAuthenticated = data.authenticated;
-                }
-            } catch (error) {
-                log.error('Failed to check auth status:', error);
-            }
-        }
-
         function refetchAllCalendars() {
             if (confirm('Are you sure you want to refetch all calendar data? This may take a moment.')) {
                 fetch('/calendars/refetch', {
