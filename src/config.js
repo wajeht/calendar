@@ -1,5 +1,5 @@
-import 'dotenv/config';
-import path from 'node:path'
+import path from 'node:path';
+import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(path.join(process.cwd(), '.env')), quiet: true });
 
@@ -23,4 +23,3 @@ export const config = {
         level: process.env.LOG_LEVEL || 'info'
     }
 };
-

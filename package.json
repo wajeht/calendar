@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
   "main": "server.js",
+  "type": "module",
   "directories": {
     "doc": "docs"
   },

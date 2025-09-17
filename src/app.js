@@ -20,14 +20,8 @@ export async function createServer(customConfig = {}) {
         .set('view engine', 'html')
         .set('view cache', ctx.config.app.env === 'production')
         .set('views', './src/routes')
-        .use(
-            layoutMiddleware({
-                defaultLayout: '_layouts/public.html',
-                layoutsDir: '_layouts',
-            }),
-        )
 
-    app.get('/health', (_req, res) => res.status(statusCode).json({ message: "ok" }));
+    app.get('/health', (_req, res) => res.status(200).json({ message: "ok" }));
     app.use('/api', createRouter(ctx));
 
     const server = app.listen(PORT);

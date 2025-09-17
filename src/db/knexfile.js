@@ -9,7 +9,7 @@ const knexConfig = {
 	useNullAsDefault: true,
 	asyncStackTraces: false,
 	connection: {
-		filename: path.resolve(__dirname, 'db.sqlite'),
+		filename: path.resolve(__dirname, 'sqlite', 'db.sqlite'),
 	},
 	migrations: {
 		tableName: 'knex_migrations',
