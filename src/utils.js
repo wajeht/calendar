@@ -8,7 +8,29 @@ export function createUtils(dependencies = {}) {
          * @returns {boolean}
          */
         isApiRequest(req) {
-            return req.path.startsWith('/api/');
+            if (req.path.startsWith('/api/')) {
+                return true;
+            }
+
+            const acceptHeader = req.get('Accept') || '';
+            if (acceptHeader.includes('application/json')) {
+                return true;
+            }
+
+            const contentType = req.get('Content-Type') || '';
+            if (contentType.includes('application/json')) {
+                return true;
+            }
+
+            if (req.xhr) {
+                return true;
+            }
+
+            if (req.get('X-Requested-With') === 'XMLHttpRequest') {
+                return true;
+            }
+
+            return false;
         },
 
         /**
