@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCalendarRouter } from "./calendars/calendar.js";
+import { createCalendarRouter } from "./api/calendar.js";
 
 export function createRouter(ctx) {
     const router = express.Router();

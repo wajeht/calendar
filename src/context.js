@@ -1,5 +1,5 @@
 import { config } from './config.js';
-import { createDatabase } from './db/index.js';
+import { createDatabase } from './db/db.js';
 import { createLogger } from './logger.js';
 
 export function createContext(customConfig = {}) {

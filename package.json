@@ -7,7 +7,16 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "NODE_ENV=production node ./src/server.js",
+    "dev": "nodemon ./src/server.js",
+    "db:prepare:prod": "npm run db:migrate:latest",
+    "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
+    "db:migrate:make": "knex migrate:make --knexfile=./src/db/knexfile.js",
+    "db:migrate:latest": "knex migrate:latest --knexfile=./src/db/knexfile.js",
+    "db:migrate:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
+    "db:seed:make": "knex seed:make --knexfile=./src/db/knexfile.js",
+    "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
+    "rmds": "find . -name '.DS_Store' -delete"
   },
   "repository": {
     "type": "git",
@@ -21,8 +30,17 @@
   },
   "homepage": "https://github.com/wajeht/calendar#readme",
   "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "ejs": "^3.1.10",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "knex": "^3.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }

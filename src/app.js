@@ -1,4 +1,8 @@
+import ejs from 'ejs';
+import cors from 'cors';
+import helmet from 'helmet';
 import express from 'express';
+import compression from 'compression';
 import { createRouter } from './routes/routes.js';
 import { createContext } from './context.js';
 
@@ -7,6 +11,9 @@ export async function createServer(customConfig = {}) {
     const PORT = ctx.config.app.port;
 
     const app = express()
+        .use(cors())
+        .use(helmet())
+        .use(compression())
         .use(express.json({ limit: '1mb' }))
         .use(express.urlencoded({ extended: true, limit: '1mb' }))
         .engine('html', ejs.renderFile)
