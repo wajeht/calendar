@@ -6,13 +6,21 @@ export async function createServer(customConfig = {}) {
     const ctx = createContext(customConfig);
     const PORT = ctx.config.app.port;
 
-    const app = express();
-    app.use(express.json());
+    const app = express()
+        .use(express.json({ limit: '1mb' }))
+        .use(express.urlencoded({ extended: true, limit: '1mb' }))
+        .engine('html', ejs.renderFile)
+        .set('view engine', 'html')
+        .set('view cache', ctx.config.app.env === 'production')
+        .set('views', './src/routes')
+        .use(
+            layoutMiddleware({
+                defaultLayout: '_layouts/public.html',
+                layoutsDir: '_layouts',
+            }),
+        )
 
-    app.get('/health', (_req, res) => {
-        res.status(statusCode).json({ message: "ok" });
-    });
-
+    app.get('/health', (_req, res) => res.status(statusCode).json({ message: "ok" }));
     app.use('/api', createRouter(ctx));
 
     const server = app.listen(PORT);
