@@ -3,26 +3,46 @@ import cors from 'cors';
 import helmet from 'helmet';
 import express from 'express';
 import compression from 'compression';
+import { rateLimit } from 'express-rate-limit';
 import { createRouter } from './routes/routes.js';
 import { createContext } from './context.js';
+import { layoutMiddleware } from './routes/middleware.js';
 
 export async function createServer(customConfig = {}) {
     const ctx = createContext(customConfig);
     const PORT = ctx.config.app.port;
 
     const app = express()
-        .use(cors())
-        .use(helmet())
-        .use(compression())
-        .use(express.json({ limit: '1mb' }))
-        .use(express.urlencoded({ extended: true, limit: '1mb' }))
+        .use(cors(ctx.config.cors || {}))
+        .use(helmet(ctx.config.security || {}))
+        .use(compression(ctx.config.compression || {}))
+        .use(rateLimit({
+            ...ctx.config.rateLimit,
+            handler: async (req, res) => {
+                if (req.path.startsWith('/api/')) {
+                    return res.json({ message: 'Too many requests, please try again later.' });
+                }
+                return res.status(429).render('general/rate-limit.html');
+            },
+            skip: (_req, _res) => ctx.config.app.env !== 'production',
+        }))
+        .use(express.json({ limit: ctx.config.app.jsonLimit || '1mb' }))
+        .use(express.urlencoded({
+            extended: true,
+            limit: ctx.config.app.urlEncodedLimit || '1mb'
+        }))
         .engine('html', ejs.renderFile)
         .set('view engine', 'html')
         .set('view cache', ctx.config.app.env === 'production')
         .set('views', './src/routes')
+        .use(layoutMiddleware({
+            defaultLayout: '_layouts/public.html',
+            layoutsDir: '_layouts'
+        }))
 
     app.get('/health', (_req, res) => res.status(200).json({ message: "ok" }));
-    app.use('/api', createRouter(ctx));
+
+    app.use('/', createRouter(ctx));
 
     const server = app.listen(PORT);
     ctx.logger.success(`Server running on http://localhost:${PORT}`);
@@ -39,4 +59,3 @@ export async function closeServer({ server, ctx }) {
 
     ctx.logger.success('Server shutdown complete');
 }
-
