@@ -19,7 +19,7 @@ export async function createServer(customConfig = {}) {
         .use(rateLimit({
             ...ctx.config.rateLimit,
             handler: async (req, res) => {
-                if (req.path.startsWith('/api/')) {
+                if (ctx.utils.isApiRequest(req)) {
                     return res.json({ message: 'Too many requests, please try again later.' });
                 }
                 return res.status(429).render('general/rate-limit.html');

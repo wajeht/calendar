@@ -25,7 +25,7 @@ export function notFoundHandler(ctx) {
     return (req, res, next) => {
         ctx.logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
 
-        if (req.path.startsWith('/api/')) {
+        if (ctx.utils.isApiRequest(req)) {
             return res.status(404).json({
                 success: false,
                 error: 'Route not found'
@@ -37,6 +37,7 @@ export function notFoundHandler(ctx) {
             error: 'The page you are looking for could not be found.',
             statusCode: 404
         });
+
     };
 }
 
@@ -47,7 +48,7 @@ export function errorHandler(ctx) {
         const statusCode = err.statusCode || err.status || 500;
         const message = err.message || 'Internal server error';
 
-        if (req.path.startsWith('/api/')) {
+        if (ctx.utils.isApiRequest(req)) {
             return res.status(statusCode).json({
                 success: false,
                 error: ctx.config.app.env === 'development' ? message : 'Internal server error'
@@ -59,5 +60,6 @@ export function errorHandler(ctx) {
             error: ctx.config.app.env === 'development' ? message : 'An error occurred',
             statusCode: statusCode
         });
+
     };
 }

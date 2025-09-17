@@ -28,17 +28,30 @@ export function createCalendarRouter(ctx) {
 
     router.post('/', async (req, res) => {
         try {
-            const { name, url } = req.body;
-            if (!name || !url) {
+            const { name, url, color } = req.body;
+
+            if (ctx.utils.isEmpty(name) || ctx.utils.isEmpty(url)) {
                 return res.status(400).json({ success: false, error: 'Name and URL are required' });
             }
+
+            if (!ctx.utils.validateCalendarUrl(url)) {
+                return res.status(400).json({ success: false, error: 'Invalid calendar URL' });
+            }
+
+            const sanitizedName = ctx.utils.sanitizeString(name);
 
             const existingCalendar = await ctx.models.calendar.getByUrl(url);
             if (existingCalendar) {
                 return res.status(409).json({ success: false, error: 'Calendar with this URL already exists' });
             }
 
-            const calendar = await ctx.models.calendar.create(req.body);
+            const calendarData = {
+                ...req.body,
+                name: sanitizedName,
+                color: color || ctx.utils.generateRandomColor()
+            };
+
+            const calendar = await ctx.models.calendar.create(calendarData);
             ctx.logger.info(`Calendar created: ${calendar.name}`);
 
             res.status(201).json({ success: true, data: calendar });
@@ -55,7 +68,20 @@ export function createCalendarRouter(ctx) {
                 return res.status(404).json({ success: false, error: 'Calendar not found' });
             }
 
-            const updatedCalendar = await ctx.models.calendar.update(req.params.id, req.body);
+            const updateData = { ...req.body };
+
+            if (updateData.name) {
+                updateData.name = ctx.utils.sanitizeString(updateData.name);
+                if (ctx.utils.isEmpty(updateData.name)) {
+                    return res.status(400).json({ success: false, error: 'Name cannot be empty' });
+                }
+            }
+
+            if (updateData.url && !ctx.utils.validateCalendarUrl(updateData.url)) {
+                return res.status(400).json({ success: false, error: 'Invalid calendar URL' });
+            }
+
+            const updatedCalendar = await ctx.models.calendar.update(req.params.id, updateData);
             ctx.logger.info(`Calendar updated: ${updatedCalendar.name}`);
 
             res.json({ success: true, data: updatedCalendar });
