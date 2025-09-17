@@ -3,7 +3,7 @@ import express from 'express';
 export function createCalendarRouter(ctx) {
     const router = express.Router();
 
-    router.get('/', async (req, res) => {
+    router.get('/', async (_req, res) => {
         try {
             const calendars = await ctx.models.calendar.getAll();
             res.json({ success: true, data: calendars });
@@ -33,7 +33,6 @@ export function createCalendarRouter(ctx) {
                 return res.status(400).json({ success: false, error: 'Name and URL are required' });
             }
 
-            // Check if URL already exists
             const existingCalendar = await ctx.models.calendar.getByUrl(url);
             if (existingCalendar) {
                 return res.status(409).json({ success: false, error: 'Calendar with this URL already exists' });
@@ -96,7 +95,7 @@ export function createCalendarRouter(ctx) {
         }
     });
 
-    router.get('/visible/all', async (req, res) => {
+    router.get('/visible/all', async (_req, res) => {
         try {
             const calendars = await ctx.models.calendar.getVisible();
             res.json({ success: true, data: calendars });
