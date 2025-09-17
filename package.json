@@ -1,0 +1,26 @@
+{
+  "name": "calendar",
+  "version": "0.0.1",
+  "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
+  "main": "server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wajeht/calendar.git"
+  },
+  "keywords": [],
+  "author": "wajeht",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wajeht/calendar/issues"
+  },
+  "homepage": "https://github.com/wajeht/calendar#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

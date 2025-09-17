@@ -1,29 +1,49 @@
-dev:
-	@go run github.com/cosmtrek/air@v1.43.0 \
-		--build.cmd "make build" --build.bin "/tmp/bin/web" --build.delay "100" \
-		--build.exclude_dir "" \
-		--build.include_ext "go, tpl, tmpl, html, css, scss, js, ts, sql, jpeg, jpg, gif, png, bmp, svg, webp, ico, md" \
-		--misc.clean_on_exit "true"
-build:
-	@go build -o=/tmp/bin/web ./cmd/web
-
-commit:
-	@git add -A
-	@git auto
-
 push:
-	@go test ./...
-	@go fmt ./...
+	@make test
+	@make lint
+	@make format
 	@git add -A
-	@git auto
+	@curl -s http://commit.jaw.dev/ | sh -s -- --no-verify
 	@git push --no-verify
 
+fix-git:
+	@git rm -r --cached . -f
+	@git add .
+	@git commit -m "Untrack files in .gitignore"
+
 test:
-	@go test ./...
+	@make test-unit
+	@make test-browser
+
+test-unit:
+	@docker compose -f docker-compose.dev.yml exec bang npm run test
+
+test-coverage:
+	@docker compose -f docker-compose.dev.yml exec bang npm run test:coverage
+
+test-browser:
+	@docker compose -f docker-compose.dev.yml exec bang npm run test:browser:headless
 
 format:
-	@go mod tidy -v
-	@go fmt ./...
+	@docker compose -f docker-compose.dev.yml exec bang npm run format
+
+lint:
+	@docker compose -f docker-compose.dev.yml exec bang npm run lint
+
+deploy:
+	@./scripts/deploy.sh
+
+shell:
+	@docker compose -f docker-compose.dev.yml exec bang sh
+
+db-migrate:
+	@docker compose -f docker-compose.dev.yml exec bang npm run db:migrate:latest
+
+db-rollback:
+	@docker compose -f docker-compose.dev.yml exec bang npm run db:migrate:rollback
+
+db-seed:
+	@docker compose -f docker-compose.dev.yml exec bang npm run db:seed:run
 
 pull-prod-db:
 	@./scripts/db.sh pull
@@ -31,36 +51,26 @@ pull-prod-db:
 push-prod-db:
 	@./scripts/db.sh push
 
-# ==================================================================================== #
-# SQL MIGRATIONS
-# ==================================================================================== #
+db-reset:
+	make db-rollback
+	make db-migrate
+	make db-seed
 
-## migrations/new name=$1: create a new database migration
-.PHONY: migrations/new
-migrations/new:
-	go run -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest create -seq -ext=.sql -dir=./assets/migrations ${name}
+up:
+	@rm -rf ./src/db/sqlite/*sqlite*
+	@docker compose -f docker-compose.dev.yml up
 
-## migrations/up: apply all up database migrations
-.PHONY: migrations/up
-migrations/up:
-	go run -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="sqlite3://calendar.sqlite" up
+up-d:
+	@docker compose -f docker-compose.dev.yml up -d
 
-## migrations/down: apply all down database migrations
-.PHONY: migrations/down
-migrations/down:
-	go run -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="sqlite3://calendar.sqlite" down
+log:
+	@docker compose -f docker-compose.dev.yml logs -f
 
-## migrations/goto version=$1: migrate to a specific version number
-.PHONY: migrations/goto
-migrations/goto:
-	go run -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="sqlite3://calendar.sqlite" goto ${version}
+down:
+	@docker compose -f docker-compose.dev.yml down
 
-## migrations/force version=$1: force database migration
-.PHONY: migrations/force
-migrations/force:
-	go run -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="sqlite3://calendar.sqlite" force ${version}
-
-## migrations/version: print the current in-use migration version
-.PHONY: migrations/version
-migrations/version:
-	go run -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest -path=./assets/migrations -database="sqlite3://calendar.sqlite" version
+clean:
+	@docker compose -f docker-compose.dev.yml down --rmi all --volumes --remove-orphans
+	@docker system prune -a -f
+	@docker volume prune -f
+	@docker network prune -f
