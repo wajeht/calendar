@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/wajeht/calendar#readme",
   "dependencies": {
+    "dotenv": "^17.2.2",
     "express": "^5.1.0"
   }
 }
