@@ -1,9 +1,13 @@
 import 'dotenv/config';
+import path from 'node:path'
+
+dotenv.config({ path: path.resolve(path.join(process.cwd(), '.env')), quiet: true });
 
 export const config = {
     app: {
-        port: parseInt(process.env.PORT) || 80,
-        env: process.env.NODE_ENV || 'development'
+        port: parseInt(process.env.APP_PORT) || 80,
+        env: process.env.APP_ENV || 'development',
+        password: process.env.password || 'password'
     },
 
     jobs: {
