@@ -2,6 +2,47 @@
 
 <%- include('../_components/password-modal.html') %>
 
+<!-- Calendar Management Modal -->
+<div class="calendar-modal-overlay" id="calendarModalOverlay"></div>
+<div class="calendar-modal" id="calendarModal">
+    <button class="calendar-modal-close" onclick="closeCalendarManagementModal()">×</button>
+    <h2>Manage Calendars</h2>
+    <div class="calendar-modal-content">
+        <div class="calendar-list" id="calendarList">
+            <!-- Calendar list will be populated here -->
+        </div>
+        <div class="calendar-actions">
+            <button onclick="showAddCalendarForm()" class="btn-primary">Add Calendar</button>
+            <button onclick="closeCalendarManagementModal()" class="btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Calendar Form Modal -->
+<div class="add-calendar-modal-overlay" id="addCalendarModalOverlay"></div>
+<div class="add-calendar-modal" id="addCalendarModal">
+    <button class="add-calendar-modal-close" onclick="closeAddCalendarModal()">×</button>
+    <h2>Add New Calendar</h2>
+    <div class="add-calendar-form">
+        <div class="form-group">
+            <label for="calendar-name">Name:</label>
+            <input type="text" id="calendar-name" placeholder="Calendar name" required>
+        </div>
+        <div class="form-group">
+            <label for="calendar-url">URL:</label>
+            <input type="url" id="calendar-url" placeholder="https://example.com/calendar.ics" required>
+        </div>
+        <div class="form-group">
+            <label for="calendar-color">Color:</label>
+            <input type="color" id="calendar-color" value="#3498db">
+        </div>
+        <div class="form-actions">
+            <button onclick="addCalendar()" class="btn-primary">Add Calendar</button>
+            <button onclick="closeAddCalendarModal()" class="btn-secondary">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <div class="event-modal-overlay" id="eventModalOverlay"></div>
 <div class="event-modal" id="eventModal">
     <button class="event-modal-close" onclick="closeEventModal()">x</button>
@@ -12,7 +53,7 @@
 <script>
     let calendar;
     let eventSources = [];
-    let isAuthenticated = true;
+    let isAuthenticated = false;
 
     function initCalendar() {
         const calendarEl = document.getElementById('calendar');
@@ -60,7 +101,11 @@
                     text: 'settings',
                     hint: 'Manage Calendars',
                     click: function () {
-                        window.location.href = '/calendars';
+                        if (isAuthenticated) {
+                            showCalendarManagementModal();
+                        } else {
+                            showPasswordModal();
+                        }
                     }
                 }
             },
@@ -326,11 +371,22 @@
     });
 
     function refetchAllCalendars() {
+        if (!isAuthenticated) {
+            showPasswordModal();
+            return;
+        }
+
         if (confirm('Are you sure you want to refetch all calendar data? This may take a moment.')) {
             fetch('/calendars/refetch', {
-                method: 'POST'
+                method: 'POST',
+                credentials: 'include'
             })
                 .then(response => {
+                    if (response.status === 401) {
+                        isAuthenticated = false;
+                        showPasswordModal();
+                        return;
+                    }
                     if (response.ok) {
                         location.reload();
                     } else {
@@ -343,7 +399,28 @@
         }
     }
 
-    function init() {
+    async function checkAuthStatus() {
+        try {
+            const response = await fetch('/api/auth/verify', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                isAuthenticated = true;
+                log.debug('User is authenticated');
+            } else {
+                isAuthenticated = false;
+                log.debug('User is not authenticated');
+            }
+        } catch (error) {
+            isAuthenticated = false;
+            log.debug('Auth check failed:', error);
+        }
+    }
+
+    async function init() {
+        await checkAuthStatus();
         initCalendar();
         requestAnimationFrame(() => {
             loadCalendars();
