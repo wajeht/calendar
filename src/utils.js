@@ -134,5 +134,59 @@ export function createUtils(dependencies = {}) {
             return false;
         },
 
+        /**
+         * Simple session authentication utilities
+         */
+        auth: {
+            /**
+             * Generate a simple session token
+             * @returns {string}
+             */
+            generateSessionToken() {
+                const timestamp = Date.now();
+                const random = Math.random().toString(36).substring(2);
+                return `${timestamp}.${random}`;
+            },
+
+            /**
+             * Validate session token (just check if it exists and isn't expired)
+             * @param {string} token - Session token
+             * @returns {boolean}
+             */
+            validateSessionToken(token) {
+                if (!token) return false;
+
+                try {
+                    const [timestamp] = token.split('.');
+                    const tokenTime = parseInt(timestamp);
+                    const now = Date.now();
+                    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+                    return (now - tokenTime) < twentyFourHours;
+                } catch (error) {
+                    return false;
+                }
+            },
+
+            /**
+             * Extract session token from request cookies
+             * @param {Object} req - Express request object
+             * @returns {string|null}
+             */
+            extractSessionToken(req) {
+                return req.cookies?.session_token || null;
+            },
+
+            /**
+             * Validate password against stored app password
+             * @param {string} password - Password to validate
+             * @returns {boolean}
+             */
+            validatePassword(password) {
+                return password === config.auth.password;
+            },
+
+        }
+
     };
 }
