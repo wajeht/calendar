@@ -1,5 +1,4 @@
 import express from 'express';
-import { fetchAndProcessCalendar, refetchAllCalendars } from './service.js';
 
 export function createCalendarRouter(ctx) {
     const router = express.Router();
@@ -60,7 +59,7 @@ export function createCalendarRouter(ctx) {
             // Fetch and process calendar data in the background
             setImmediate(async () => {
                 try {
-                    await fetchAndProcessCalendar(calendar.id, calendar.url, ctx);
+                    await ctx.services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url, ctx);
                 } catch (error) {
                     ctx.logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
                 }
@@ -145,7 +144,7 @@ export function createCalendarRouter(ctx) {
 
             setImmediate(async () => {
                 try {
-                    await refetchAllCalendars(ctx);
+                    await ctx.services.calendar.refetchAllCalendars(ctx);
                 } catch (error) {
                     ctx.logger.error('Background refetch failed:', error);
                 }
