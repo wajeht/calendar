@@ -22,7 +22,7 @@ export function createGeneralRouter(ctx) {
 }
 
 export function notFoundHandler(ctx) {
-    return (req, res, next) => {
+    return (req, res, _next) => {
         ctx.logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
 
         if (ctx.utils.isApiRequest(req)) {

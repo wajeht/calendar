@@ -22,7 +22,9 @@ export async function createServer(customConfig = {}) {
                 if (ctx.utils.isApiRequest(req)) {
                     return res.json({ message: 'Too many requests, please try again later.' });
                 }
-                return res.status(429).render('general/rate-limit.html');
+                return res.status(429).render('general/rate-limit.html', {
+                    copyrightYear: new Date().getFullYear(),
+                });
             },
             skip: (_req, _res) => ctx.config.app.env !== 'production',
         }))
