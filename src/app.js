@@ -14,7 +14,7 @@ export async function createServer(customConfig = {}) {
 
     const app = express()
         .use(cors(ctx.config.cors || {}))
-        .use(helmet(ctx.config.security || {}))
+        // .use(helmet(ctx.config.security || {}))
         .use(compression(ctx.config.compression || {}))
         .use(rateLimit({
             ...ctx.config.rateLimit,

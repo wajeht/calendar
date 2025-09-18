@@ -3,19 +3,11 @@ import express from 'express';
 export function createGeneralRouter(ctx) {
     const router = express.Router();
 
-    router.get('/', (req, res) => {
-        try {
-            res.render('general/home.html', {
-                title: 'Calendar App',
-                message: 'Welcome to the Calendar Application'
-            });
-        } catch (error) {
-            ctx.logger.error('Error rendering home page:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Internal server error'
-            });
-        }
+    router.get('/', (_req, res) => {
+        res.render('general/home.html', {
+            title: 'Calendar',
+            layout: '_layouts/calendar.html'
+        });
     });
 
     return router;
@@ -42,7 +34,7 @@ export function notFoundHandler(ctx) {
 }
 
 export function errorHandler(ctx) {
-    return (err, req, res, next) => {
+    return (err, req, res, _next) => {
         ctx.logger.error('Unhandled error:', err);
 
         const statusCode = err.statusCode || err.status || 500;
