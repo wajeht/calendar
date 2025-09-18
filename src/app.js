@@ -15,7 +15,28 @@ export async function createServer(customConfig = {}) {
 
     const app = express()
         .use(cors(ctx.config.cors || {}))
-        // .use(helmet(ctx.config.security || {}))
+        .use(helmet({
+            ...ctx.config.security,
+            contentSecurityPolicy: {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+                    styleSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+                    imgSrc: ["'self'", "data:", "https:"],
+                    connectSrc: ["'self'"],
+                    fontSrc: ["'self'", "cdn.jsdelivr.net"],
+                    objectSrc: ["'none'"],
+                    mediaSrc: ["'self'"],
+                    frameSrc: ["'none'"],
+                },
+            },
+            hsts: {
+                maxAge: 31536000,
+                includeSubDomains: true,
+                preload: true
+            },
+            crossOriginEmbedderPolicy: false
+        }))
         .use(compression(ctx.config.compression || {}))
         .use(rateLimit({
             ...ctx.config.rateLimit,
@@ -29,6 +50,18 @@ export async function createServer(customConfig = {}) {
             },
             skip: (_req, _res) => ctx.config.app.env !== 'production',
         }))
+        .use((req, res, next) => {
+            if (ctx.config.app.env === 'production' && req.header('x-forwarded-proto') !== 'https') {
+                return res.redirect(`https://${req.header('host')}${req.url}`);
+            }
+
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('X-Frame-Options', 'DENY');
+            res.setHeader('X-XSS-Protection', '1; mode=block');
+            res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+            next();
+        })
         .use(cookieParser())
         .use(express.json({ limit: ctx.config.app.jsonLimit || '1mb' }))
         .use(express.urlencoded({
