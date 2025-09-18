@@ -212,14 +212,4 @@ class ToastManager {
 
 // Global toast instance
 const toast = new ToastManager();
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    if (!document.getElementById('toast-container')) {
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        document.body.appendChild(container);
-        window.toast = new ToastManager();
-    }
-});
 </script>

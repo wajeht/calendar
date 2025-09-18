@@ -187,6 +187,26 @@ body {
     border-color: #c0392b;
 }
 
+.fc-button-warning {
+    background-color: #f39c12;
+    background-image: linear-gradient(to bottom, #f39c12 0%, #e67e22 100%);
+    border-color: #f39c12;
+    color: white;
+}
+
+.fc-button-warning:hover {
+    background-color: #e67e22;
+    background-image: linear-gradient(to bottom, #e67e22 0%, #f39c12 100%);
+    border-color: #e67e22;
+}
+
+/* Standalone buttons (not in button groups) */
+.fc-button:only-child,
+.fc-button.standalone {
+    border-radius: 3px;
+    margin: 0 4px 0 0;
+}
+
 /* Form styling to match FullCalendar */
 .fc-form {
     max-width: 100%;
@@ -289,3 +309,71 @@ body {
 .event-detail a:hover {
     text-decoration: underline;
 }
+
+/* Calendar Management Styles */
+.calendar-list {
+    margin-bottom: 20px;
+}
+
+.calendar-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #ddd;
+    margin-bottom: 8px;
+    background: #fafafa;
+    border-radius: 3px;
+}
+
+.calendar-item:hover {
+    background: #f0f0f0;
+}
+
+.calendar-color {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.calendar-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.calendar-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.calendar-url {
+    font-size: 11px;
+    color: #666;
+    word-break: break-all;
+    margin-bottom: 2px;
+}
+
+.calendar-meta {
+    font-size: 11px;
+    color: #999;
+}
+
+.calendar-actions {
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.no-calendars-message {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 40px 20px;
+    border: 2px dashed #ddd;
+    border-radius: 3px;
+    background: #fafafa;
+}
+

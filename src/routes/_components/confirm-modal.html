@@ -122,11 +122,4 @@ class ConfirmModal {
 
 // Global confirm modal instance
 const confirmModal = new ConfirmModal();
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    if (!window.confirmModal && document.getElementById('confirmModal')) {
-        window.confirmModal = new ConfirmModal();
-    }
-});
 </script>

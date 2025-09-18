@@ -1,0 +1,382 @@
+<!-- Calendar Management Modal -->
+<div class="modal-overlay" id="calendarModalOverlay"></div>
+<div class="modal" id="calendarModal">
+    <div class="modal-header">
+        <h2>Manage Calendars</h2>
+        <button class="modal-close" onclick="calendarModals.management.close()">×</button>
+    </div>
+    <div class="modal-body">
+        <div class="calendar-list" id="calendarList">
+            <!-- Calendar list will be populated here -->
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button onclick="calendarModals.form.showAdd()" class="fc-button fc-button-primary">Add Calendar</button>
+        <button onclick="calendarModals.management.close()" class="fc-button">Close</button>
+    </div>
+</div>
+
+<!-- Add/Edit Calendar Form Modal -->
+<div class="modal-overlay" id="addCalendarModalOverlay"></div>
+<div class="modal" id="addCalendarModal">
+    <div class="modal-header">
+        <h2 id="addCalendarModalTitle">Add New Calendar</h2>
+        <button class="modal-close" onclick="calendarModals.form.close()">×</button>
+    </div>
+    <div class="modal-body">
+        <div class="fc-form">
+            <div class="fc-form-group">
+                <label for="calendar-name">Name:</label>
+                <input type="text" id="calendar-name" placeholder="Calendar name" required>
+            </div>
+            <div class="fc-form-group">
+                <label for="calendar-url">URL:</label>
+                <input type="url" id="calendar-url" placeholder="https://example.com/calendar.ics" required>
+            </div>
+            <div class="fc-form-group">
+                <label for="calendar-color">Color:</label>
+                <input type="color" id="calendar-color" value="#447dfc">
+            </div>
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="calendar-hidden">
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="calendar-hidden">Hide calendar from public view</label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="calendar-hide-details">
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="calendar-hide-details">Hide event details for public view (show as time blocks only)</label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button onclick="calendarModals.form.save()" class="fc-button fc-button-primary" id="saveCalendarButton">Add Calendar</button>
+        <button onclick="calendarModals.form.close()" class="fc-button">Cancel</button>
+    </div>
+</div>
+
+<script>
+class CalendarManagementModal {
+    constructor() {
+        this.modal = document.getElementById('calendarModal');
+        this.overlay = document.getElementById('calendarModalOverlay');
+        this.calendarList = document.getElementById('calendarList');
+        this.isOpen = false;
+
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                this.close();
+            }
+        });
+
+        // Overlay click to close
+        this.overlay.addEventListener('click', () => {
+            this.close();
+        });
+    }
+
+    async show() {
+        if (!isAuthenticated) {
+            showPasswordModal();
+            return;
+        }
+
+        this.isOpen = true;
+        this.modal.classList.add('show');
+        this.overlay.classList.add('show');
+
+        await this.loadCalendarList();
+    }
+
+    close() {
+        this.isOpen = false;
+        this.modal.classList.remove('show');
+        this.overlay.classList.remove('show');
+    }
+
+    async loadCalendarList() {
+        try {
+            const response = await fetch('/api/calendars', {
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                const calendars = await response.json();
+                this.displayCalendarList(calendars);
+            }
+        } catch (error) {
+            console.error('Error loading calendar list:', error);
+            toast.error('Failed to load calendar list');
+        }
+    }
+
+    displayCalendarList(calendars) {
+        if (!calendars || calendars.length === 0) {
+            this.calendarList.innerHTML = '<div class="no-calendars-message">No calendars found. Add your first calendar!</div>';
+            return;
+        }
+
+        this.calendarList.innerHTML = calendars.map(cal => {
+            const isVisible = !cal.hidden;
+            const showDetails = !cal.details;
+            const statusParts = [];
+
+            if (isVisible) {
+                statusParts.push('Visible');
+            } else {
+                statusParts.push('Hidden');
+            }
+
+            if (!showDetails) {
+                statusParts.push('Details hidden');
+            }
+
+            return `
+            <div class="calendar-item">
+                <div class="calendar-color" style="background: ${cal.color};"></div>
+                <div class="calendar-info">
+                    <div class="calendar-name">${cal.name}</div>
+                    <div class="calendar-url">${cal.url}</div>
+                    <div class="calendar-meta">
+                        ${statusParts.join(' • ')} •
+                        Last updated: ${cal.updated_at ? new Date(cal.updated_at).toLocaleDateString() : 'Never'}
+                    </div>
+                </div>
+                <div class="calendar-actions">
+                    <button onclick="calendarModals.form.showEdit(${cal.id})" class="fc-button" style="margin-right: 8px;">
+                        Edit
+                    </button>
+                    <button onclick="calendarModals.deleteCalendar(${cal.id})" class="fc-button fc-button-danger">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `;
+        }).join('');
+    }
+}
+
+class CalendarFormModal {
+    constructor() {
+        this.modal = document.getElementById('addCalendarModal');
+        this.overlay = document.getElementById('addCalendarModalOverlay');
+        this.title = document.getElementById('addCalendarModalTitle');
+        this.saveButton = document.getElementById('saveCalendarButton');
+        this.nameInput = document.getElementById('calendar-name');
+        this.urlInput = document.getElementById('calendar-url');
+        this.colorInput = document.getElementById('calendar-color');
+        this.hiddenInput = document.getElementById('calendar-hidden');
+        this.hideDetailsInput = document.getElementById('calendar-hide-details');
+
+        this.currentEditingId = null;
+        this.isOpen = false;
+
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                this.close();
+            }
+        });
+
+        // Overlay click to close
+        this.overlay.addEventListener('click', () => {
+            this.close();
+        });
+    }
+
+    showAdd() {
+        this.currentEditingId = null;
+        this.title.textContent = 'Add New Calendar';
+        this.saveButton.textContent = 'Add Calendar';
+
+        this.clearForm();
+        this.show();
+    }
+
+    async showEdit(calendarId) {
+        try {
+            const response = await fetch(`/api/calendars/${calendarId}`, {
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (!response.ok) {
+                toast.error('Error loading calendar details');
+                return;
+            }
+
+            const result = await response.json();
+            const calendar = result.data;
+
+            this.currentEditingId = calendarId;
+            this.title.textContent = 'Edit Calendar';
+            this.saveButton.textContent = 'Update Calendar';
+
+            this.populateForm(calendar);
+            this.show();
+        } catch (error) {
+            toast.error('Error loading calendar details: ' + error.message);
+        }
+    }
+
+    show() {
+        this.isOpen = true;
+        this.modal.classList.add('show');
+        this.overlay.classList.add('show');
+        this.nameInput.focus();
+    }
+
+    close() {
+        this.isOpen = false;
+        this.modal.classList.remove('show');
+        this.overlay.classList.remove('show');
+        calendarModals.management.show();
+    }
+
+    clearForm() {
+        this.nameInput.value = '';
+        this.urlInput.value = '';
+        this.colorInput.value = '#447dfc';
+        this.hiddenInput.checked = false;
+        this.hideDetailsInput.checked = false;
+    }
+
+    populateForm(calendar) {
+        this.nameInput.value = calendar.name || '';
+        this.urlInput.value = calendar.url || '';
+        this.colorInput.value = calendar.color || '#447dfc';
+        this.hiddenInput.checked = calendar.hidden || false;
+        this.hideDetailsInput.checked = calendar.details || false;
+    }
+
+    async save() {
+        const name = this.nameInput.value.trim();
+        const url = this.urlInput.value.trim();
+        const color = this.colorInput.value;
+        const hidden = this.hiddenInput.checked;
+        const hideDetails = this.hideDetailsInput.checked;
+
+        if (!name || !url) {
+            toast.warning('Please fill in all required fields');
+            return;
+        }
+
+        try {
+            const isEditing = this.currentEditingId !== null;
+            const apiUrl = isEditing ? `/api/calendars/${this.currentEditingId}` : '/api/calendars';
+            const method = isEditing ? 'PUT' : 'POST';
+
+            const response = await fetch(apiUrl, {
+                method: method,
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name,
+                    url,
+                    color,
+                    hidden,
+                    details: hideDetails
+                })
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                this.close();
+                await calendarModals.management.loadCalendarList();
+                await loadCalendars(); // Reload calendars in the main view
+
+                const action = isEditing ? 'updated' : 'added';
+                toast.success(`Calendar ${action} successfully!`);
+            } else {
+                const error = await response.json();
+                const action = isEditing ? 'updating' : 'adding';
+                toast.error(`Error ${action} calendar: ` + (error.error || 'Unknown error'));
+            }
+        } catch (error) {
+            const action = this.currentEditingId ? 'updating' : 'adding';
+            toast.error(`Error ${action} calendar: ` + error.message);
+        }
+    }
+}
+
+class CalendarModals {
+    constructor() {
+        this.management = new CalendarManagementModal();
+        this.form = new CalendarFormModal();
+    }
+
+    async deleteCalendar(calendarId) {
+        const confirmed = await confirmModal.delete('this calendar');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/calendars/${calendarId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                await this.management.loadCalendarList();
+                await loadCalendars(); // Reload calendars in the main view
+                toast.success('Calendar deleted successfully');
+            } else {
+                toast.error('Error deleting calendar');
+            }
+        } catch (error) {
+            toast.error('Error deleting calendar: ' + error.message);
+        }
+    }
+}
+
+// Global calendar modals instance
+const calendarModals = new CalendarModals();
+</script>
