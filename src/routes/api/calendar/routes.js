@@ -15,7 +15,7 @@ export function createCalendarRouter(ctx) {
         }
     });
 
-    router.get('/:id', async (req, res) => {
+    router.get('/:id', verifyToken, async (req, res) => {
         try {
             const calendar = await ctx.models.calendar.getById(req.params.id);
             if (!calendar) {
