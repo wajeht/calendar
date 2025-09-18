@@ -3,27 +3,6 @@ import express from 'express';
 export function createAuthRouter(ctx) {
     const router = express.Router();
 
-    const setSessionCookie = (res, token) => {
-        res.cookie('session_token', token, {
-            httpOnly: true,
-            secure: ctx.config.app.env === 'production', // Only require HTTPS in production
-            sameSite: 'strict', // Stricter CSRF protection
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            path: '/', // Explicit path
-            domain: ctx.config.auth.cookieDomain
-        });
-    };
-
-    const clearSessionCookie = (res) => {
-        res.clearCookie('session_token', {
-            httpOnly: true,
-            secure: ctx.config.app.env === 'production',
-            sameSite: 'strict',
-            path: '/',
-            domain: ctx.config.auth.cookieDomain
-        });
-    };
-
     const requireAuth = ctx.middleware.auth.requireAuth();
 
     router.post('/', async (req, res) => {
@@ -39,9 +18,14 @@ export function createAuthRouter(ctx) {
                 return res.status(401).json({ success: false, error: 'Invalid password' });
             }
 
-            const sessionToken = ctx.utils.auth.generateSessionToken();
-
-            setSessionCookie(res, sessionToken);
+            res.cookie('session_token', ctx.utils.auth.generateSessionToken(), {
+                httpOnly: true,
+                secure: ctx.config.app.env === 'production', // Only require HTTPS in production
+                sameSite: 'strict', // Stricter CSRF protection
+                maxAge: 24 * 60 * 60 * 1000, // 24 hours
+                path: '/', // Explicit path
+                domain: ctx.config.auth.cookieDomain
+            });
 
             ctx.logger.info('Successful login');
             res.json({
@@ -56,7 +40,14 @@ export function createAuthRouter(ctx) {
     });
 
     router.post('/logout', (req, res) => {
-        clearSessionCookie(res);
+        res.clearCookie('session_token', {
+            httpOnly: true,
+            secure: ctx.config.app.env === 'production',
+            sameSite: 'strict',
+            path: '/',
+            domain: ctx.config.auth.cookieDomain
+        });
+
         ctx.logger.info('User logged out');
         res.json({ success: true, message: 'Logged out successfully' });
     });

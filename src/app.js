@@ -7,7 +7,6 @@ import compression from 'compression';
 import { rateLimit } from 'express-rate-limit';
 import { createRouter } from './routes/routes.js';
 import { createContext } from './context.js';
-import { layoutMiddleware } from './routes/middleware.js';
 
 export async function createServer(customConfig = {}) {
     const ctx = createContext(customConfig);
@@ -74,10 +73,21 @@ export async function createServer(customConfig = {}) {
         .set('view engine', 'html')
         .set('view cache', ctx.config.app.env === 'production')
         .set('views', './src/routes')
-        .use(layoutMiddleware({
-            defaultLayout: '_layouts/public.html',
-            layoutsDir: '_layouts'
-        }))
+        .use((_req, res, next) => {
+            const originalRender = res.render;
+            res.render = function (view, viewOptions = {}, callback) {
+                const layout = viewOptions.layout === false ? false : viewOptions.layout || '_layouts/public.html';
+                const options = { ...viewOptions };
+
+                if (!layout) return originalRender.call(this, view, options, callback);
+
+                originalRender.call(this, view, options, (err, html) => {
+                    if (err) return callback ? callback(err) : next(err);
+                    originalRender.call(this, layout, { ...options, body: html, layout: undefined }, callback);
+                });
+            };
+            next();
+        })
 
     app.get('/health', (_req, res) => res.status(200).json({ message: "ok" }));
 

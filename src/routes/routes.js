@@ -1,7 +1,7 @@
 import express from 'express';
 import { createCalendarRouter } from "./api/calendar/routes.js";
 import { createAuthRouter } from "./api/auth/routes.js";
-import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/general.js";
+import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/index.js";
 
 export function createRouter(ctx) {
     const router = express.Router();

@@ -58,35 +58,5 @@ export function createCalendar(db) {
             await db('calendars').where('id', id).del();
             return calendar;
         },
-
-        async getByUrl(url) {
-            const calendar = await db('calendars').where('url', url).first();
-            return calendar || null;
-        },
-
-        async getVisible() {
-            return await db('calendars').where('hidden', false).select('*');
-        },
-
-        async getHidden() {
-            return await db('calendars').where('hidden', true).select('*');
-        },
-
-        async toggleVisibility(id) {
-            const calendar = await this.getById(id);
-            if (!calendar) {
-                return null;
-            }
-
-            const updated = await db('calendars')
-                .where('id', id)
-                .update({ hidden: !calendar.hidden });
-
-            if (updated === 0) {
-                return null;
-            }
-
-            return await this.getById(id);
-        }
     };
 }

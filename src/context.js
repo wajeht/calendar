@@ -1,9 +1,9 @@
 import { config } from './config.js';
 import { createDatabase } from './db/db.js';
 import { createLogger } from './logger.js';
-import { createCalendar } from './routes/api/calendar/models.js';
+import { createCalendar } from './routes/api/calendar/model.js';
 import { createUtils } from './utils.js';
-import { createAuthMiddleware } from './routes/auth/middleware.js';
+import { createAuthMiddleware } from './routes/api/auth/middleware.js';
 
 export function createContext(customConfig = {}) {
     const finalConfig = {
