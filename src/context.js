@@ -4,6 +4,7 @@ import { createLogger } from './logger.js';
 import { createCalendar } from './routes/api/calendar/model.js';
 import { createUtils } from './utils.js';
 import { createAuthMiddleware } from './routes/api/auth/middleware.js';
+import { createCalendarService } from './routes/api/calendar/service.js';
 
 export function createContext(customConfig = {}) {
     const finalConfig = {
@@ -16,13 +17,15 @@ export function createContext(customConfig = {}) {
     const utils = createUtils({ logger, config: finalConfig });
     const calendar = createCalendar(db);
     const authMiddleware = createAuthMiddleware({ utils, logger });
+    const calendarService = createCalendarService();
     const ctx = {
         config: finalConfig,
         db,
         logger,
         utils,
         models: { calendar },
-        middleware: { auth: authMiddleware }
+        middleware: { auth: authMiddleware },
+        services: { calendar: calendarService }
     };
 
     return ctx;
