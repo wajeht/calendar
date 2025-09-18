@@ -3,266 +3,153 @@
 <%- include('../_components/password-modal.html') %>
 
 <style>
-/* Calendar Management Modal Styles */
-.calendar-modal-overlay, .add-calendar-modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 3000;
-}
-
-.calendar-modal-overlay.show, .add-calendar-modal-overlay.show {
-    display: block;
-}
-
-.calendar-modal, .add-calendar-modal {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    z-index: 3001;
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.calendar-modal.show, .add-calendar-modal.show {
-    display: block;
-}
-
-.calendar-modal h2, .add-calendar-modal h2 {
-    margin-top: 0;
+.calendar-list {
     margin-bottom: 20px;
-    text-align: center;
 }
 
-.calendar-modal-close, .add-calendar-modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
+.calendar-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #ddd;
+    margin-bottom: 8px;
+    background: #fafafa;
+    border-radius: 3px;
+}
+
+.calendar-item:hover {
+    background: #f0f0f0;
+}
+
+.calendar-color {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.calendar-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.calendar-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.calendar-url {
+    font-size: 11px;
     color: #666;
+    word-break: break-all;
+    margin-bottom: 2px;
 }
 
-.calendar-modal-close:hover, .add-calendar-modal-close:hover {
-    color: #000;
+.calendar-meta {
+    font-size: 11px;
+    color: #999;
 }
 
 .calendar-actions {
-    margin-top: 20px;
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.no-calendars-message {
     text-align: center;
-}
-
-.calendar-actions button {
-    margin: 0 10px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.btn-primary {
-    background: #007bff;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #0056b3;
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #545b62;
-}
-
-/* Add Calendar Form Styles */
-.add-calendar-form {
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #333;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-}
-
-.form-actions {
-    text-align: center;
-    margin-top: 20px;
-}
-
-.form-actions button {
-    margin: 0 10px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-/* Event Modal Styles */
-.event-modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 3000;
-}
-
-.event-modal-overlay.show {
-    display: block;
-}
-
-.event-modal {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    z-index: 3001;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.event-modal.show {
-    display: block;
-}
-
-.event-modal h2 {
-    margin-top: 0;
-    margin-bottom: 20px;
-}
-
-.event-modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-}
-
-.event-modal-close:hover {
-    color: #000;
-}
-
-.event-detail {
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-.event-detail label {
-    font-weight: bold;
-    color: #333;
-    margin-right: 10px;
-}
-
-.event-detail a {
-    color: #007bff;
-    text-decoration: none;
-}
-
-.event-detail a:hover {
-    text-decoration: underline;
+    color: #999;
+    font-style: italic;
+    padding: 40px 20px;
+    border: 2px dashed #ddd;
+    border-radius: 3px;
+    background: #fafafa;
 }
 </style>
 
 <!-- Calendar Management Modal -->
-<div class="calendar-modal-overlay" id="calendarModalOverlay"></div>
-<div class="calendar-modal" id="calendarModal">
-    <button class="calendar-modal-close" onclick="closeCalendarManagementModal()">×</button>
-    <h2>Manage Calendars</h2>
-    <div class="calendar-modal-content">
+<div class="modal-overlay" id="calendarModalOverlay"></div>
+<div class="modal" id="calendarModal">
+    <div class="modal-header">
+        <h2>Manage Calendars</h2>
+        <button class="modal-close" onclick="closeCalendarManagementModal()">×</button>
+    </div>
+    <div class="modal-body">
         <div class="calendar-list" id="calendarList">
             <!-- Calendar list will be populated here -->
         </div>
-        <div class="calendar-actions">
-            <button onclick="showAddCalendarForm()" class="btn-primary">Add Calendar</button>
-            <button onclick="closeCalendarManagementModal()" class="btn-secondary">Close</button>
-        </div>
+    </div>
+    <div class="modal-footer">
+        <button onclick="showAddCalendarForm()" class="fc-button fc-button-primary">Add Calendar</button>
+        <button onclick="closeCalendarManagementModal()" class="fc-button">Close</button>
     </div>
 </div>
 
 <!-- Add Calendar Form Modal -->
-<div class="add-calendar-modal-overlay" id="addCalendarModalOverlay"></div>
-<div class="add-calendar-modal" id="addCalendarModal">
-    <button class="add-calendar-modal-close" onclick="closeAddCalendarModal()">×</button>
-    <h2>Add New Calendar</h2>
-    <div class="add-calendar-form">
-        <div class="form-group">
-            <label for="calendar-name">Name:</label>
-            <input type="text" id="calendar-name" placeholder="Calendar name" required>
+<div class="modal-overlay" id="addCalendarModalOverlay"></div>
+<div class="modal" id="addCalendarModal">
+    <div class="modal-header">
+        <h2>Add New Calendar</h2>
+        <button class="modal-close" onclick="backToCalendarManagement()">×</button>
+    </div>
+    <div class="modal-body">
+        <div class="fc-form">
+            <div class="fc-form-group">
+                <label for="calendar-name">Name:</label>
+                <input type="text" id="calendar-name" placeholder="Calendar name" required>
+            </div>
+            <div class="fc-form-group">
+                <label for="calendar-url">URL:</label>
+                <input type="url" id="calendar-url" placeholder="https://example.com/calendar.ics" required>
+            </div>
+            <div class="fc-form-group">
+                <label for="calendar-color">Color:</label>
+                <input type="color" id="calendar-color" value="#3498db">
+            </div>
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="calendar-hidden">
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="calendar-hidden">Hide calendar from public view</label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="calendar-hide-details">
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="calendar-hide-details">Hide event details for public view (show as time blocks only)</label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="calendar-url">URL:</label>
-            <input type="url" id="calendar-url" placeholder="https://example.com/calendar.ics" required>
-        </div>
-        <div class="form-group">
-            <label for="calendar-color">Color:</label>
-            <input type="color" id="calendar-color" value="#3498db">
-        </div>
-        <div class="form-actions">
-            <button onclick="addCalendar()" class="btn-primary">Add Calendar</button>
-            <button onclick="closeAddCalendarModal()" class="btn-secondary">Cancel</button>
-        </div>
+    </div>
+    <div class="modal-footer">
+        <button onclick="addCalendar()" class="fc-button fc-button-primary">Add Calendar</button>
+        <button onclick="backToCalendarManagement()" class="fc-button">Cancel</button>
     </div>
 </div>
 
-<div class="event-modal-overlay" id="eventModalOverlay"></div>
-<div class="event-modal" id="eventModal">
-    <button class="event-modal-close" onclick="closeEventModal()">x</button>
-    <h2 id="eventTitle">Event Details</h2>
-    <div id="eventDetails"></div>
+<div class="modal-overlay" id="eventModalOverlay"></div>
+<div class="modal" id="eventModal" style="max-width: 500px;">
+    <div class="modal-header">
+        <h2 id="eventTitle">Event Details</h2>
+        <button class="modal-close" onclick="closeEventModal()">×</button>
+    </div>
+    <div class="modal-body">
+        <div id="eventDetails"></div>
+    </div>
 </div>
 
 <script>
@@ -866,6 +753,9 @@
     }
 
     function showAddCalendarForm() {
+        // Close the calendar management modal first
+        closeCalendarManagementModal();
+
         const modal = document.getElementById('addCalendarModal');
         const overlay = document.getElementById('addCalendarModalOverlay');
 
@@ -873,6 +763,8 @@
         document.getElementById('calendar-name').value = '';
         document.getElementById('calendar-url').value = '';
         document.getElementById('calendar-color').value = '#3498db';
+        document.getElementById('calendar-hidden').checked = false;
+        document.getElementById('calendar-hide-details').checked = false;
 
         modal.classList.add('show');
         overlay.classList.add('show');
@@ -881,6 +773,11 @@
     function closeAddCalendarModal() {
         document.getElementById('addCalendarModal').classList.remove('show');
         document.getElementById('addCalendarModalOverlay').classList.remove('show');
+    }
+
+    function backToCalendarManagement() {
+        closeAddCalendarModal();
+        showCalendarManagementModal();
     }
 
     async function loadCalendarList() {
@@ -908,26 +805,38 @@
         const listEl = document.getElementById('calendarList');
 
         if (!calendars || calendars.length === 0) {
-            listEl.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">No calendars found. Add your first calendar!</p>';
+            listEl.innerHTML = '<div class="no-calendars-message">No calendars found. Add your first calendar!</div>';
             return;
         }
 
         listEl.innerHTML = calendars.map(cal => {
-            const isVisible = !cal.hidden; // Convert hidden to visible for display
+            const isVisible = !cal.hidden;
+            const showDetails = !cal.details;
+            const statusParts = [];
+
+            if (isVisible) {
+                statusParts.push('Visible');
+            } else {
+                statusParts.push('Hidden');
+            }
+
+            if (!showDetails) {
+                statusParts.push('Details hidden');
+            }
+
             return `
-            <div class="calendar-item" style="display: flex; align-items: center; padding: 10px; border: 1px solid #eee; margin-bottom: 10px; border-radius: 4px;">
-                <div style="width: 20px; height: 20px; background: ${cal.color}; border-radius: 3px; margin-right: 10px;"></div>
-                <div style="flex: 1;">
-                    <div style="font-weight: bold;">${cal.name}</div>
-                    <div style="font-size: 0.9em; color: #666;">${cal.url}</div>
-                    <div style="font-size: 0.8em; color: #888;">
-                        ${isVisible ? 'Visible' : 'Hidden'} •
+            <div class="calendar-item">
+                <div class="calendar-color" style="background: ${cal.color};"></div>
+                <div class="calendar-info">
+                    <div class="calendar-name">${cal.name}</div>
+                    <div class="calendar-url">${cal.url}</div>
+                    <div class="calendar-meta">
+                        ${statusParts.join(' • ')} •
                         Last updated: ${cal.updated_at ? new Date(cal.updated_at).toLocaleDateString() : 'Never'}
                     </div>
                 </div>
-                <div style="display: flex; gap: 5px;">
-                    <button onclick="deleteCalendar(${cal.id})"
-                            style="padding: 5px 10px; border: 1px solid #dc3545; background: #dc3545; color: white; cursor: pointer; border-radius: 3px;">
+                <div class="calendar-actions">
+                    <button onclick="deleteCalendar(${cal.id})" class="fc-button fc-button-danger">
                         Delete
                     </button>
                 </div>
@@ -940,6 +849,8 @@
         const name = document.getElementById('calendar-name').value.trim();
         const url = document.getElementById('calendar-url').value.trim();
         const color = document.getElementById('calendar-color').value;
+        const hidden = document.getElementById('calendar-hidden').checked;
+        const hideDetails = document.getElementById('calendar-hide-details').checked;
 
         if (!name || !url) {
             alert('Please fill in all required fields');
@@ -953,7 +864,13 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name, url, color })
+                body: JSON.stringify({
+                    name,
+                    url,
+                    color,
+                    hidden,
+                    details: hideDetails
+                })
             });
 
             if (response.status === 401) {
@@ -963,7 +880,8 @@
             }
 
             if (response.ok) {
-                closeAddCalendarModal();
+                // Go back to calendar management modal and refresh the list
+                backToCalendarManagement();
                 await loadCalendarList();
                 // Reload calendars in the main view
                 await loadCalendars();
