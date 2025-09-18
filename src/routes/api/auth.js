@@ -6,7 +6,7 @@ export function createAuthRouter(ctx) {
     const setSessionCookie = (res, token) => {
         res.cookie('session_token', token, {
             httpOnly: true,
-            secure: true, // Always require HTTPS
+            secure: ctx.config.app.env === 'production', // Only require HTTPS in production
             sameSite: 'strict', // Stricter CSRF protection
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             path: '/', // Explicit path
@@ -17,7 +17,7 @@ export function createAuthRouter(ctx) {
     const clearSessionCookie = (res) => {
         res.clearCookie('session_token', {
             httpOnly: true,
-            secure: true,
+            secure: ctx.config.app.env === 'production',
             sameSite: 'strict',
             path: '/',
             domain: ctx.config.auth.cookieDomain

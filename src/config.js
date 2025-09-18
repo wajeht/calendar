@@ -49,6 +49,6 @@ export const config = {
     auth: {
         password: process.env.APP_PASSWORD || 'password',
         sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
-        cookieDomain: process.env.COOKIE_DOMAIN || 'http://localhost'
+        cookieDomain: process.env.COOKIE_DOMAIN || undefined
     }
 };
