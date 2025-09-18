@@ -1,13 +1,13 @@
+import ICAL from 'ical.js';
 import { config } from './config.js';
-import { createDatabase } from './db/db.js';
-import { createLogger } from './logger.js';
-import { createCalendar } from './routes/api/calendar/model.js';
 import { createUtils } from './utils.js';
+import { createLogger } from './logger.js';
+import { createDatabase } from './db/db.js';
 import { createValidators } from './validators.js';
+import { createCalendar } from './routes/api/calendar/model.js';
 import { createAuthMiddleware } from './routes/api/auth/middleware.js';
 import { createCalendarService } from './routes/api/calendar/service.js';
 import { ValidationError, NotFoundError, CalendarFetchError, DatabaseError } from './errors.js';
-import ICAL from 'ical.js';
 
 export function createContext(customConfig = {}) {
     const finalConfig = {

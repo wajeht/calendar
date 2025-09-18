@@ -1,7 +1,3 @@
-/**
- * Validation utilities and helpers
- */
-
 export function createValidators(dependencies = {}) {
     const { errors, utils } = dependencies;
 

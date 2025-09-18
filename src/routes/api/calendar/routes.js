@@ -72,7 +72,6 @@ export function createCalendarRouter(dependencies = {}) {
             throw new NotFoundError('Calendar');
         }
 
-        // Handle legacy 'visible' field
         const updateData = { ...req.body };
         if ('visible' in updateData) {
             updateData.hidden = !updateData.visible;
