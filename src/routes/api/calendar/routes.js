@@ -10,7 +10,7 @@ export function createCalendarRouter(dependencies = {}) {
     if (!logger) throw new Error('Logger required for calendar router');
     if (!errors) throw new Error('Errors required for calendar router');
 
-    const { ValidationError, NotFoundError, CalendarFetchError } = errors;
+    const { ValidationError, NotFoundError } = errors;
 
     const router = express.Router();
     const verifyToken = middleware.auth.requireAuth();

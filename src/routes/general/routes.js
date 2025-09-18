@@ -1,9 +1,9 @@
 import express from 'express';
 
-export function createGeneralRouter(dependencies = {}) {
+export function createGeneralRouter(_dependencies = {}) {
     const router = express.Router();
 
-    router.get('/', async (req, res) => {
+    router.get('/', async (_req, res) => {
         res.render('general/home.html', {
             title: 'Calendar',
             layout: '_layouts/calendar.html',

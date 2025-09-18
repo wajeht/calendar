@@ -2,11 +2,11 @@ import ejs from 'ejs';
 import cors from 'cors';
 import helmet from 'helmet';
 import express from 'express';
-import cookieParser from 'cookie-parser';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
+import { createContext } from './context.js';
 import { rateLimit } from 'express-rate-limit';
 import { createRouter } from './routes/routes.js';
-import { createContext } from './context.js';
 
 export async function createServer(customConfig = {}) {
     const ctx = createContext(customConfig);

@@ -1,9 +1,9 @@
 export function createCalendarService(dependencies = {}) {
     const { ICAL, logger, models } = dependencies;
 
-    if (!ICAL) {
-        throw new Error('ICAL library is required in dependencies');
-    }
+    if (!ICAL) { throw new Error('ICAL library is required in dependencies'); }
+    if (!models) throw new Error('Models is required required in dependencies');
+    if (!logger) throw new Error('Logger is required required in dependencies');
 
     async function fetchICalData(url) {
         try {

@@ -1,7 +1,7 @@
 import express from 'express';
 import { createCalendarRouter } from "./api/calendar/routes.js";
 import { createAuthRouter } from "./api/auth/routes.js";
-import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/index.js";
+import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/routes.js";
 
 export function createRouter(dependencies = {}) {
     const { models, services, middleware, utils, logger, config, errors, validators } = dependencies;
