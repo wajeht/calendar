@@ -1,8 +1,10 @@
 <div id="calendar"></div>
 
+<%- include('../_components/password-modal.html') %>
+
 <div class="event-modal-overlay" id="eventModalOverlay"></div>
 <div class="event-modal" id="eventModal">
-    <button class="event-modal-close" onclick="closeEventModal()">×</button>
+    <button class="event-modal-close" onclick="closeEventModal()">x</button>
     <h2 id="eventTitle">Event Details</h2>
     <div id="eventDetails"></div>
 </div>
