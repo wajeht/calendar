@@ -66,6 +66,15 @@ body {
     display: block;
 }
 
+/* Higher z-index for confirmation modals that appear over other modals */
+.modal-overlay.modal-overlay-high {
+    z-index: 4000;
+}
+
+.modal.modal-high {
+    z-index: 4001;
+}
+
 .modal-header {
     background: #f5f5f5;
     border-bottom: 1px solid #ddd;
