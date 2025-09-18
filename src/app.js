@@ -103,17 +103,63 @@ export async function createServer(customConfig = {}) {
     }));
 
     const server = app.listen(PORT);
-    ctx.logger.success(`Server running on http://localhost:${PORT}`);
+
+    server.timeout = 120000; // 2 minutes
+    server.keepAliveTimeout = 65000; // 65 seconds
+    server.headersTimeout = 66000; // slightly higher than keepAliveTimeout
+    server.requestTimeout = 120000; // same as timeout
+
+    server.on('listening', () => {
+        ctx.logger.success(`Server running on http://localhost:${PORT}`);
+    });
+
+    server.on('error', (error) => {
+        if (error.syscall !== 'listen') {
+            throw error;
+        }
+
+        const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
+
+        switch (error.code) {
+            case 'EACCES':
+                ctx.logger.error(`${bind} requires elevated privileges`);
+                process.exit(1);
+                break;
+            case 'EADDRINUSE':
+                ctx.logger.error(`${bind} is already in use`);
+                process.exit(1);
+                break;
+            default:
+                throw error;
+        }
+    });
 
     return { app, server, ctx };
 }
 
 export async function closeServer({ server, ctx }) {
-    ctx.logger.info('Shutting down server...');
+    ctx.logger.info('Shutting down server gracefully...');
+
+    let shutdownComplete = false;
 
     if (server) {
-        server.close();
-    }
+        server.keepAliveTimeout = 0;
+        server.headersTimeout = 0;
+        server.timeout = 1;
 
-    ctx.logger.success('Server shutdown complete');
+        server.close(() => {
+            ctx.logger.info('HTTP server closed.');
+            shutdownComplete = true;
+            ctx.logger.success('Server shutdown complete');
+        });
+
+        setTimeout(() => {
+            if (!shutdownComplete) {
+                ctx.logger.error('Could not close connections in time, forcefully shutting down');
+                process.exit(1);
+            }
+        }, 10000);
+    } else {
+        ctx.logger.success('Server shutdown complete');
+    }
 }
