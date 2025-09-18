@@ -1,5 +1,6 @@
 import express from 'express';
 import { createCalendarRouter } from "./api/calendar.js";
+import { createAuthRouter } from "./api/auth.js";
 import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/general.js";
 
 export function createRouter(ctx) {
@@ -7,7 +8,11 @@ export function createRouter(ctx) {
 
     router.use('/', createGeneralRouter(ctx));
 
+    router.use('/api/auth', createAuthRouter(ctx));
+
     router.use('/api/calendars', createCalendarRouter(ctx));
+
+    router.use('/calendars', createCalendarRouter(ctx));
 
     router.use(notFoundHandler(ctx));
 
