@@ -2,6 +2,7 @@ import ejs from 'ejs';
 import cors from 'cors';
 import helmet from 'helmet';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import { rateLimit } from 'express-rate-limit';
 import { createRouter } from './routes/routes.js';
@@ -28,6 +29,7 @@ export async function createServer(customConfig = {}) {
             },
             skip: (_req, _res) => ctx.config.app.env !== 'production',
         }))
+        .use(cookieParser())
         .use(express.json({ limit: ctx.config.app.jsonLimit || '1mb' }))
         .use(express.urlencoded({
             extended: true,
