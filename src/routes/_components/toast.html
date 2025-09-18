@@ -1,0 +1,225 @@
+<div id="toast-container"></div>
+
+<style>
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    min-width: 300px;
+    max-width: 450px;
+    pointer-events: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    opacity: 0;
+    position: relative;
+    font-family: inherit;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast.success {
+    border-left: 3px solid #28a745;
+}
+
+.toast.error {
+    border-left: 3px solid #dc3545;
+}
+
+.toast.warning {
+    border-left: 3px solid #ffc107;
+}
+
+.toast.info {
+    border-left: 3px solid #17a2b8;
+}
+
+.toast-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.toast-icon {
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.toast.success .toast-icon {
+    color: #28a745;
+}
+
+.toast.error .toast-icon {
+    color: #dc3545;
+}
+
+.toast.warning .toast-icon {
+    color: #ffc107;
+}
+
+.toast.info .toast-icon {
+    color: #17a2b8;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.toast-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: #333;
+}
+
+.toast-close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 3px;
+}
+
+.toast-close:hover {
+    color: #666;
+    background: #f5f5f5;
+}
+</style>
+
+<script>
+class ToastManager {
+    constructor() {
+        this.container = document.getElementById('toast-container');
+        this.toasts = new Map();
+        this.toastId = 0;
+    }
+
+    show(message, type = 'info', title = null, duration = 5000) {
+        const id = ++this.toastId;
+        const toast = this.createToast(id, message, type, title, duration);
+
+        this.container.appendChild(toast);
+        this.toasts.set(id, toast);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+
+        // Auto remove
+        if (duration > 0) {
+            setTimeout(() => {
+                this.remove(id);
+            }, duration);
+        }
+
+        return id;
+    }
+
+    createToast(id, message, type, title, duration) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.dataset.toastId = id;
+
+        const icons = {
+            success: '✓',
+            error: '✕',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+
+        const titleHtml = title ? `<div class="toast-title">${title}</div>` : '';
+
+        toast.innerHTML = `
+            <div class="toast-content">
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <div class="toast-message">
+                    ${titleHtml}
+                    <div>${message}</div>
+                </div>
+            </div>
+            <button class="toast-close" onclick="toast.remove(${id})">&times;</button>
+        `;
+
+        return toast;
+    }
+
+    remove(id) {
+        const toast = this.toasts.get(id);
+        if (!toast) return;
+
+        toast.classList.remove('show');
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+            this.toasts.delete(id);
+        }, 300);
+    }
+
+    success(message, title = null, duration = 5000) {
+        return this.show(message, 'success', title, duration);
+    }
+
+    error(message, title = null, duration = 8000) {
+        return this.show(message, 'error', title, duration);
+    }
+
+    warning(message, title = null, duration = 6000) {
+        return this.show(message, 'warning', title, duration);
+    }
+
+    info(message, title = null, duration = 5000) {
+        return this.show(message, 'info', title, duration);
+    }
+
+    clear() {
+        this.toasts.forEach((toast, id) => {
+            this.remove(id);
+        });
+    }
+}
+
+// Global toast instance
+const toast = new ToastManager();
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.getElementById('toast-container')) {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+        window.toast = new ToastManager();
+    }
+});
+</script>
