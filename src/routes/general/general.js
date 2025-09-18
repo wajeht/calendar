@@ -3,23 +3,11 @@ import express from 'express';
 export function createGeneralRouter(ctx) {
     const router = express.Router();
 
-    router.get('/', async (_req, res) => {
-        try {
-            // Get all visible calendars for the home page
-            const calendars = await ctx.models.calendar.getVisible();
-            res.render('general/home.html', {
-                title: 'Calendar',
-                layout: '_layouts/calendar.html',
-                Calendars: calendars
-            });
-        } catch (error) {
-            ctx.logger.error('Error loading home page:', error);
-            res.render('general/home.html', {
-                title: 'Calendar',
-                layout: '_layouts/calendar.html',
-                Calendars: []
-            });
-        }
+    router.get('/', async (req, res) => {
+        res.render('general/home.html', {
+            title: 'Calendar',
+            layout: '_layouts/calendar.html',
+        });
     });
 
     return router;

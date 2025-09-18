@@ -2,6 +2,221 @@
 
 <%- include('../_components/password-modal.html') %>
 
+<style>
+/* Calendar Management Modal Styles */
+.calendar-modal-overlay, .add-calendar-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 3000;
+}
+
+.calendar-modal-overlay.show, .add-calendar-modal-overlay.show {
+    display: block;
+}
+
+.calendar-modal, .add-calendar-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 3001;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.calendar-modal.show, .add-calendar-modal.show {
+    display: block;
+}
+
+.calendar-modal h2, .add-calendar-modal h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.calendar-modal-close, .add-calendar-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.calendar-modal-close:hover, .add-calendar-modal-close:hover {
+    color: #000;
+}
+
+.calendar-actions {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.calendar-actions button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+/* Add Calendar Form Styles */
+.add-calendar-form {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.form-actions button {
+    margin: 0 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* Event Modal Styles */
+.event-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 3000;
+}
+
+.event-modal-overlay.show {
+    display: block;
+}
+
+.event-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 3001;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.event-modal.show {
+    display: block;
+}
+
+.event-modal h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.event-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.event-modal-close:hover {
+    color: #000;
+}
+
+.event-detail {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.event-detail label {
+    font-weight: bold;
+    color: #333;
+    margin-right: 10px;
+}
+
+.event-detail a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.event-detail a:hover {
+    text-decoration: underline;
+}
+</style>
+
 <!-- Calendar Management Modal -->
 <div class="calendar-modal-overlay" id="calendarModalOverlay"></div>
 <div class="calendar-modal" id="calendarModal">
@@ -157,43 +372,168 @@
         calendar.render();
     }
 
-    function loadCalendars() {
-        let calendars = [];
+    async function loadCalendars() {
         try {
-            const calendarsData = `<%- JSON.stringify(Calendars || []) %>`;
-            calendars = JSON.parse(calendarsData);
+            const response = await fetch('/api/calendars', {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                log.error('Failed to fetch calendars:', response.status);
+                return;
+            }
+
+            const calendars = await response.json();
+
+            if (!calendars || calendars.length === 0) {
+                log.debug('No calendars to load');
+                return;
+            }
+
+            // Clear existing event sources
+            eventSources.forEach(es => {
+                if (es.source) {
+                    es.source.remove();
+                }
+            });
+            eventSources = [];
+
+            // Load each calendar
+            calendars.forEach(cal => {
+                if (!cal || !cal.id) return;
+
+                // Parse events from the pre-processed events field
+                let events = [];
+                try {
+                    if (cal.events) {
+                        events = typeof cal.events === 'string'
+                            ? JSON.parse(cal.events)
+                            : cal.events;
+                    }
+                } catch (error) {
+                    log.error('Failed to parse events for calendar', cal.id, error);
+                    events = [];
+                }
+
+                log.debug('Loading calendar:', cal.name, 'with', events.length, 'events');
+
+                // Build FullCalendar events with authentication-based detail hiding
+                const fullCalendarEvents = buildFullCalendarEvents(cal, events, isAuthenticated);
+
+                const source = {
+                    events: fullCalendarEvents,
+                    color: cal.color
+                };
+
+                const eventSource = calendar.addEventSource(source);
+
+                eventSources.push({
+                    id: cal.id,
+                    name: cal.name,
+                    color: cal.color,
+                    source: eventSource,
+                    visible: !cal.hidden,
+                    lastUpdate: new Date(),
+                    status: 'fresh',
+                    details: cal.details
+                });
+            });
+
         } catch (error) {
-            log.error('Failed to parse calendars data:', error);
-            calendars = [];
+            log.error('Error loading calendars:', error);
         }
+    }
 
-        if (!calendars || calendars.length === 0) {
-            log.debug('No calendars to load');
-            return;
-        }
+    function buildFullCalendarEvents(calendar, events, isAuthenticated) {
+        if (!events || events.length === 0) return [];
 
-        calendars.forEach(cal => {
-            if (!cal || !cal.id) return;
+        return events.map(event => {
+            const shouldHideDetails = !isAuthenticated && calendar.details;
 
-            log.debug('Loading calendar:', cal.name, 'with', (cal.events || []).length, 'events');
-
-            const source = {
-                events: cal.events || [],
-                color: cal.color
+            const fcEvent = {
+                title: event.title,
+                start: event.start,
+                allDay: event.allDay || false,
+                backgroundColor: calendar.color,
+                borderColor: calendar.color,
+                textColor: 'white',
+                extendedProps: buildExtendedProps(event)
             };
 
-            const eventSource = calendar.addEventSource(source);
+            if (shouldHideDetails) {
+                fcEvent.title = '';
+                fcEvent.extendedProps.description = '';
+                fcEvent.extendedProps.location = '';
+            }
 
-            eventSources.push({
-                id: cal.id,
-                name: cal.name,
-                color: cal.color,
-                source: eventSource,
-                visible: true,
-                lastUpdate: new Date(),
-                status: 'fresh'
-            });
+            if (event.end) {
+                fcEvent.end = event.end;
+            }
+
+            if (event.url) {
+                fcEvent.url = event.url;
+            }
+
+            return fcEvent;
         });
+    }
+
+    function buildExtendedProps(event) {
+        const props = {
+            description: event.description || '',
+            location: event.location || '',
+            uid: event.uid || '',
+            duration: event.duration || '',
+            status: event.status || '',
+            transparency: event.transparency || '',
+            sequence: event.sequence ? String(event.sequence) : '0'
+        };
+
+        // Add timestamp fields if they exist
+        if (event.dtStamp) {
+            props.dtStamp = event.dtStamp;
+        }
+        if (event.created) {
+            props.created = event.created;
+        }
+        if (event.lastModified) {
+            props.lastModified = event.lastModified;
+        }
+
+        // Add organizer information if it exists
+        if (event.organizer) {
+            if (event.organizer.name) {
+                props.organizerName = event.organizer.name;
+            }
+            if (event.organizer.email) {
+                props.organizerEmail = event.organizer.email;
+            }
+        }
+
+        // Add attendee information if it exists
+        if (event.attendees && Array.isArray(event.attendees) && event.attendees.length > 0) {
+            const attendeeNames = [];
+            const attendeeEmails = [];
+
+            for (const attendee of event.attendees) {
+                if (attendee.name) {
+                    attendeeNames.push(attendee.name);
+                }
+                if (attendee.email) {
+                    attendeeEmails.push(attendee.email);
+                }
+            }
+
+            if (attendeeNames.length > 0) {
+                props.attendeeNames = attendeeNames.join(', ');
+            }
+            if (attendeeEmails.length > 0) {
+                props.attendeeEmails = attendeeEmails.join(', ');
+            }
+            props.attendeeCount = String(event.attendees.length);
+        }
+
+        return props;
     }
 
     function linkify(text) {
@@ -382,32 +722,35 @@
         }
     });
 
-    function refetchAllCalendars() {
+    async function refetchAllCalendars() {
         if (!isAuthenticated) {
             showPasswordModal();
             return;
         }
 
         if (confirm('Are you sure you want to refetch all calendar data? This may take a moment.')) {
-            fetch('/calendars/refetch', {
-                method: 'POST',
-                credentials: 'include'
-            })
-                .then(response => {
-                    if (response.status === 401) {
-                        isAuthenticated = false;
-                        showPasswordModal();
-                        return;
-                    }
-                    if (response.ok) {
-                        location.reload();
-                    } else {
-                        alert('Error refetching calendars');
-                    }
-                })
-                .catch(error => {
-                    alert('Error refetching calendars');
+            try {
+                const response = await fetch('/api/calendars/refetch', {
+                    method: 'POST',
+                    credentials: 'include'
                 });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    // Reload calendars after refetch
+                    await loadCalendars();
+                    alert('Calendars refetched successfully!');
+                } else {
+                    alert('Error refetching calendars');
+                }
+            } catch (error) {
+                alert('Error refetching calendars: ' + error.message);
+            }
         }
     }
 
@@ -473,6 +816,199 @@
         }
 
         window.history.replaceState({}, '', url.toString());
+    }
+
+    function showCalendarManagementModal() {
+        if (!isAuthenticated) {
+            showPasswordModal();
+            return;
+        }
+
+        const modal = document.getElementById('calendarModal');
+        const overlay = document.getElementById('calendarModalOverlay');
+
+        loadCalendarList();
+
+        modal.classList.add('show');
+        overlay.classList.add('show');
+    }
+
+    function closeCalendarManagementModal() {
+        document.getElementById('calendarModal').classList.remove('show');
+        document.getElementById('calendarModalOverlay').classList.remove('show');
+    }
+
+    function showAddCalendarForm() {
+        const modal = document.getElementById('addCalendarModal');
+        const overlay = document.getElementById('addCalendarModalOverlay');
+
+        // Clear form
+        document.getElementById('calendar-name').value = '';
+        document.getElementById('calendar-url').value = '';
+        document.getElementById('calendar-color').value = '#3498db';
+
+        modal.classList.add('show');
+        overlay.classList.add('show');
+    }
+
+    function closeAddCalendarModal() {
+        document.getElementById('addCalendarModal').classList.remove('show');
+        document.getElementById('addCalendarModalOverlay').classList.remove('show');
+    }
+
+    async function loadCalendarList() {
+        try {
+            const response = await fetch('/api/calendars', {
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                const calendars = await response.json();
+                displayCalendarList(calendars);
+            }
+        } catch (error) {
+            log.error('Error loading calendar list:', error);
+        }
+    }
+
+    function displayCalendarList(calendars) {
+        const listEl = document.getElementById('calendarList');
+
+        if (!calendars || calendars.length === 0) {
+            listEl.innerHTML = '<p style="text-align: center; color: #666; margin: 20px 0;">No calendars found. Add your first calendar!</p>';
+            return;
+        }
+
+        listEl.innerHTML = calendars.map(cal => {
+            const isVisible = !cal.hidden; // Convert hidden to visible for display
+            return `
+            <div class="calendar-item" style="display: flex; align-items: center; padding: 10px; border: 1px solid #eee; margin-bottom: 10px; border-radius: 4px;">
+                <div style="width: 20px; height: 20px; background: ${cal.color}; border-radius: 3px; margin-right: 10px;"></div>
+                <div style="flex: 1;">
+                    <div style="font-weight: bold;">${cal.name}</div>
+                    <div style="font-size: 0.9em; color: #666;">${cal.url}</div>
+                    <div style="font-size: 0.8em; color: #888;">
+                        ${isVisible ? 'Visible' : 'Hidden'} •
+                        Last updated: ${cal.updated_at ? new Date(cal.updated_at).toLocaleDateString() : 'Never'}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="toggleCalendarVisibility(${cal.id}, ${!isVisible})"
+                            style="padding: 5px 10px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 3px;">
+                        ${isVisible ? 'Hide' : 'Show'}
+                    </button>
+                    <button onclick="deleteCalendar(${cal.id})"
+                            style="padding: 5px 10px; border: 1px solid #dc3545; background: #dc3545; color: white; cursor: pointer; border-radius: 3px;">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `;
+        }).join('');
+    }
+
+    async function addCalendar() {
+        const name = document.getElementById('calendar-name').value.trim();
+        const url = document.getElementById('calendar-url').value.trim();
+        const color = document.getElementById('calendar-color').value;
+
+        if (!name || !url) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/calendars', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, url, color })
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                closeAddCalendarModal();
+                await loadCalendarList();
+                // Reload calendars in the main view
+                await loadCalendars();
+            } else {
+                const error = await response.json();
+                alert('Error adding calendar: ' + (error.error || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Error adding calendar: ' + error.message);
+        }
+    }
+
+    async function toggleCalendarVisibility(calendarId, visible) {
+        try {
+            const response = await fetch(`/api/calendars/${calendarId}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ visible })
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                await loadCalendarList();
+                // Reload calendars in the main view
+                await loadCalendars();
+            } else {
+                alert('Error updating calendar');
+            }
+        } catch (error) {
+            alert('Error updating calendar: ' + error.message);
+        }
+    }
+
+    async function deleteCalendar(calendarId) {
+        if (!confirm('Are you sure you want to delete this calendar? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/calendars/${calendarId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (response.status === 401) {
+                isAuthenticated = false;
+                showPasswordModal();
+                return;
+            }
+
+            if (response.ok) {
+                await loadCalendarList();
+                // Reload calendars in the main view
+                await loadCalendars();
+            } else {
+                alert('Error deleting calendar');
+            }
+        } catch (error) {
+            alert('Error deleting calendar: ' + error.message);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {

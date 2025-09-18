@@ -1,4 +1,5 @@
 import express from 'express';
+import { fetchAndProcessCalendar, refetchAllCalendars } from './service.js';
 
 export function createCalendarRouter(ctx) {
     const router = express.Router();
@@ -7,10 +8,10 @@ export function createCalendarRouter(ctx) {
 
     router.get('/', async (_req, res) => {
         try {
-            const calendars = await ctx.models.calendar.getAll();
-            res.json({ success: true, data: calendars });
+            const calendars = await ctx.models.calendar.getVisible();
+            res.json(calendars);
         } catch (error) {
-            ctx.logger.error('Error fetching calendars:', error);
+            ctx.logger.error('Error fetching visible calendars:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
@@ -56,14 +57,23 @@ export function createCalendarRouter(ctx) {
             const calendar = await ctx.models.calendar.create(calendarData);
             ctx.logger.info(`Calendar created: ${calendar.name}`);
 
-            res.status(201).json({ success: true, data: calendar });
+            // Fetch and process calendar data in the background
+            setImmediate(async () => {
+                try {
+                    await fetchAndProcessCalendar(calendar.id, calendar.url, ctx);
+                } catch (error) {
+                    ctx.logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
+                }
+            });
+
+            res.status(201).json(calendar);
         } catch (error) {
             ctx.logger.error('Error creating calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
 
-    router.patch('/:id', verifyToken, async (req, res) => {
+    router.put('/:id', verifyToken, async (req, res) => {
         try {
             const calendar = await ctx.models.calendar.getById(req.params.id);
             if (!calendar) {
@@ -71,6 +81,12 @@ export function createCalendarRouter(ctx) {
             }
 
             const updateData = { ...req.body };
+
+            // Handle visibility update
+            if ('visible' in updateData) {
+                updateData.hidden = !updateData.visible;
+                delete updateData.visible;
+            }
 
             if (updateData.name) {
                 updateData.name = ctx.utils.sanitizeString(updateData.name);
@@ -86,7 +102,7 @@ export function createCalendarRouter(ctx) {
             const updatedCalendar = await ctx.models.calendar.update(req.params.id, updateData);
             ctx.logger.info(`Calendar updated: ${updatedCalendar.name}`);
 
-            res.json({ success: true, data: updatedCalendar });
+            res.json(updatedCalendar);
         } catch (error) {
             ctx.logger.error('Error updating calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
@@ -101,7 +117,7 @@ export function createCalendarRouter(ctx) {
             }
 
             ctx.logger.info(`Calendar deleted: ${calendar.name}`);
-            res.json({ success: true, data: calendar });
+            res.json(calendar);
         } catch (error) {
             ctx.logger.error('Error deleting calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
@@ -123,19 +139,18 @@ export function createCalendarRouter(ctx) {
         }
     });
 
-    router.get('/visible/all', async (_req, res) => {
-        try {
-            const calendars = await ctx.models.calendar.getVisible();
-            res.json({ success: true, data: calendars });
-        } catch (error) {
-            ctx.logger.error('Error fetching visible calendars:', error);
-            res.status(500).json({ success: false, error: 'Internal server error' });
-        }
-    });
-
     router.post('/refetch', verifyToken, async (_req, res) => {
         try {
             ctx.logger.info('Calendar refetch requested');
+
+            setImmediate(async () => {
+                try {
+                    await refetchAllCalendars(ctx);
+                } catch (error) {
+                    ctx.logger.error('Background refetch failed:', error);
+                }
+            });
+
             res.json({ success: true, message: 'Calendar refetch initiated' });
         } catch (error) {
             ctx.logger.error('Error initiating calendar refetch:', error);
