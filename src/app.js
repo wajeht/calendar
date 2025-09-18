@@ -68,7 +68,19 @@ export async function createServer(customConfig = {}) {
             extended: true,
             limit: ctx.config.app.urlEncodedLimit || '1mb'
         }))
-        .use(express.static('./public'))
+        .use(express.static('./public', {
+            maxAge: ctx.config.app.env === 'production' ? ctx.config.cache.staticMaxAge : '0',
+            etag: true,
+            lastModified: true,
+            immutable: ctx.config.app.env === 'production' && ctx.config.cache.staticImmutable,
+            setHeaders: (res, path, _stat) => {
+                const extensionPattern = new RegExp(`\\.(${ctx.config.cache.staticExtensions.join('|')})$`);
+                if (ctx.config.app.env === 'production' && path.match(extensionPattern)) {
+                    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                    res.setHeader('Vary', 'Accept-Encoding');
+                }
+            }
+        }))
         .engine('html', ejs.renderFile)
         .set('view engine', 'html')
         .set('view cache', ctx.config.app.env === 'production')

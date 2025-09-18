@@ -25,7 +25,7 @@ export const config = {
 
     rateLimit: {
         windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-        max: parseInt(process.env.RATE_LIMIT_MAX) || 100, // Limit each IP to 100 requests per windowMs
+        max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
         standardHeaders: process.env.RATE_LIMIT_STANDARD_HEADERS !== 'false',
         legacyHeaders: process.env.RATE_LIMIT_LEGACY_HEADERS === 'true',
         skipSuccessfulRequests: process.env.RATE_LIMIT_SKIP_SUCCESSFUL === 'true',
@@ -40,5 +40,11 @@ export const config = {
         password: process.env.APP_PASSWORD || 'password',
         sessionSecret: process.env.SESSION_SECRET || 'calendar',
         cookieDomain: process.env.COOKIE_DOMAIN || undefined
+    },
+
+    cache: {
+        staticMaxAge: process.env.STATIC_CACHE_MAX_AGE || '365d',
+        staticImmutable: process.env.STATIC_CACHE_IMMUTABLE !== 'false',
+        staticExtensions: process.env.STATIC_CACHE_EXTENSIONS?.split(',') || ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'eot', 'txt']
     }
 };
