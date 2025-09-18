@@ -3,7 +3,7 @@ set -e
 
 source .env
 
-LOCAL_DIR="./data"
+LOCAL_DIR="./src/db/sqlite"
 REMOTE_DIR="~/databases/calendar"
 
 usage() {
