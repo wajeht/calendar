@@ -21,7 +21,9 @@ export function createRouter(dependencies = {}) {
         middleware,
         utils,
         logger,
-        config
+        config,
+        errors,
+        validators
     }));
 
     router.use('/api/calendars', createCalendarRouter({
