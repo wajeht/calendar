@@ -120,21 +120,44 @@ export function createCalendarService(dependencies = {}) {
     function addEventProperties(event, icalEvent) {
         // Add organizer
         if (icalEvent.organizer) {
-            event.organizer = {
-                name: icalEvent.organizer.getParameter('cn') || '',
-                email: icalEvent.organizer.getFirstValue()?.replace('mailto:', '') || ''
-            };
+            try {
+                event.organizer = {
+                    name: (typeof icalEvent.organizer.getParameter === 'function' ? icalEvent.organizer.getParameter('cn') : '') || '',
+                    email: (typeof icalEvent.organizer.getFirstValue === 'function' ? icalEvent.organizer.getFirstValue()?.replace('mailto:', '') : icalEvent.organizer.toString().replace('mailto:', '')) || ''
+                };
+            } catch (error) {
+                // Fallback for organizer as string value
+                const organizerStr = icalEvent.organizer.toString();
+                event.organizer = {
+                    name: '',
+                    email: organizerStr.replace('mailto:', '') || ''
+                };
+            }
         }
 
         // Add attendees
         if (icalEvent.attendees && icalEvent.attendees.length > 0) {
-            event.attendees = icalEvent.attendees.map(attendee => ({
-                name: attendee.getParameter('cn') || '',
-                email: attendee.getFirstValue()?.replace('mailto:', '') || '',
-                role: attendee.getParameter('role') || '',
-                status: attendee.getParameter('partstat') || '',
-                type: attendee.getParameter('cutype') || ''
-            }));
+            event.attendees = icalEvent.attendees.map(attendee => {
+                try {
+                    return {
+                        name: (typeof attendee.getParameter === 'function' ? attendee.getParameter('cn') : '') || '',
+                        email: (typeof attendee.getFirstValue === 'function' ? attendee.getFirstValue()?.replace('mailto:', '') : attendee.toString().replace('mailto:', '')) || '',
+                        role: (typeof attendee.getParameter === 'function' ? attendee.getParameter('role') : '') || '',
+                        status: (typeof attendee.getParameter === 'function' ? attendee.getParameter('partstat') : '') || '',
+                        type: (typeof attendee.getParameter === 'function' ? attendee.getParameter('cutype') : '') || ''
+                    };
+                } catch (error) {
+                    // Fallback for attendee as string value
+                    const attendeeStr = attendee.toString();
+                    return {
+                        name: '',
+                        email: attendeeStr.replace('mailto:', '') || '',
+                        role: '',
+                        status: '',
+                        type: ''
+                    };
+                }
+            });
         }
 
         // Add timestamps
