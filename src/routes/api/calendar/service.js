@@ -1,6 +1,10 @@
-import ICAL from 'ical.js';
-
 export function createCalendarService(dependencies = {}) {
+    const { ICAL, logger, models } = dependencies;
+
+    if (!ICAL) {
+        throw new Error('ICAL library is required in dependencies');
+    }
+
     async function fetchICalData(url) {
         try {
             const response = await fetch(url, {
@@ -20,12 +24,12 @@ export function createCalendarService(dependencies = {}) {
 
     function parseICalToEvents(icalData) {
         try {
-            console.log('Parsing iCal data with ical.js...');
+            logger.debug('Parsing iCal data with ical.js...');
             const jcalData = ICAL.parse(icalData);
             const comp = new ICAL.Component(jcalData);
             const vevents = comp.getAllSubcomponents('vevent');
 
-            console.log('Found', vevents.length, 'VEVENT components');
+            logger.debug(`Found ${vevents.length} VEVENT components`);
 
             const events = [];
             const now = new Date();
@@ -35,11 +39,11 @@ export function createCalendarService(dependencies = {}) {
             for (const vevent of vevents) {
                 try {
                     const event = new ICAL.Event(vevent);
-                    console.log('Processing event:', event.summary, 'recurring:', event.isRecurring());
+                    logger.debug(`Processing event: ${event.summary}, recurring: ${event.isRecurring()}`);
 
                     if (event.isRecurring()) {
                         // Handle recurring events using RecurExpansion
-                        console.log('Expanding recurring event:', event.summary);
+                        logger.debug(`Expanding recurring event: ${event.summary}`);
 
                         const expand = new ICAL.RecurExpansion({
                             component: vevent,
@@ -58,14 +62,14 @@ export function createCalendarService(dependencies = {}) {
                         events.push(createEventFromIcal(event));
                     }
                 } catch (eventError) {
-                    console.error('Error processing event:', eventError.message);
+                    logger.error('Error processing event:', eventError.message);
                 }
             }
 
-            console.log('Successfully parsed', events.length, 'total events');
+            logger.debug(`Successfully parsed ${events.length} total events`);
             return events;
         } catch (error) {
-            console.error('Error parsing iCal data:', error);
+            logger.error('Error parsing iCal data:', error);
             throw new Error(`Failed to parse iCal data: ${error.message}`);
         }
     }
@@ -157,52 +161,52 @@ export function createCalendarService(dependencies = {}) {
         if (url) event.url = url;
     }
 
-    async function fetchAndProcessCalendar(calendarId, url, ctx) {
+    async function fetchAndProcessCalendar(calendarId, url) {
         try {
-            ctx.logger.info(`Fetching calendar data for ID ${calendarId} from ${url}`);
+            logger.info(`Fetching calendar data for ID ${calendarId} from ${url}`);
 
             const rawData = await fetchICalData(url);
             const events = parseICalToEvents(rawData);
 
-            ctx.logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
+            logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
 
-            await ctx.models.calendar.update(calendarId, {
+            await models.calendar.update(calendarId, {
                 data: rawData,
                 events: JSON.stringify(events)
             });
 
-            ctx.logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
+            logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
 
             return { rawData, events };
         } catch (error) {
-            ctx.logger.error(`Failed to fetch calendar ${calendarId}:`, error);
+            logger.error(`Failed to fetch calendar ${calendarId}:`, error);
 
             try {
-                await ctx.models.calendar.update(calendarId, {
+                await models.calendar.update(calendarId, {
                     data: null,
                     events: JSON.stringify([])
                 });
             } catch (updateError) {
-                ctx.logger.error(`Failed to update calendar ${calendarId} with error state:`, updateError);
+                logger.error(`Failed to update calendar ${calendarId} with error state:`, updateError);
             }
 
             throw error;
         }
     }
 
-    async function refetchAllCalendars(ctx) {
+    async function refetchAllCalendars() {
         try {
-            const calendars = await ctx.models.calendar.getAll();
-            ctx.logger.info(`Refetching ${calendars.length} calendars`);
+            const calendars = await models.calendar.getAll();
+            logger.info(`Refetching ${calendars.length} calendars`);
 
             const results = [];
 
             for (const calendar of calendars) {
                 try {
-                    const result = await fetchAndProcessCalendar(calendar.id, calendar.url, ctx);
+                    const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
                     results.push({ success: true, calendarId: calendar.id, ...result });
                 } catch (error) {
-                    ctx.logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
+                    logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
                     results.push({
                         success: false,
                         calendarId: calendar.id,
@@ -214,11 +218,11 @@ export function createCalendarService(dependencies = {}) {
             const successful = results.filter(r => r.success).length;
             const failed = results.filter(r => !r.success).length;
 
-            ctx.logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
+            logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
 
             return { total: calendars.length, successful, failed, results };
         } catch (error) {
-            ctx.logger.error('Failed to refetch calendars:', error);
+            logger.error('Failed to refetch calendars:', error);
             throw error;
         }
     }

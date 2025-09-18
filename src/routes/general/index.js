@@ -1,6 +1,7 @@
 import express from 'express';
 
-export function createGeneralRouter(ctx) {
+export function createGeneralRouter(dependencies = {}) {
+    // General router doesn't need dependencies - just serves static content
     const router = express.Router();
 
     router.get('/', async (req, res) => {
@@ -13,11 +14,16 @@ export function createGeneralRouter(ctx) {
     return router;
 }
 
-export function notFoundHandler(ctx) {
-    return (req, res, _next) => {
-        ctx.logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
+export function notFoundHandler(dependencies = {}) {
+    const { logger, utils } = dependencies;
 
-        if (ctx.utils.isApiRequest(req)) {
+    if (!logger) throw new Error('Logger required for notFoundHandler');
+    if (!utils) throw new Error('Utils required for notFoundHandler');
+
+    return (req, res, _next) => {
+        logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
+
+        if (utils.isApiRequest(req)) {
             return res.status(404).json({
                 success: false,
                 error: 'Route not found'
@@ -33,23 +39,29 @@ export function notFoundHandler(ctx) {
     };
 }
 
-export function errorHandler(ctx) {
+export function errorHandler(dependencies = {}) {
+    const { logger, utils, config } = dependencies;
+
+    if (!logger) throw new Error('Logger required for errorHandler');
+    if (!utils) throw new Error('Utils required for errorHandler');
+    if (!config) throw new Error('Config required for errorHandler');
+
     return (err, req, res, _next) => {
-        ctx.logger.error('Unhandled error:', err);
+        logger.error('Unhandled error:', err);
 
         const statusCode = err.statusCode || err.status || 500;
         const message = err.message || 'Internal server error';
 
-        if (ctx.utils.isApiRequest(req)) {
+        if (utils.isApiRequest(req)) {
             return res.status(statusCode).json({
                 success: false,
-                error: ctx.config.app.env === 'development' ? message : 'Internal server error'
+                error: config.app.env === 'development' ? message : 'Internal server error'
             });
         }
 
         res.status(statusCode).render('general/error.html', {
             title: `${statusCode} - Error`,
-            error: ctx.config.app.env === 'development' ? message : 'An error occurred',
+            error: config.app.env === 'development' ? message : 'An error occurred',
             statusCode: statusCode
         });
 

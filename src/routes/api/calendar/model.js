@@ -1,4 +1,6 @@
 export function createCalendar(db) {
+    if (!db) throw new Error('Database required for calendar model');
+
     return {
 
         async getAll() {

@@ -1,29 +1,36 @@
 import express from 'express';
 
-export function createCalendarRouter(ctx) {
-    const router = express.Router();
+export function createCalendarRouter(dependencies = {}) {
+    const { models, services, middleware, utils, logger } = dependencies;
 
-    const verifyToken = ctx.middleware.auth.requireAuth();
+    if (!models) throw new Error('Models required for calendar router');
+    if (!services) throw new Error('Services required for calendar router');
+    if (!middleware) throw new Error('Middleware required for calendar router');
+    if (!utils) throw new Error('Utils required for calendar router');
+    if (!logger) throw new Error('Logger required for calendar router');
+
+    const router = express.Router();
+    const verifyToken = middleware.auth.requireAuth();
 
     router.get('/', async (_req, res) => {
         try {
-            const calendars = await ctx.models.calendar.getAll();
+            const calendars = await models.calendar.getAll();
             res.json(calendars);
         } catch (error) {
-            ctx.logger.error('Error fetching visible calendars:', error);
+            logger.error('Error fetching visible calendars:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
 
     router.get('/:id', verifyToken, async (req, res) => {
         try {
-            const calendar = await ctx.models.calendar.getById(req.params.id);
+            const calendar = await models.calendar.getById(req.params.id);
             if (!calendar) {
                 return res.status(404).json({ success: false, error: 'Calendar not found' });
             }
             res.json({ success: true, data: calendar });
         } catch (error) {
-            ctx.logger.error('Error fetching calendar:', error);
+            logger.error('Error fetching calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
@@ -32,17 +39,17 @@ export function createCalendarRouter(ctx) {
         try {
             const { name, url, color } = req.body;
 
-            if (ctx.utils.isEmpty(name) || ctx.utils.isEmpty(url)) {
+            if (utils.isEmpty(name) || utils.isEmpty(url)) {
                 return res.status(400).json({ success: false, error: 'Name and URL are required' });
             }
 
-            if (!ctx.utils.validateCalendarUrl(url)) {
+            if (!utils.validateCalendarUrl(url)) {
                 return res.status(400).json({ success: false, error: 'Invalid calendar URL' });
             }
 
-            const sanitizedName = ctx.utils.sanitizeString(name);
+            const sanitizedName = utils.sanitizeString(name);
 
-            const existingCalendar = await ctx.models.calendar.getByUrl(url);
+            const existingCalendar = await models.calendar.getByUrl(url);
             if (existingCalendar) {
                 return res.status(409).json({ success: false, error: 'Calendar with this URL already exists' });
             }
@@ -50,30 +57,30 @@ export function createCalendarRouter(ctx) {
             const calendarData = {
                 ...req.body,
                 name: sanitizedName,
-                color: color || ctx.utils.generateRandomColor()
+                color: color || utils.generateRandomColor()
             };
 
-            const calendar = await ctx.models.calendar.create(calendarData);
-            ctx.logger.info(`Calendar created: ${calendar.name}`);
+            const calendar = await models.calendar.create(calendarData);
+            logger.info(`Calendar created: ${calendar.name}`);
 
             setImmediate(async () => {
                 try {
-                    await ctx.services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url, ctx);
+                    await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
                 } catch (error) {
-                    ctx.logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
+                    logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
                 }
             });
 
             res.status(201).json(calendar);
         } catch (error) {
-            ctx.logger.error('Error creating calendar:', error);
+            logger.error('Error creating calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
 
     router.put('/:id', verifyToken, async (req, res) => {
         try {
-            const calendar = await ctx.models.calendar.getById(req.params.id);
+            const calendar = await models.calendar.getById(req.params.id);
             if (!calendar) {
                 return res.status(404).json({ success: false, error: 'Calendar not found' });
             }
@@ -86,56 +93,56 @@ export function createCalendarRouter(ctx) {
             }
 
             if (updateData.name) {
-                updateData.name = ctx.utils.sanitizeString(updateData.name);
-                if (ctx.utils.isEmpty(updateData.name)) {
+                updateData.name = utils.sanitizeString(updateData.name);
+                if (utils.isEmpty(updateData.name)) {
                     return res.status(400).json({ success: false, error: 'Name cannot be empty' });
                 }
             }
 
-            if (updateData.url && !ctx.utils.validateCalendarUrl(updateData.url)) {
+            if (updateData.url && !utils.validateCalendarUrl(updateData.url)) {
                 return res.status(400).json({ success: false, error: 'Invalid calendar URL' });
             }
 
-            const updatedCalendar = await ctx.models.calendar.update(req.params.id, updateData);
-            ctx.logger.info(`Calendar updated: ${updatedCalendar.name}`);
+            const updatedCalendar = await models.calendar.update(req.params.id, updateData);
+            logger.info(`Calendar updated: ${updatedCalendar.name}`);
 
             res.json(updatedCalendar);
         } catch (error) {
-            ctx.logger.error('Error updating calendar:', error);
+            logger.error('Error updating calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
 
     router.delete('/:id', verifyToken, async (req, res) => {
         try {
-            const calendar = await ctx.models.calendar.delete(req.params.id);
+            const calendar = await models.calendar.delete(req.params.id);
             if (!calendar) {
                 return res.status(404).json({ success: false, error: 'Calendar not found' });
             }
 
-            ctx.logger.info(`Calendar deleted: ${calendar.name}`);
+            logger.info(`Calendar deleted: ${calendar.name}`);
             res.json(calendar);
         } catch (error) {
-            ctx.logger.error('Error deleting calendar:', error);
+            logger.error('Error deleting calendar:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
 
     router.post('/refetch', verifyToken, async (_req, res) => {
         try {
-            ctx.logger.info('Calendar refetch requested');
+            logger.info('Calendar refetch requested');
 
             setImmediate(async () => {
                 try {
-                    await ctx.services.calendar.refetchAllCalendars(ctx);
+                    await services.calendar.refetchAllCalendars();
                 } catch (error) {
-                    ctx.logger.error('Background refetch failed:', error);
+                    logger.error('Background refetch failed:', error);
                 }
             });
 
             res.json({ success: true, message: 'Calendar refetch initiated' });
         } catch (error) {
-            ctx.logger.error('Error initiating calendar refetch:', error);
+            logger.error('Error initiating calendar refetch:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });

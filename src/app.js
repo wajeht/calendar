@@ -91,7 +91,14 @@ export async function createServer(customConfig = {}) {
 
     app.get('/health', (_req, res) => res.status(200).json({ message: "ok" }));
 
-    app.use('/', createRouter(ctx));
+    app.use('/', createRouter({
+        models: ctx.models,
+        services: ctx.services,
+        middleware: ctx.middleware,
+        utils: ctx.utils,
+        logger: ctx.logger,
+        config: ctx.config
+    }));
 
     const server = app.listen(PORT);
     ctx.logger.success(`Server running on http://localhost:${PORT}`);

@@ -1,6 +1,9 @@
 export function createUtils(dependencies = {}) {
     const { logger, config } = dependencies;
 
+    if (!logger) throw new Error('Logger required for utils');
+    if (!config) throw new Error('Config required for utils');
+
     return {
         /**
          * Check if a request is an API request

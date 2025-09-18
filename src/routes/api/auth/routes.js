@@ -1,9 +1,15 @@
 import express from 'express';
 
-export function createAuthRouter(ctx) {
-    const router = express.Router();
+export function createAuthRouter(dependencies = {}) {
+    const { middleware, utils, logger, config } = dependencies;
 
-    const requireAuth = ctx.middleware.auth.requireAuth();
+    if (!middleware) throw new Error('Middleware required for auth router');
+    if (!utils) throw new Error('Utils required for auth router');
+    if (!logger) throw new Error('Logger required for auth router');
+    if (!config) throw new Error('Config required for auth router');
+
+    const router = express.Router();
+    const requireAuth = middleware.auth.requireAuth();
 
     router.post('/', async (req, res) => {
         try {
@@ -13,28 +19,28 @@ export function createAuthRouter(ctx) {
                 return res.status(400).json({ success: false, error: 'Password is required' });
             }
 
-            if (!ctx.utils.auth.validatePassword(password)) {
-                ctx.logger.warn('Failed login attempt');
+            if (!utils.auth.validatePassword(password)) {
+                logger.warn('Failed login attempt');
                 return res.status(401).json({ success: false, error: 'Invalid password' });
             }
 
-            res.cookie('session_token', ctx.utils.auth.generateSessionToken(), {
+            res.cookie('session_token', utils.auth.generateSessionToken(), {
                 httpOnly: true,
-                secure: ctx.config.app.env === 'production', // Only require HTTPS in production
+                secure: config.app.env === 'production', // Only require HTTPS in production
                 sameSite: 'strict', // Stricter CSRF protection
                 maxAge: 24 * 60 * 60 * 1000, // 24 hours
                 path: '/', // Explicit path
-                domain: ctx.config.auth.cookieDomain
+                domain: config.auth.cookieDomain
             });
 
-            ctx.logger.info('Successful login');
+            logger.info('Successful login');
             res.json({
                 success: true,
                 message: 'Authentication successful'
             });
 
         } catch (error) {
-            ctx.logger.error('Error during authentication:', error);
+            logger.error('Error during authentication:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });
@@ -42,13 +48,13 @@ export function createAuthRouter(ctx) {
     router.post('/logout', (req, res) => {
         res.clearCookie('session_token', {
             httpOnly: true,
-            secure: ctx.config.app.env === 'production',
+            secure: config.app.env === 'production',
             sameSite: 'strict',
             path: '/',
-            domain: ctx.config.auth.cookieDomain
+            domain: config.auth.cookieDomain
         });
 
-        ctx.logger.info('User logged out');
+        logger.info('User logged out');
         res.json({ success: true, message: 'Logged out successfully' });
     });
 
