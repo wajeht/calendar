@@ -1,271 +1,171 @@
+import ICAL from 'ical.js';
+
 export function createCalendarService(dependencies = {}) {
     async function fetchICalData(url) {
         try {
             const response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Calendar-App/1.0'
-                },
-                timeout: 30000 // 30 second timeout
+                headers: { 'User-Agent': 'Calendar-App/1.0' },
+                timeout: 30000
             });
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const data = await response.text();
-            return data;
+            return await response.text();
         } catch (error) {
             throw new Error(`Failed to fetch iCal data from ${url}: ${error.message}`);
         }
     }
 
     function parseICalToEvents(icalData) {
-        const events = [];
-        const lines = icalData.split('\n').map(line => line.trim());
+        try {
+            console.log('Parsing iCal data with ical.js...');
+            const jcalData = ICAL.parse(icalData);
+            const comp = new ICAL.Component(jcalData);
+            const vevents = comp.getAllSubcomponents('vevent');
 
-        let currentEvent = null;
-        let inEvent = false;
+            console.log('Found', vevents.length, 'VEVENT components');
 
-        for (const line of lines) {
-            if (line === 'BEGIN:VEVENT') {
-                inEvent = true;
-                currentEvent = {};
-                continue;
-            }
+            const events = [];
+            const now = new Date();
+            const futureLimit = new Date();
+            futureLimit.setFullYear(now.getFullYear() + 2);
 
-            if (line === 'END:VEVENT') {
-                if (currentEvent) {
-                    events.push(currentEvent);
-                }
-                inEvent = false;
-                currentEvent = null;
-                continue;
-            }
-
-            if (!inEvent || !currentEvent) {
-                continue;
-            }
-
-            // Parse event properties
-            if (line.startsWith('SUMMARY:')) {
-                currentEvent.title = line.substring(8);
-            } else if (line.startsWith('DTSTART')) {
-                const { dateTime, allDay } = parseICalDateTime(line);
-                if (dateTime) {
-                    currentEvent.start = dateTime;
-                    currentEvent.allDay = allDay;
-                }
-            } else if (line.startsWith('DTEND')) {
-                const { dateTime } = parseICalDateTime(line);
-                if (dateTime) {
-                    currentEvent.end = dateTime;
-                }
-            } else if (line.startsWith('DESCRIPTION:')) {
-                currentEvent.description = line.substring(12);
-            } else if (line.startsWith('LOCATION:')) {
-                currentEvent.location = line.substring(9);
-            } else if (line.startsWith('UID:')) {
-                currentEvent.uid = line.substring(4);
-            } else if (line.startsWith('URL:')) {
-                currentEvent.url = line.substring(4);
-            } else if (line.startsWith('DURATION:')) {
-                currentEvent.duration = line.substring(9);
-            } else if (line.startsWith('DTSTAMP:')) {
-                currentEvent.dtStamp = parseICalTimestamp(line.substring(8));
-            } else if (line.startsWith('STATUS:')) {
-                currentEvent.status = line.substring(7);
-            } else if (line.startsWith('TRANSP:')) {
-                currentEvent.transparency = line.substring(7);
-            } else if (line.startsWith('SEQUENCE:')) {
-                const seq = parseInt(line.substring(9));
-                if (!isNaN(seq)) {
-                    currentEvent.sequence = seq;
-                }
-            } else if (line.startsWith('ORGANIZER')) {
-                const organizer = parseOrganizer(line);
-                if (organizer) {
-                    currentEvent.organizer = organizer;
-                }
-            } else if (line.startsWith('ATTENDEE')) {
-                const attendee = parseAttendee(line);
-                if (attendee) {
-                    if (!currentEvent.attendees) {
-                        currentEvent.attendees = [];
-                    }
-                    currentEvent.attendees.push(attendee);
-                }
-            } else if (line.startsWith('CREATED:')) {
-                currentEvent.created = parseICalTimestamp(line.substring(8));
-            } else if (line.startsWith('LAST-MODIFIED:')) {
-                currentEvent.lastModified = parseICalTimestamp(line.substring(14));
-            }
-        }
-
-        return events;
-    }
-
-    function parseICalDateTime(dtLine) {
-        // Extract the datetime value using regex
-        const match = dtLine.match(/DT(?:START|END)[^:]*:(.+)/);
-        if (!match) {
-            return { dateTime: null, allDay: false };
-        }
-
-        const dateStr = match[1];
-
-        // Check if it's an all-day event (date only, no time)
-        if (dateStr.length === 8) { // YYYYMMDD
-            try {
-                const year = parseInt(dateStr.substring(0, 4));
-                const month = parseInt(dateStr.substring(4, 6)) - 1; // JS months are 0-indexed
-                const day = parseInt(dateStr.substring(6, 8));
-                return {
-                    dateTime: new Date(year, month, day).toISOString().split('T')[0],
-                    allDay: true
-                };
-            } catch (error) {
-                return { dateTime: null, allDay: false };
-            }
-        }
-
-        // Parse datetime formats
-        const formats = [
-            { pattern: /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, utc: true },  // UTC
-            { pattern: /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/, utc: false }   // Local time
-        ];
-
-        for (const format of formats) {
-            const match = dateStr.match(format.pattern);
-            if (match) {
+            for (const vevent of vevents) {
                 try {
-                    const [, year, month, day, hour, minute, second] = match;
-                    const date = new Date(
-                        parseInt(year),
-                        parseInt(month) - 1, // JS months are 0-indexed
-                        parseInt(day),
-                        parseInt(hour),
-                        parseInt(minute),
-                        parseInt(second)
-                    );
+                    const event = new ICAL.Event(vevent);
+                    console.log('Processing event:', event.summary, 'recurring:', event.isRecurring());
 
-                    if (format.utc) {
-                        return { dateTime: date.toISOString(), allDay: false };
+                    if (event.isRecurring()) {
+                        // Handle recurring events using RecurExpansion
+                        console.log('Expanding recurring event:', event.summary);
+
+                        const expand = new ICAL.RecurExpansion({
+                            component: vevent,
+                            dtstart: event.startDate
+                        });
+
+                        let next;
+                        let count = 0;
+                        while ((next = expand.next()) && count < 1000 && next.toJSDate() <= futureLimit) {
+                            const eventInstance = createEventFromOccurrence(event, next);
+                            events.push(eventInstance);
+                            count++;
+                        }
                     } else {
-                        return { dateTime: date.toISOString(), allDay: false };
+                        // Single event
+                        events.push(createEventFromIcal(event));
                     }
-                } catch (error) {
-                    continue;
+                } catch (eventError) {
+                    console.error('Error processing event:', eventError.message);
                 }
             }
-        }
 
-        return { dateTime: null, allDay: false };
+            console.log('Successfully parsed', events.length, 'total events');
+            return events;
+        } catch (error) {
+            console.error('Error parsing iCal data:', error);
+            throw new Error(`Failed to parse iCal data: ${error.message}`);
+        }
     }
 
-    function parseICalTimestamp(dateStr) {
-        const formats = [
-            /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, // UTC
-            /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})$/   // Local time
-        ];
+    function createEventFromIcal(icalEvent) {
+        const event = {
+            uid: icalEvent.uid,
+            title: icalEvent.summary || 'Untitled Event',
+            description: icalEvent.description || '',
+            location: icalEvent.location || '',
+            start: icalEvent.startDate.toJSDate().toISOString(),
+            allDay: icalEvent.startDate.isDate
+        };
 
-        for (const format of formats) {
-            const match = dateStr.match(format);
-            if (match) {
-                try {
-                    const [, year, month, day, hour, minute, second] = match;
-                    const date = new Date(
-                        parseInt(year),
-                        parseInt(month) - 1,
-                        parseInt(day),
-                        parseInt(hour),
-                        parseInt(minute),
-                        parseInt(second)
-                    );
-                    return date.toISOString();
-                } catch (error) {
-                    continue;
-                }
-            }
+        if (icalEvent.endDate) {
+            event.end = icalEvent.endDate.toJSDate().toISOString();
         }
 
-        return null;
+        // Add additional properties
+        addEventProperties(event, icalEvent);
+
+        return event;
     }
 
-    function parseOrganizer(line) {
-        const organizer = {};
+    function createEventFromOccurrence(originalEvent, occurrenceDate) {
+        const event = {
+            uid: `${originalEvent.uid}_${occurrenceDate.toJSDate().getTime()}`,
+            title: originalEvent.summary || 'Untitled Event',
+            description: originalEvent.description || '',
+            location: originalEvent.location || '',
+            start: occurrenceDate.toJSDate().toISOString(),
+            allDay: occurrenceDate.isDate
+        };
 
-        // Extract email from ORGANIZER line (format: ORGANIZER;CN=Name:mailto:email)
-        if (line.includes('mailto:')) {
-            const emailStart = line.indexOf('mailto:') + 7;
-            organizer.email = line.substring(emailStart);
+        // Calculate end time if original event has duration
+        if (originalEvent.endDate && originalEvent.startDate) {
+            const durationMs = originalEvent.endDate.toJSDate().getTime() - originalEvent.startDate.toJSDate().getTime();
+            const endDate = new Date(occurrenceDate.toJSDate().getTime() + durationMs);
+            event.end = endDate.toISOString();
         }
 
-        // Extract name from CN parameter
-        const cnMatch = line.match(/CN=([^;:]+)/);
-        if (cnMatch) {
-            organizer.name = cnMatch[1];
-        }
+        // Add additional properties
+        addEventProperties(event, originalEvent);
 
-        if (!organizer.email && !organizer.name) {
-            return null;
-        }
-
-        return organizer;
+        return event;
     }
 
-    function parseAttendee(line) {
-        const attendee = {};
-
-        // Extract email from ATTENDEE line
-        if (line.includes('mailto:')) {
-            const emailStart = line.indexOf('mailto:') + 7;
-            attendee.email = line.substring(emailStart);
+    function addEventProperties(event, icalEvent) {
+        // Add organizer
+        if (icalEvent.organizer) {
+            event.organizer = {
+                name: icalEvent.organizer.getParameter('cn') || '',
+                email: icalEvent.organizer.getFirstValue()?.replace('mailto:', '') || ''
+            };
         }
 
-        // Extract name from CN parameter
-        const cnMatch = line.match(/CN=([^;:]+)/);
-        if (cnMatch) {
-            attendee.name = cnMatch[1];
+        // Add attendees
+        if (icalEvent.attendees && icalEvent.attendees.length > 0) {
+            event.attendees = icalEvent.attendees.map(attendee => ({
+                name: attendee.getParameter('cn') || '',
+                email: attendee.getFirstValue()?.replace('mailto:', '') || '',
+                role: attendee.getParameter('role') || '',
+                status: attendee.getParameter('partstat') || '',
+                type: attendee.getParameter('cutype') || ''
+            }));
         }
 
-        // Extract role from ROLE parameter
-        const roleMatch = line.match(/ROLE=([^;:]+)/);
-        if (roleMatch) {
-            attendee.role = roleMatch[1];
-        }
+        // Add timestamps
+        const created = icalEvent.component.getFirstPropertyValue('created');
+        if (created) event.created = created.toJSDate().toISOString();
 
-        // Extract participation status from PARTSTAT parameter
-        const statusMatch = line.match(/PARTSTAT=([^;:]+)/);
-        if (statusMatch) {
-            attendee.status = statusMatch[1];
-        }
+        const lastModified = icalEvent.component.getFirstPropertyValue('last-modified');
+        if (lastModified) event.lastModified = lastModified.toJSDate().toISOString();
 
-        // Extract type from CUTYPE parameter
-        const typeMatch = line.match(/CUTYPE=([^;:]+)/);
-        if (typeMatch) {
-            attendee.type = typeMatch[1];
-        }
+        const dtStamp = icalEvent.component.getFirstPropertyValue('dtstamp');
+        if (dtStamp) event.dtStamp = dtStamp.toJSDate().toISOString();
 
-        if (!attendee.email && !attendee.name) {
-            return null;
-        }
+        // Add other properties
+        const status = icalEvent.component.getFirstPropertyValue('status');
+        if (status) event.status = status;
 
-        return attendee;
+        const transparency = icalEvent.component.getFirstPropertyValue('transp');
+        if (transparency) event.transparency = transparency;
+
+        const sequence = icalEvent.component.getFirstPropertyValue('sequence');
+        if (sequence !== null) event.sequence = sequence;
+
+        const url = icalEvent.component.getFirstPropertyValue('url');
+        if (url) event.url = url;
     }
 
     async function fetchAndProcessCalendar(calendarId, url, ctx) {
         try {
             ctx.logger.info(`Fetching calendar data for ID ${calendarId} from ${url}`);
 
-            // Fetch the raw iCal data
             const rawData = await fetchICalData(url);
-
-            // Parse the iCal data into events
             const events = parseICalToEvents(rawData);
 
             ctx.logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
 
-            // Update the calendar with the raw data and processed events
             await ctx.models.calendar.update(calendarId, {
                 data: rawData,
                 events: JSON.stringify(events)
@@ -273,15 +173,10 @@ export function createCalendarService(dependencies = {}) {
 
             ctx.logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
 
-            return {
-                rawData,
-                events
-            };
-
+            return { rawData, events };
         } catch (error) {
             ctx.logger.error(`Failed to fetch calendar ${calendarId}:`, error);
 
-            // Update calendar with error status or empty data
             try {
                 await ctx.models.calendar.update(calendarId, {
                     data: null,
@@ -298,7 +193,6 @@ export function createCalendarService(dependencies = {}) {
     async function refetchAllCalendars(ctx) {
         try {
             const calendars = await ctx.models.calendar.getAll();
-
             ctx.logger.info(`Refetching ${calendars.length} calendars`);
 
             const results = [];
@@ -322,13 +216,7 @@ export function createCalendarService(dependencies = {}) {
 
             ctx.logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
 
-            return {
-                total: calendars.length,
-                successful,
-                failed,
-                results
-            };
-
+            return { total: calendars.length, successful, failed, results };
         } catch (error) {
             ctx.logger.error('Failed to refetch calendars:', error);
             throw error;

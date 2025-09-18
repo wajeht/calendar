@@ -417,8 +417,20 @@
 
                 log.debug('Loading calendar:', cal.name, 'with', events.length, 'events');
 
+                // Log sample of events for debugging
+                if (events.length > 0) {
+                    log.debug('Sample events:', events.slice(0, 3).map(e => ({
+                        title: e.title,
+                        start: e.start,
+                        end: e.end,
+                        uid: e.uid
+                    })));
+                }
+
                 // Build FullCalendar events with authentication-based detail hiding
                 const fullCalendarEvents = buildFullCalendarEvents(cal, events, isAuthenticated);
+
+                log.debug('Built', fullCalendarEvents.length, 'FullCalendar events for calendar:', cal.name);
 
                 const source = {
                     events: fullCalendarEvents,
@@ -447,11 +459,20 @@
     function buildFullCalendarEvents(calendar, events, isAuthenticated) {
         if (!events || events.length === 0) return [];
 
-        return events.map(event => {
+        const validEvents = [];
+        const skippedEvents = [];
+
+        events.forEach(event => {
+            // Skip events without valid start date or title
+            if (!event.start && !event.title) {
+                skippedEvents.push({ reason: 'No start date or title', event: event.uid || 'unknown' });
+                return;
+            }
+
             const shouldHideDetails = !isAuthenticated && calendar.details;
 
             const fcEvent = {
-                title: event.title,
+                title: event.title || 'Untitled Event',
                 start: event.start,
                 allDay: event.allDay || false,
                 backgroundColor: calendar.color,
@@ -474,8 +495,14 @@
                 fcEvent.url = event.url;
             }
 
-            return fcEvent;
+            validEvents.push(fcEvent);
         });
+
+        if (skippedEvents.length > 0) {
+            log.debug('Skipped', skippedEvents.length, 'invalid events:', skippedEvents);
+        }
+
+        return validEvents;
     }
 
     function buildExtendedProps(event) {
