@@ -99,7 +99,7 @@ export function createUtils(dependencies = {}) {
          */
         generateRandomColor() {
             const colors = [
-                '#3498db', '#e74c3c', '#2ecc71', '#f39c12',
+                '#447dfc', '#e74c3c', '#2ecc71', '#f39c12',
                 '#9b59b6', '#1abc9c', '#34495e', '#e67e22',
                 '#95a5a6', '#16a085', '#27ae60', '#2980b9'
             ];

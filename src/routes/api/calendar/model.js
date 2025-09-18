@@ -85,7 +85,7 @@ export function createCalendar(dependencies = {}) {
                 throw new ValidationError('Calendar data must be an object');
             }
 
-            const { name, url, color = '#3498db', hidden = false, details = false, data: calendarData = null, events = null } = data;
+            const { name, url, color = '#447dfc', hidden = false, details = false, data: calendarData = null, events = null } = data;
 
             // Validate required fields
             if (utils.isEmpty(name)) {
@@ -106,7 +106,7 @@ export function createCalendar(dependencies = {}) {
 
             // Validate color format if provided
             if (color && !utils.validateHexColor(color)) {
-                throw new ValidationError('Color must be a valid hex color (e.g., #3498db)', 'color');
+                throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', 'color');
             }
 
             try {
@@ -180,7 +180,7 @@ export function createCalendar(dependencies = {}) {
 
             if (updateData.color !== undefined && updateData.color !== null) {
                 if (!utils.validateHexColor(updateData.color)) {
-                    throw new ValidationError('Color must be a valid hex color (e.g., #3498db)', 'color');
+                    throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', 'color');
                 }
             }
 

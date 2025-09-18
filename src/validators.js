@@ -39,7 +39,7 @@ export function createValidators(dependencies = {}) {
          */
         validateColor(color, field = 'color') {
             if (color && !utils.validateHexColor(color)) {
-                throw new ValidationError('Color must be a valid hex color (e.g., #3498db)', field);
+                throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', field);
             }
         },
 
