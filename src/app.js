@@ -31,6 +31,7 @@ export async function createServer(customConfig = {}) {
             extended: true,
             limit: ctx.config.app.urlEncodedLimit || '1mb'
         }))
+        .use(express.static('./public'))
         .engine('html', ejs.renderFile)
         .set('view engine', 'html')
         .set('view cache', ctx.config.app.env === 'production')
