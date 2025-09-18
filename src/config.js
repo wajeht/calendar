@@ -4,7 +4,6 @@ export const config = {
     app: {
         port: parseInt(process.env.APP_PORT) || 80,
         env: process.env.APP_ENV || 'development',
-        password: process.env.password || 'password',
         jsonLimit: process.env.JSON_LIMIT || '1mb',
         urlEncodedLimit: process.env.URL_ENCODED_LIMIT || '1mb'
     },
@@ -33,22 +32,13 @@ export const config = {
         skipFailedRequests: process.env.RATE_LIMIT_SKIP_FAILED === 'true'
     },
 
-    jobs: {
-        redis: {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT) || 6379,
-            password: process.env.REDIS_PASSWORD || undefined
-        },
-        maxRetries: parseInt(process.env.JOB_MAX_RETRIES) || 3
-    },
-
     logger: {
         level: process.env.LOG_LEVEL || 'info'
     },
 
     auth: {
         password: process.env.APP_PASSWORD || 'password',
-        sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+        sessionSecret: process.env.SESSION_SECRET || 'calendar',
         cookieDomain: process.env.COOKIE_DOMAIN || undefined
     }
 };
