@@ -44,5 +44,11 @@ export const config = {
 
     logger: {
         level: process.env.LOG_LEVEL || 'info'
+    },
+
+    auth: {
+        password: process.env.APP_PASSWORD || 'password',
+        sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+        cookieDomain: process.env.COOKIE_DOMAIN || 'http://localhost'
     }
 };
