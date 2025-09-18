@@ -82,15 +82,7 @@
             eventClick: function (info) {
                 info.jsEvent.preventDefault();
 
-                const eventSourceUrl = info.event.source?.url || info.event.source?.internalEventSource?.meta?.url;
-                log.debug('Event source URL:', eventSourceUrl, 'Event color:', info.event.backgroundColor);
-
-                const sourceCalendar = eventSources.find(es => {
-                    return es.color === info.event.backgroundColor ||
-                        (es.source && es.source.url === eventSourceUrl);
-                });
-
-                log.debug('Found calendar:', sourceCalendar, 'Auth:', isAuthenticated);
+                const sourceCalendar = eventSources.find(es => es.id == info.event.source.id);
 
                 if (!isAuthenticated && sourceCalendar && sourceCalendar.details) {
                     log.public('Details hidden for public view');
@@ -98,7 +90,7 @@
                 }
 
                 if (typeof eventModal !== 'undefined' && eventModal.show) {
-                    eventModal.show(info.event);
+                    eventModal.show(info.event, sourceCalendar);
                 } else {
                     console.error('Event modal not available');
                 }
@@ -180,6 +172,7 @@
                 log.debug('Built', fullCalendarEvents.length, 'FullCalendar events for calendar:', cal.name);
 
                 const source = {
+                    id: cal.id,
                     events: fullCalendarEvents,
                     color: cal.color
                 };

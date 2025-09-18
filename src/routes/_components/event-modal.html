@@ -35,11 +35,11 @@ class EventModal {
         });
     }
 
-    show(event) {
+    show(event, sourceCalendar = null) {
         this.isOpen = true;
         this.titleEl.textContent = event.title || 'Event Details';
 
-        const detailsHTML = this.buildEventDetails(event);
+        const detailsHTML = this.buildEventDetails(event, sourceCalendar);
         this.detailsEl.innerHTML = detailsHTML;
 
         this.modal.classList.add('show');
@@ -52,7 +52,7 @@ class EventModal {
         this.overlay.classList.remove('show');
     }
 
-    buildEventDetails(event) {
+    buildEventDetails(event, sourceCalendar = null) {
         let detailsHTML = '';
 
         // Date and time information
@@ -147,13 +147,9 @@ class EventModal {
         }
 
         // Calendar source
-        if (event.source && typeof eventSources !== 'undefined') {
-            const sourceCalendar = eventSources.find(es => es.source && es.source.url === event.source.url);
-            if (sourceCalendar) {
-                const calendarDisplayName = sourceCalendar.name || sourceCalendar.url;
-                const displayText = sourceCalendar.name ? calendarDisplayName : this.linkify(calendarDisplayName);
-                detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${displayText}</div>`;
-            }
+        if (sourceCalendar) {
+            const calendarDisplayName = sourceCalendar.name || 'Unknown Calendar';
+            detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${calendarDisplayName}</div>`;
         }
 
         // Event URL
