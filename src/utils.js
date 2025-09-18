@@ -138,58 +138,31 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Simple session authentication utilities
+         * Validate and parse a numeric ID from request parameters
+         * @param {string} idStr - The ID string from req.params
+         * @returns {number} Parsed ID
+         * @throws {Error} If ID is invalid
          */
-        auth: {
-            /**
-             * Generate a simple session token
-             * @returns {string}
-             */
-            generateSessionToken() {
-                const timestamp = Date.now();
-                const random = Math.random().toString(36).substring(2);
-                return `${timestamp}.${random}`;
-            },
+        validateId(idStr) {
+            const id = parseInt(idStr);
+            if (isNaN(id) || id <= 0) {
+                throw new Error('Invalid ID');
+            }
+            return id;
+        },
 
-            /**
-             * Validate session token (just check if it exists and isn't expired)
-             * @param {string} token - Session token
-             * @returns {boolean}
-             */
-            validateSessionToken(token) {
-                if (!token) return false;
 
-                try {
-                    const [timestamp] = token.split('.');
-                    const tokenTime = parseInt(timestamp);
-                    const now = Date.now();
-                    const twentyFourHours = 24 * 60 * 60 * 1000;
+        /**
+         * Validate hex color format
+         * @param {string} color - Color string to validate
+         * @returns {boolean}
+         */
+        validateHexColor(color) {
+            if (!color || typeof color !== 'string') return false;
+            return /^#[0-9A-Fa-f]{6}$/.test(color);
+        },
 
-                    return (now - tokenTime) < twentyFourHours;
-                } catch (error) {
-                    return false;
-                }
-            },
 
-            /**
-             * Extract session token from request cookies
-             * @param {Object} req - Express request object
-             * @returns {string|null}
-             */
-            extractSessionToken(req) {
-                return req.cookies?.session_token || null;
-            },
-
-            /**
-             * Validate password against stored app password
-             * @param {string} password - Password to validate
-             * @returns {boolean}
-             */
-            validatePassword(password) {
-                return password === config.auth.password;
-            },
-
-        }
 
     };
 }

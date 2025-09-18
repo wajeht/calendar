@@ -97,7 +97,9 @@ export async function createServer(customConfig = {}) {
         middleware: ctx.middleware,
         utils: ctx.utils,
         logger: ctx.logger,
-        config: ctx.config
+        config: ctx.config,
+        errors: ctx.errors,
+        validators: ctx.validators
     }));
 
     const server = app.listen(PORT);

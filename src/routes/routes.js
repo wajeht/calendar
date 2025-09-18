@@ -4,7 +4,7 @@ import { createAuthRouter } from "./api/auth/routes.js";
 import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/index.js";
 
 export function createRouter(dependencies = {}) {
-    const { models, services, middleware, utils, logger, config } = dependencies;
+    const { models, services, middleware, utils, logger, config, errors, validators } = dependencies;
 
     if (!models) throw new Error('Models required for router');
     if (!services) throw new Error('Services required for router');
@@ -29,12 +29,14 @@ export function createRouter(dependencies = {}) {
         services,
         middleware,
         utils,
-        logger
+        logger,
+        errors,
+        validators
     }));
 
     router.use(notFoundHandler({ logger, utils }));
 
-    router.use(errorHandler({ logger, utils, config }));
+    router.use(errorHandler({ logger, utils, config, errors }));
 
     return router;
 }

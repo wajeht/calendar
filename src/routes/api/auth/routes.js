@@ -19,12 +19,16 @@ export function createAuthRouter(dependencies = {}) {
                 return res.status(400).json({ success: false, error: 'Password is required' });
             }
 
-            if (!utils.auth.validatePassword(password)) {
+            if (password !== config.auth.password) {
                 logger.warn('Failed login attempt');
                 return res.status(401).json({ success: false, error: 'Invalid password' });
             }
 
-            res.cookie('session_token', utils.auth.generateSessionToken(), {
+            const timestamp = Date.now();
+            const random = Math.random().toString(36).substring(2);
+            const sessionToken = `${timestamp}.${random}`;
+
+            res.cookie('session_token', sessionToken, {
                 httpOnly: true,
                 secure: config.app.env === 'production', // Only require HTTPS in production
                 sameSite: 'strict', // Stricter CSRF protection
