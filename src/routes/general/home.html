@@ -158,15 +158,27 @@
     }
 
     function loadCalendars() {
-        const calendars = JSON.parse(`{{.Calendars}}`);
+        let calendars = [];
+        try {
+            const calendarsData = `<%- JSON.stringify(Calendars || []) %>`;
+            calendars = JSON.parse(calendarsData);
+        } catch (error) {
+            log.error('Failed to parse calendars data:', error);
+            calendars = [];
+        }
+
+        if (!calendars || calendars.length === 0) {
+            log.debug('No calendars to load');
+            return;
+        }
 
         calendars.forEach(cal => {
             if (!cal || !cal.id) return;
 
-            log.debug('Loading calendar:', cal.name, 'with', cal.events.length, 'events');
+            log.debug('Loading calendar:', cal.name, 'with', (cal.events || []).length, 'events');
 
             const source = {
-                events: cal.events,
+                events: cal.events || [],
                 color: cal.color
             };
 
