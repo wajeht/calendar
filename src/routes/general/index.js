@@ -1,7 +1,6 @@
 import express from 'express';
 
 export function createGeneralRouter(dependencies = {}) {
-    // General router doesn't need dependencies - just serves static content
     const router = express.Router();
 
     router.get('/', async (req, res) => {
@@ -47,10 +46,9 @@ export function errorHandler(dependencies = {}) {
     if (!config) throw new Error('Config required for errorHandler');
     if (!errors) throw new Error('Errors required for errorHandler');
 
-    const { ValidationError, NotFoundError, CalendarFetchError, DatabaseError } = errors;
+    const { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError } = errors;
 
     return (err, req, res, _next) => {
-        // Handle custom error types
         if (err instanceof ValidationError) {
             const response = {
                 success: false,
@@ -65,6 +63,18 @@ export function errorHandler(dependencies = {}) {
                 title: '400 - Validation Error',
                 error: err.message,
                 statusCode: 400
+            });
+        }
+
+        if (err instanceof AuthenticationError) {
+            logger.warn(`401 - Authentication failed: ${req.method} ${req.originalUrl}`);
+            if (utils.isApiRequest(req)) {
+                return res.status(401).json({ success: false, error: err.message });
+            }
+            return res.status(401).render('general/error.html', {
+                title: '401 - Unauthorized',
+                error: err.message,
+                statusCode: 401
             });
         }
 
@@ -109,7 +119,6 @@ export function errorHandler(dependencies = {}) {
             });
         }
 
-        // Handle generic errors
         logger.error('Unhandled error:', err);
         const statusCode = err.statusCode || err.status || 500;
         const message = err.message || 'Internal server error';

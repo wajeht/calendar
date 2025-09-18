@@ -7,7 +7,7 @@ import { createValidators } from './validators.js';
 import { createCalendar } from './routes/api/calendar/model.js';
 import { createAuthMiddleware } from './routes/api/auth/middleware.js';
 import { createCalendarService } from './routes/api/calendar/service.js';
-import { ValidationError, NotFoundError, CalendarFetchError, DatabaseError } from './errors.js';
+import { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError } from './errors.js';
 
 export function createContext(customConfig = {}) {
     const finalConfig = {
@@ -19,7 +19,7 @@ export function createContext(customConfig = {}) {
 
     const logger = createLogger(finalConfig.logger);
     const db = createDatabase(finalConfig.db);
-    const errors = { ValidationError, NotFoundError, CalendarFetchError, DatabaseError };
+    const errors = { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError };
     const utils = createUtils({ logger, config: finalConfig });
     const validators = createValidators({ errors, utils });
     const models = {
@@ -27,7 +27,7 @@ export function createContext(customConfig = {}) {
     };
 
     const middleware = {
-        auth: createAuthMiddleware({ utils, logger, config: finalConfig })
+        auth: createAuthMiddleware({ utils, logger, errors, config: finalConfig, })
     };
 
     const services = {

@@ -1,34 +1,40 @@
 export function createAuthMiddleware(dependencies = {}) {
-  const { utils, logger, config } = dependencies;
+    const { utils, logger, config, errors } = dependencies;
 
-  if (!utils) throw new Error('Utils required for auth middleware');
-  if (!logger) throw new Error('Logger required for auth middleware');
-  if (!config) throw new Error('Config required for auth middleware');
+    if (!utils) throw new Error('Utils required for auth middleware');
+    if (!logger) throw new Error('Logger required for auth middleware');
+    if (!config) throw new Error('Config required for auth middleware');
+    if (!errors) throw new Error('Errors required for auth middleware');
 
-  return {
-      requireAuth() {
-          return (req, res, next) => {
-              const token = req.cookies?.session_token || null;
+    const { AuthenticationError } = errors;
 
-              if (!token) {
-                  return res.status(401).json({ success: false, error: 'Access token required' });
-              }
+    return {
+        requireAuth() {
+            return (req, res, next) => {
+                const token = req.cookies?.session_token || null;
 
-              try {
-                  const [timestamp] = token.split('.');
-                  const tokenTime = parseInt(timestamp);
-                  const now = Date.now();
-                  const twentyFourHours = 24 * 60 * 60 * 1000;
+                if (!token) {
+                    throw new AuthenticationError();
+                }
 
-                  if ((now - tokenTime) >= twentyFourHours) {
-                      return res.status(401).json({ success: false, error: 'Access token required' });
-                  }
-              } catch (error) {
-                  return res.status(401).json({ success: false, error: 'Access token required' });
-              }
+                try {
+                    const [timestamp] = token.split('.');
+                    const tokenTime = parseInt(timestamp);
+                    const now = Date.now();
+                    const twentyFourHours = 24 * 60 * 60 * 1000;
 
-              next();
-          };
-      },
-  };
+                    if ((now - tokenTime) >= twentyFourHours) {
+                        throw new AuthenticationError();
+                    }
+                } catch (error) {
+                    if (error instanceof AuthenticationError) {
+                        throw error;
+                    }
+                    throw new AuthenticationError();
+                }
+
+                next();
+            };
+        },
+    };
 }

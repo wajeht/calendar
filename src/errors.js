@@ -32,3 +32,11 @@ export class DatabaseError extends Error {
         this.originalError = originalError;
     }
 }
+
+export class AuthenticationError extends Error {
+    constructor(message = 'Access token required') {
+        super(message);
+        this.name = 'AuthenticationError';
+        this.statusCode = 401;
+    }
+}
