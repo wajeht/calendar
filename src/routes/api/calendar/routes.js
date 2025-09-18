@@ -7,7 +7,7 @@ export function createCalendarRouter(ctx) {
 
     router.get('/', async (_req, res) => {
         try {
-            const calendars = await ctx.models.calendar.getVisible();
+            const calendars = await ctx.models.calendar.getAll();
             res.json(calendars);
         } catch (error) {
             ctx.logger.error('Error fetching visible calendars:', error);
@@ -56,7 +56,6 @@ export function createCalendarRouter(ctx) {
             const calendar = await ctx.models.calendar.create(calendarData);
             ctx.logger.info(`Calendar created: ${calendar.name}`);
 
-            // Fetch and process calendar data in the background
             setImmediate(async () => {
                 try {
                     await ctx.services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url, ctx);
@@ -81,7 +80,6 @@ export function createCalendarRouter(ctx) {
 
             const updateData = { ...req.body };
 
-            // Handle visibility update
             if ('visible' in updateData) {
                 updateData.hidden = !updateData.visible;
                 delete updateData.visible;
@@ -119,21 +117,6 @@ export function createCalendarRouter(ctx) {
             res.json(calendar);
         } catch (error) {
             ctx.logger.error('Error deleting calendar:', error);
-            res.status(500).json({ success: false, error: 'Internal server error' });
-        }
-    });
-
-    router.patch('/:id/toggle', verifyToken, async (req, res) => {
-        try {
-            const calendar = await ctx.models.calendar.toggleVisibility(req.params.id);
-            if (!calendar) {
-                return res.status(404).json({ success: false, error: 'Calendar not found' });
-            }
-
-            ctx.logger.info(`Calendar visibility toggled: ${calendar.name} - hidden: ${calendar.hidden}`);
-            res.json({ success: true, data: calendar });
-        } catch (error) {
-            ctx.logger.error('Error toggling calendar visibility:', error);
             res.status(500).json({ success: false, error: 'Internal server error' });
         }
     });

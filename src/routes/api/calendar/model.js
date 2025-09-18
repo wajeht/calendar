@@ -10,6 +10,11 @@ export function createCalendar(db) {
             return calendar || null;
         },
 
+        async getByUrl(url) {
+            const calendar = await db('calendars').where('url', url).first();
+            return calendar || null;
+        },
+
         async create(data) {
             const { name, url, color = '#3498db', hidden = false, details = false, data: calendarData, events } = data;
 

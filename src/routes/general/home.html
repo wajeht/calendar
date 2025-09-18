@@ -899,10 +899,6 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 5px;">
-                    <button onclick="toggleCalendarVisibility(${cal.id}, ${!isVisible})"
-                            style="padding: 5px 10px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 3px;">
-                        ${isVisible ? 'Hide' : 'Show'}
-                    </button>
                     <button onclick="deleteCalendar(${cal.id})"
                             style="padding: 5px 10px; border: 1px solid #dc3545; background: #dc3545; color: white; cursor: pointer; border-radius: 3px;">
                         Delete
@@ -950,35 +946,6 @@
             }
         } catch (error) {
             alert('Error adding calendar: ' + error.message);
-        }
-    }
-
-    async function toggleCalendarVisibility(calendarId, visible) {
-        try {
-            const response = await fetch(`/api/calendars/${calendarId}`, {
-                method: 'PUT',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ visible })
-            });
-
-            if (response.status === 401) {
-                isAuthenticated = false;
-                showPasswordModal();
-                return;
-            }
-
-            if (response.ok) {
-                await loadCalendarList();
-                // Reload calendars in the main view
-                await loadCalendars();
-            } else {
-                alert('Error updating calendar');
-            }
-        } catch (error) {
-            alert('Error updating calendar: ' + error.message);
         }
     }
 
