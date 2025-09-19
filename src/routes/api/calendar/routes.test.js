@@ -238,20 +238,20 @@ describe("Calendar", () => {
         });
     });
 
-    describe("POST /api/calendars/refetch", () => {
-        it("should initiate calendar refetch", async () => {
-            const response = await testServer.post("/api/calendars/refetch");
+    describe("POST /api/calendars/refresh", () => {
+        it("should initiate calendar refresh", async () => {
+            const response = await testServer.post("/api/calendars/refresh");
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(data.success).toBe(true);
-            expect(data.message.includes("refetch initiated")).toBeTruthy();
+            expect(data.successful).toBeDefined();
+            expect(data.total).toBeDefined();
         });
 
         it("should require authentication", async () => {
             await testServer.logout();
 
-            const response = await testServer.post("/api/calendars/refetch");
+            const response = await testServer.post("/api/calendars/refresh");
 
             expect(response.status).toBe(401);
 
