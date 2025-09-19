@@ -27,11 +27,7 @@ jobs:
               run: npm ci
 
             - name: Run tests
-              run: npm test
-              env:
-                  NODE_ENV: test
-                  APP_PASSWORD: test-password
-                  APP_SECRET: test-secret-key-for-sessions
+              run: npm run test:ci
 
     build:
         name: Build Docker Image
