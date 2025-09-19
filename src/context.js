@@ -3,6 +3,7 @@ import { config } from './config.js';
 import { createUtils } from './utils.js';
 import { createLogger } from './logger.js';
 import { createDatabase } from './db/db.js';
+import { createCronService } from './cron.js';
 import { createValidators } from './validators.js';
 import { createCalendar } from './routes/api/calendar/model.js';
 import { createAuthMiddleware } from './routes/api/auth/middleware.js';
@@ -38,6 +39,11 @@ export function createContext(customConfig = {}) {
             errors
         })
     };
+
+    services.cron = createCronService({
+        logger,
+        services
+    });
 
     return {
         config: finalConfig,

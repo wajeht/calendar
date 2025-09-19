@@ -41,7 +41,8 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "ical.js": "^2.2.1",
-    "knex": "^3.1.0"
+    "knex": "^3.1.0",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

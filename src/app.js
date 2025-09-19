@@ -121,6 +121,12 @@ export async function createServer(customConfig = {}) {
 
     server.on('listening', () => {
         ctx.logger.success(`Server running on http://localhost:${PORT}`);
+
+        try {
+            ctx.services.cron.start();
+        } catch (error) {
+            ctx.logger.error('Failed to start cron service:', error.message);
+        }
     });
 
     server.on('error', (error) => {
@@ -150,26 +156,50 @@ export async function createServer(customConfig = {}) {
 export async function closeServer({ server, ctx }) {
     ctx.logger.info('Shutting down server gracefully...');
 
-    let shutdownComplete = false;
+    try {
+        try {
+            ctx.services.cron.stop();
+            ctx.logger.info('Cron service stopped');
+        } catch (error) {
+            ctx.logger.warn('Error stopping cron service:', error.message);
+        }
 
-    if (server) {
-        server.keepAliveTimeout = 0;
-        server.headersTimeout = 0;
-        server.timeout = 1;
-
-        server.close(() => {
-            ctx.logger.info('HTTP server closed.');
-            shutdownComplete = true;
-            ctx.logger.success('Server shutdown complete');
-        });
-
-        setTimeout(() => {
-            if (!shutdownComplete) {
-                ctx.logger.error('Could not close connections in time, forcefully shutting down');
-                process.exit(1);
+        try {
+            if (ctx.db && typeof ctx.db.close === 'function') {
+                await ctx.db.close();
+                ctx.logger.info('Database connections closed');
             }
-        }, 10000);
-    } else {
+        } catch (error) {
+            ctx.logger.warn('Error closing database:', error.message);
+        }
+
+        if (server) {
+            await new Promise((resolve, reject) => {
+                server.keepAliveTimeout = 0;
+                server.headersTimeout = 0;
+                server.timeout = 1;
+
+                const shutdownTimeout = setTimeout(() => {
+                    ctx.logger.error('Could not close connections in time, forcefully shutting down');
+                    reject(new Error('Server close timeout'));
+                }, 10000);
+
+                server.close((error) => {
+                    clearTimeout(shutdownTimeout);
+                    if (error) {
+                        ctx.logger.error('Error closing HTTP server:', error.message);
+                        reject(error);
+                    } else {
+                        ctx.logger.info('HTTP server closed');
+                        resolve();
+                    }
+                });
+            });
+        }
+
         ctx.logger.success('Server shutdown complete');
+    } catch (error) {
+        ctx.logger.error('Error during graceful shutdown:', error.message);
+        process.exit(1);
     }
 }
