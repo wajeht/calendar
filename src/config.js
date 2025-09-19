@@ -46,8 +46,18 @@ export const config = deepFreeze({
     },
 
     auth: {
-        password: process.env.APP_PASSWORD || 'password',
-        sessionSecret: process.env.SESSION_SECRET || 'calendar',
+        password: process.env.APP_PASSWORD || (() => {
+            if (process.env.NODE_ENV === 'production') {
+                throw new Error('APP_PASSWORD must be set in production');
+            }
+            return 'development-password';
+        })(),
+        sessionSecret: process.env.SESSION_SECRET || (() => {
+            if (process.env.NODE_ENV === 'production') {
+                throw new Error('SESSION_SECRET must be set in production');
+            }
+            return 'development-session-secret-' + Date.now();
+        })(),
         cookieDomain: process.env.COOKIE_DOMAIN || undefined
     },
 
