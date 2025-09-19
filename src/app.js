@@ -224,12 +224,12 @@ export async function createServer(customConfig = {}) {
     server.headersTimeout = 66000; // slightly higher than keepAliveTimeout
     server.requestTimeout = 120000; // same as timeout
 
-    server.on("listening", () => {
+    server.on("listening", async () => {
         ctx.logger.success(`Server running on http://localhost:${PORT}`);
 
         if (process.env.NODE_ENV !== "test") {
             try {
-                ctx.services.cron.start();
+                await ctx.services.cron.start();
             } catch (error) {
                 ctx.logger.error("Failed to start cron service:", error.message);
             }
