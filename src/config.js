@@ -3,7 +3,7 @@ import 'dotenv/config';
 export const config = {
     app: {
         port: parseInt(process.env.APP_PORT) || 80,
-        env: process.env.APP_ENV || 'development',
+        env: process.env.APP_ENV || process.env.NODE_ENV || 'development',
         jsonLimit: process.env.JSON_LIMIT || '1mb',
         urlEncodedLimit: process.env.URL_ENCODED_LIMIT || '1mb'
     },
@@ -14,7 +14,7 @@ export const config = {
     },
 
     security: {
-        contentSecurityPolicy: process.env.NODE_ENV === 'development' ? false : true,
+        contentSecurityPolicy: (process.env.APP_ENV || process.env.NODE_ENV) === 'development' ? false : true,
         crossOriginEmbedderPolicy: false
     },
 
