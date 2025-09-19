@@ -1,6 +1,15 @@
 import 'dotenv/config';
 
-export const config = {
+function deepFreeze(obj) {
+    Object.values(obj).forEach(val => {
+        if (typeof val === 'object' && val !== null) {
+            deepFreeze(val);
+        }
+    });
+    return Object.freeze(obj);
+}
+
+export const config = deepFreeze({
     app: {
         port: parseInt(process.env.APP_PORT) || 80,
         env: process.env.APP_ENV || process.env.NODE_ENV || 'development',
@@ -47,4 +56,4 @@ export const config = {
         staticImmutable: process.env.STATIC_CACHE_IMMUTABLE !== 'false',
         staticExtensions: process.env.STATIC_CACHE_EXTENSIONS?.split(',') || ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'eot', 'txt']
     }
-};
+});
