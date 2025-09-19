@@ -17,6 +17,7 @@ export function createAuthRouter(dependencies = {}) {
 
     router.post('/', async (req, res) => {
         validators.validateBody(req.body);
+
         const { password } = req.body;
 
         if (!password) {
@@ -83,7 +84,7 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.post('/logout', (req, res) => {
+    router.post('/logout', (_req, res) => {
         res.clearCookie('session_token', {
             httpOnly: true,
             secure: config.app.env === 'production',
@@ -96,7 +97,7 @@ export function createAuthRouter(dependencies = {}) {
         res.json({ success: true, message: 'Logged out successfully' });
     });
 
-    router.get('/verify', requireAuth, (req, res) => {
+    router.get('/verify', requireAuth, (_req, res) => {
         res.json({
             success: true,
             message: 'Session is valid'

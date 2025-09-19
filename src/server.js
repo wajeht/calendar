@@ -26,7 +26,7 @@ function handleUncaughtException(error, origin) {
     process.exit(1);
 }
 
-function handleUnhandledRejection(reason, promise) {
+function handleUnhandledRejection(reason, _promise) {
     if (reason instanceof Error) {
         console.error(`Unhandled Rejection: ${reason.message}`);
     } else {
