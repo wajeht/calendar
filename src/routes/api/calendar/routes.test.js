@@ -1,7 +1,7 @@
-import { describe, it, beforeAll, afterAll, expect } from 'vitest';
-import { setupAuthenticatedServer } from '../../../utils/test-utils.js';
+import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { setupAuthenticatedServer } from "../../../utils/test-utils.js";
 
-describe('Calendar', () => {
+describe("Calendar", () => {
     let testServer;
 
     beforeAll(async () => {
@@ -15,14 +15,14 @@ describe('Calendar', () => {
         }
     });
 
-    describe('GET /api/calendars', () => {
-        it('should get calendars list regardless of auth status', async () => {
-            let response = await testServer.get('/api/calendars');
+    describe("GET /api/calendars", () => {
+        it("should get calendars list regardless of auth status", async () => {
+            let response = await testServer.get("/api/calendars");
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBeTruthy();
 
             await testServer.logout();
-            response = await testServer.get('/api/calendars');
+            response = await testServer.get("/api/calendars");
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBeTruthy();
 
@@ -30,68 +30,68 @@ describe('Calendar', () => {
         });
     });
 
-    describe('POST /api/calendars', () => {
-        it('should create a new calendar', async () => {
+    describe("POST /api/calendars", () => {
+        it("should create a new calendar", async () => {
             const calendarData = {
-                name: 'Test Calendar',
-                url: 'https://calendar.google.com/calendar/ical/test@gmail.com/public/basic.ics',
-                color: '#ff0000'
+                name: "Test Calendar",
+                url: "https://calendar.google.com/calendar/ical/test@gmail.com/public/basic.ics",
+                color: "#ff0000",
             };
 
-            const response = await testServer.post('/api/calendars', calendarData);
+            const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(201);
-            expect(response.body.name).toBe('Test Calendar');
+            expect(response.body.name).toBe("Test Calendar");
             expect(response.body.url).toBe(calendarData.url);
-            expect(response.body.color).toBe('#ff0000');
+            expect(response.body.color).toBe("#ff0000");
             expect(response.body.id).toBeTruthy();
         });
 
-        it('should reject calendar with missing name', async () => {
+        it("should reject calendar with missing name", async () => {
             const calendarData = {
-                url: 'https://calendar.google.com/calendar/ical/test2@gmail.com/public/basic.ics'
+                url: "https://calendar.google.com/calendar/ical/test2@gmail.com/public/basic.ics",
             };
 
-            const response = await testServer.post('/api/calendars', calendarData);
+            const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
             expect(response.body.error).toBeTruthy();
         });
 
-        it('should reject calendar with invalid URL', async () => {
+        it("should reject calendar with invalid URL", async () => {
             const calendarData = {
-                name: 'Invalid URL Calendar',
-                url: 'not-a-valid-url'
+                name: "Invalid URL Calendar",
+                url: "not-a-valid-url",
             };
 
-            const response = await testServer.post('/api/calendars', calendarData);
+            const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
             expect(response.body.error).toBeTruthy();
         });
 
-        it('should reject duplicate calendar URL', async () => {
+        it("should reject duplicate calendar URL", async () => {
             const calendarData = {
-                name: 'Duplicate Calendar',
-                url: 'https://calendar.google.com/calendar/ical/test@gmail.com/public/basic.ics'
+                name: "Duplicate Calendar",
+                url: "https://calendar.google.com/calendar/ical/test@gmail.com/public/basic.ics",
             };
 
-            const response = await testServer.post('/api/calendars', calendarData);
+            const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
             expect(response.body.error).toBeTruthy();
-            expect(response.body.error.includes('already exists')).toBeTruthy();
+            expect(response.body.error.includes("already exists")).toBeTruthy();
         });
 
-        it('should require authentication', async () => {
+        it("should require authentication", async () => {
             await testServer.logout();
 
             const calendarData = {
-                name: 'Unauthorized Calendar',
-                url: 'https://calendar.google.com/calendar/ical/unauthorized@gmail.com/public/basic.ics'
+                name: "Unauthorized Calendar",
+                url: "https://calendar.google.com/calendar/ical/unauthorized@gmail.com/public/basic.ics",
             };
 
-            const response = await testServer.post('/api/calendars', calendarData);
+            const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(401);
 
@@ -99,34 +99,34 @@ describe('Calendar', () => {
         });
     });
 
-    describe('GET /api/calendars/:id', () => {
+    describe("GET /api/calendars/:id", () => {
         let calendarId;
 
         beforeAll(async () => {
             const calendar = await testServer.ctx.models.calendar.create({
-                name: 'Get Test Calendar',
-                url: 'https://calendar.google.com/calendar/ical/get-test@gmail.com/public/basic.ics'
+                name: "Get Test Calendar",
+                url: "https://calendar.google.com/calendar/ical/get-test@gmail.com/public/basic.ics",
             });
             calendarId = calendar.id;
         });
 
-        it('should get calendar by ID', async () => {
+        it("should get calendar by ID", async () => {
             const response = await testServer.get(`/api/calendars/${calendarId}`);
             const data = response.body;
 
             expect(response.status).toBe(200);
             expect(data.success).toBe(true);
             expect(data.data.id).toBe(calendarId);
-            expect(data.data.name).toBe('Get Test Calendar');
+            expect(data.data.name).toBe("Get Test Calendar");
         });
 
-        it('should return 404 for non-existent calendar', async () => {
-            const response = await testServer.get('/api/calendars/99999');
+        it("should return 404 for non-existent calendar", async () => {
+            const response = await testServer.get("/api/calendars/99999");
 
             expect(response.status).toBe(404);
         });
 
-        it('should require authentication', async () => {
+        it("should require authentication", async () => {
             await testServer.logout();
 
             const response = await testServer.get(`/api/calendars/${calendarId}`);
@@ -137,33 +137,33 @@ describe('Calendar', () => {
         });
     });
 
-    describe('PUT /api/calendars/:id', () => {
+    describe("PUT /api/calendars/:id", () => {
         let calendarId;
 
         beforeAll(async () => {
             const calendar = await testServer.ctx.models.calendar.create({
-                name: 'Update Test Calendar',
-                url: 'https://calendar.google.com/calendar/ical/update-test@gmail.com/public/basic.ics'
+                name: "Update Test Calendar",
+                url: "https://calendar.google.com/calendar/ical/update-test@gmail.com/public/basic.ics",
             });
             calendarId = calendar.id;
         });
 
-        it('should update calendar name', async () => {
+        it("should update calendar name", async () => {
             const updateData = {
-                name: 'Updated Calendar Name'
+                name: "Updated Calendar Name",
             };
 
             const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(data.name).toBe('Updated Calendar Name');
+            expect(data.name).toBe("Updated Calendar Name");
             expect(data.id).toBe(calendarId);
         });
 
-        it('should update calendar visibility', async () => {
+        it("should update calendar visibility", async () => {
             const updateData = {
-                visible: false
+                visible: false,
             };
 
             const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
@@ -173,21 +173,21 @@ describe('Calendar', () => {
             expect(!!data.hidden).toBe(true);
         });
 
-        it('should return 404 for non-existent calendar', async () => {
+        it("should return 404 for non-existent calendar", async () => {
             const updateData = {
-                name: 'Non-existent Calendar'
+                name: "Non-existent Calendar",
             };
 
-            const response = await testServer.put('/api/calendars/99999', updateData);
+            const response = await testServer.put("/api/calendars/99999", updateData);
 
             expect(response.status).toBe(404);
         });
 
-        it('should require authentication', async () => {
+        it("should require authentication", async () => {
             await testServer.logout();
 
             const updateData = {
-                name: 'Unauthorized Update'
+                name: "Unauthorized Update",
             };
 
             const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
@@ -198,39 +198,39 @@ describe('Calendar', () => {
         });
     });
 
-    describe('DELETE /api/calendars/:id', () => {
+    describe("DELETE /api/calendars/:id", () => {
         let calendarId;
 
         beforeAll(async () => {
             const calendar = await testServer.ctx.models.calendar.create({
-                name: 'Delete Test Calendar',
-                url: 'https://calendar.google.com/calendar/ical/delete-test@gmail.com/public/basic.ics'
+                name: "Delete Test Calendar",
+                url: "https://calendar.google.com/calendar/ical/delete-test@gmail.com/public/basic.ics",
             });
             calendarId = calendar.id;
         });
 
-        it('should delete calendar by ID', async () => {
+        it("should delete calendar by ID", async () => {
             const response = await testServer.delete(`/api/calendars/${calendarId}`);
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(data.name).toBe('Delete Test Calendar');
+            expect(data.name).toBe("Delete Test Calendar");
             expect(data.id).toBe(calendarId);
 
             const getResponse = await testServer.get(`/api/calendars/${calendarId}`);
             expect(getResponse.status).toBe(404);
         });
 
-        it('should return 404 for non-existent calendar', async () => {
-            const response = await testServer.delete('/api/calendars/99999');
+        it("should return 404 for non-existent calendar", async () => {
+            const response = await testServer.delete("/api/calendars/99999");
 
             expect(response.status).toBe(404);
         });
 
-        it('should require authentication', async () => {
+        it("should require authentication", async () => {
             await testServer.logout();
 
-            const response = await testServer.delete('/api/calendars/1');
+            const response = await testServer.delete("/api/calendars/1");
 
             expect(response.status).toBe(401);
 
@@ -238,20 +238,20 @@ describe('Calendar', () => {
         });
     });
 
-    describe('POST /api/calendars/refetch', () => {
-        it('should initiate calendar refetch', async () => {
-            const response = await testServer.post('/api/calendars/refetch');
+    describe("POST /api/calendars/refetch", () => {
+        it("should initiate calendar refetch", async () => {
+            const response = await testServer.post("/api/calendars/refetch");
             const data = response.body;
 
             expect(response.status).toBe(200);
             expect(data.success).toBe(true);
-            expect(data.message.includes('refetch initiated')).toBeTruthy();
+            expect(data.message.includes("refetch initiated")).toBeTruthy();
         });
 
-        it('should require authentication', async () => {
+        it("should require authentication", async () => {
             await testServer.logout();
 
-            const response = await testServer.post('/api/calendars/refetch');
+            const response = await testServer.post("/api/calendars/refetch");
 
             expect(response.status).toBe(401);
 

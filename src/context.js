@@ -1,38 +1,55 @@
-import ICAL from 'ical.js';
-import { config } from './config.js';
-import { createDatabase } from './db/db.js';
-import { createCronService } from './cron.js';
-import { createUtils } from './utils/utils.js';
-import { createLogger } from './utils/logger.js';
-import { createValidators } from './utils/validators.js';
-import { createCalendar } from './routes/api/calendar/model.js';
-import { createAuthMiddleware } from './routes/api/auth/middleware.js';
-import { createCalendarService } from './routes/api/calendar/service.js';
-import { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError } from './errors.js';
+import {
+    NotFoundError,
+    DatabaseError,
+    ValidationError,
+    CalendarFetchError,
+    AuthenticationError,
+} from "./errors.js";
+import ICAL from "ical.js";
+import { config } from "./config.js";
+import { createDatabase } from "./db/db.js";
+import { createCronService } from "./cron.js";
+import { createUtils } from "./utils/utils.js";
+import { createLogger } from "./utils/logger.js";
+import { createValidators } from "./utils/validators.js";
+import { createCalendar } from "./routes/api/calendar/model.js";
+import { createAuthMiddleware } from "./routes/api/auth/middleware.js";
+import { createCalendarService } from "./routes/api/calendar/service.js";
 
 export function createContext(customConfig = {}) {
-    if (customConfig && typeof customConfig !== 'object') {
-        throw new Error('customConfig must be an object');
+    if (customConfig && typeof customConfig !== "object") {
+        throw new Error("customConfig must be an object");
     }
 
     const finalConfig = {
         ...config,
-        ...customConfig
+        ...customConfig,
     };
 
     const icalLibrary = customConfig.ICAL || ICAL;
 
     const logger = createLogger(finalConfig.logger);
     const db = finalConfig.database?.instance || createDatabase(finalConfig.db);
-    const errors = { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError };
+    const errors = {
+        ValidationError,
+        NotFoundError,
+        CalendarFetchError,
+        DatabaseError,
+        AuthenticationError,
+    };
     const utils = createUtils({ logger, config: finalConfig });
     const validators = createValidators({ errors, utils });
     const models = {
-        calendar: createCalendar({ db, errors, utils })
+        calendar: createCalendar({ db, errors, utils }),
     };
 
     const middleware = {
-        auth: createAuthMiddleware({ utils, logger, errors, config: finalConfig, })
+        auth: createAuthMiddleware({
+            utils,
+            logger,
+            errors,
+            config: finalConfig,
+        }),
     };
 
     const services = {
@@ -40,13 +57,13 @@ export function createContext(customConfig = {}) {
             ICAL: icalLibrary,
             logger,
             models,
-            errors
-        })
+            errors,
+        }),
     };
 
     services.cron = createCronService({
         logger,
-        services
+        services,
     });
 
     const context = {
@@ -58,8 +75,8 @@ export function createContext(customConfig = {}) {
         validators,
         models,
         middleware,
-        services
+        services,
     };
 
-    return process.env.NODE_ENV === 'test' ? context : Object.freeze(context);
+    return process.env.NODE_ENV === "test" ? context : Object.freeze(context);
 }

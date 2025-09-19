@@ -1,9 +1,9 @@
 export function createCalendarService(dependencies = {}) {
     const { ICAL, logger, models } = dependencies;
 
-    if (!ICAL) throw new Error('ICAL required for calendar service');
-    if (!models) throw new Error('Models required for calendar service');
-    if (!logger) throw new Error('Logger required for calendar service');
+    if (!ICAL) throw new Error("ICAL required for calendar service");
+    if (!models) throw new Error("Models required for calendar service");
+    if (!logger) throw new Error("Logger required for calendar service");
 
     async function fetchICalData(url) {
         const controller = new AbortController();
@@ -12,10 +12,10 @@ export function createCalendarService(dependencies = {}) {
         try {
             const response = await fetch(url, {
                 headers: {
-                    'User-Agent': 'Calendar-App/1.0',
-                    'Accept': 'text/calendar, application/calendar, text/plain'
+                    "User-Agent": "Calendar-App/1.0",
+                    Accept: "text/calendar, application/calendar, text/plain",
                 },
-                signal: controller.signal
+                signal: controller.signal,
             });
 
             clearTimeout(timeoutId);
@@ -24,15 +24,15 @@ export function createCalendarService(dependencies = {}) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
-            const contentType = response.headers.get('content-type');
-            if (contentType && !contentType.includes('calendar') && !contentType.includes('text')) {
+            const contentType = response.headers.get("content-type");
+            if (contentType && !contentType.includes("calendar") && !contentType.includes("text")) {
                 logger.warn(`Unexpected content type: ${contentType} for ${url}`);
             }
 
             return await response.text();
         } catch (error) {
             clearTimeout(timeoutId);
-            if (error.name === 'AbortError') {
+            if (error.name === "AbortError") {
                 throw new Error(`Request timeout after 30s for ${url}`);
             }
             throw new Error(`Failed to fetch iCal data from ${url}: ${error.message}`);
@@ -41,11 +41,11 @@ export function createCalendarService(dependencies = {}) {
 
     function parseICalToEvents(icalData) {
         try {
-            logger.debug('Parsing iCal data with ical.js...');
+            logger.debug("Parsing iCal data with ical.js...");
 
             const jCalData = ICAL.parse(icalData);
             const comp = new ICAL.Component(jCalData);
-            const vevents = comp.getAllSubcomponents('vevent');
+            const vevents = comp.getAllSubcomponents("vevent");
 
             logger.debug(`Found ${vevents.length} VEVENT components`);
 
@@ -62,7 +62,9 @@ export function createCalendarService(dependencies = {}) {
                 const vevent = vevents[i];
                 try {
                     const event = new ICAL.Event(vevent);
-                    logger.debug(`Processing event: ${event.summary}, recurring: ${event.isRecurring()}`);
+                    logger.debug(
+                        `Processing event: ${event.summary}, recurring: ${event.isRecurring()}`,
+                    );
 
                     if (event.isRecurring()) {
                         // Use RecurExpansion for recurring events - this handles RRULE, RDATE, EXDATE automatically
@@ -70,13 +72,17 @@ export function createCalendarService(dependencies = {}) {
 
                         const expand = new ICAL.RecurExpansion({
                             component: vevent,
-                            dtstart: vevent.getFirstPropertyValue('dtstart')
+                            dtstart: vevent.getFirstPropertyValue("dtstart"),
                         });
 
                         let next;
                         let count = 0;
 
-                        while ((next = expand.next()) && count < 1000 && next.compare(rangeEnd) < 0) {
+                        while (
+                            (next = expand.next()) &&
+                            count < 1000 &&
+                            next.compare(rangeEnd) < 0
+                        ) {
                             if (next.compare(rangeStart) < 0) {
                                 continue; // Skip dates before our range
                             }
@@ -86,21 +92,25 @@ export function createCalendarService(dependencies = {}) {
                             count++;
                         }
 
-                        logger.debug(`Created ${count} instances for recurring event: ${event.summary}`);
+                        logger.debug(
+                            `Created ${count} instances for recurring event: ${event.summary}`,
+                        );
                     } else {
                         // Single event or modified instance
-                        logger.debug(`Adding single/modified event: ${event.summary}, UID: ${event.uid}`);
+                        logger.debug(
+                            `Adding single/modified event: ${event.summary}, UID: ${event.uid}`,
+                        );
                         events.push(createEventFromIcal(event));
                     }
                 } catch (eventError) {
-                    logger.error('Error processing event:', eventError.message);
+                    logger.error("Error processing event:", eventError.message);
                 }
             }
 
             logger.debug(`Successfully parsed ${events.length} total events`);
             return events;
         } catch (error) {
-            logger.error('Error parsing iCal data:', error);
+            logger.error("Error parsing iCal data:", error);
             throw new Error(`Failed to parse iCal data: ${error.message}`);
         }
     }
@@ -108,11 +118,11 @@ export function createCalendarService(dependencies = {}) {
     function createEventFromIcal(icalEvent) {
         const event = {
             uid: icalEvent.uid,
-            title: icalEvent.summary || 'Untitled Event',
-            description: icalEvent.description || '',
-            location: icalEvent.location || '',
+            title: icalEvent.summary || "Untitled Event",
+            description: icalEvent.description || "",
+            location: icalEvent.location || "",
             start: icalEvent.startDate.toJSDate().toISOString(),
-            allDay: icalEvent.startDate.isDate
+            allDay: icalEvent.startDate.isDate,
         };
 
         if (icalEvent.endDate) {
@@ -127,16 +137,18 @@ export function createCalendarService(dependencies = {}) {
     function createEventFromOccurrence(originalEvent, occurrenceDate) {
         const event = {
             uid: `${originalEvent.uid}_${occurrenceDate.toJSDate().getTime()}`,
-            title: originalEvent.summary || 'Untitled Event',
-            description: originalEvent.description || '',
-            location: originalEvent.location || '',
+            title: originalEvent.summary || "Untitled Event",
+            description: originalEvent.description || "",
+            location: originalEvent.location || "",
             start: occurrenceDate.toJSDate().toISOString(),
-            allDay: occurrenceDate.isDate
+            allDay: occurrenceDate.isDate,
         };
 
         // Calculate end time if original event has duration
         if (originalEvent.endDate && originalEvent.startDate) {
-            const durationMs = originalEvent.endDate.toJSDate().getTime() - originalEvent.startDate.toJSDate().getTime();
+            const durationMs =
+                originalEvent.endDate.toJSDate().getTime() -
+                originalEvent.startDate.toJSDate().getTime();
             const endDate = new Date(occurrenceDate.toJSDate().getTime() + durationMs);
             event.end = endDate.toISOString();
         }
@@ -151,15 +163,21 @@ export function createCalendarService(dependencies = {}) {
         if (icalEvent.organizer) {
             try {
                 event.organizer = {
-                    name: (typeof icalEvent.organizer.getParameter === 'function' ? icalEvent.organizer.getParameter('cn') : '') || '',
-                    email: (typeof icalEvent.organizer.getFirstValue === 'function' ? icalEvent.organizer.getFirstValue()?.replace('mailto:', '') : icalEvent.organizer.toString().replace('mailto:', '')) || ''
+                    name:
+                        (typeof icalEvent.organizer.getParameter === "function"
+                            ? icalEvent.organizer.getParameter("cn")
+                            : "") || "",
+                    email:
+                        (typeof icalEvent.organizer.getFirstValue === "function"
+                            ? icalEvent.organizer.getFirstValue()?.replace("mailto:", "")
+                            : icalEvent.organizer.toString().replace("mailto:", "")) || "",
                 };
             } catch (error) {
                 // Fallback for organizer as string value
                 const organizerStr = icalEvent.organizer.toString();
                 event.organizer = {
-                    name: '',
-                    email: organizerStr.replace('mailto:', '') || ''
+                    name: "",
+                    email: organizerStr.replace("mailto:", "") || "",
                 };
             }
         }
@@ -171,21 +189,36 @@ export function createCalendarService(dependencies = {}) {
                 const attendee = icalEvent.attendees[i];
                 try {
                     attendees[i] = {
-                        name: (typeof attendee.getParameter === 'function' ? attendee.getParameter('cn') : '') || '',
-                        email: (typeof attendee.getFirstValue === 'function' ? attendee.getFirstValue()?.replace('mailto:', '') : attendee.toString().replace('mailto:', '')) || '',
-                        role: (typeof attendee.getParameter === 'function' ? attendee.getParameter('role') : '') || '',
-                        status: (typeof attendee.getParameter === 'function' ? attendee.getParameter('partstat') : '') || '',
-                        type: (typeof attendee.getParameter === 'function' ? attendee.getParameter('cutype') : '') || ''
+                        name:
+                            (typeof attendee.getParameter === "function"
+                                ? attendee.getParameter("cn")
+                                : "") || "",
+                        email:
+                            (typeof attendee.getFirstValue === "function"
+                                ? attendee.getFirstValue()?.replace("mailto:", "")
+                                : attendee.toString().replace("mailto:", "")) || "",
+                        role:
+                            (typeof attendee.getParameter === "function"
+                                ? attendee.getParameter("role")
+                                : "") || "",
+                        status:
+                            (typeof attendee.getParameter === "function"
+                                ? attendee.getParameter("partstat")
+                                : "") || "",
+                        type:
+                            (typeof attendee.getParameter === "function"
+                                ? attendee.getParameter("cutype")
+                                : "") || "",
                     };
                 } catch (error) {
                     // Fallback for attendee as string value
                     const attendeeStr = attendee.toString();
                     attendees[i] = {
-                        name: '',
-                        email: attendeeStr.replace('mailto:', '') || '',
-                        role: '',
-                        status: '',
-                        type: ''
+                        name: "",
+                        email: attendeeStr.replace("mailto:", "") || "",
+                        role: "",
+                        status: "",
+                        type: "",
                     };
                 }
             }
@@ -193,38 +226,38 @@ export function createCalendarService(dependencies = {}) {
         }
 
         // Add timestamps
-        const created = icalEvent.component.getFirstPropertyValue('created');
+        const created = icalEvent.component.getFirstPropertyValue("created");
         if (created) event.created = created.toJSDate().toISOString();
 
-        const lastModified = icalEvent.component.getFirstPropertyValue('last-modified');
+        const lastModified = icalEvent.component.getFirstPropertyValue("last-modified");
         if (lastModified) event.lastModified = lastModified.toJSDate().toISOString();
 
-        const dtStamp = icalEvent.component.getFirstPropertyValue('dtstamp');
+        const dtStamp = icalEvent.component.getFirstPropertyValue("dtstamp");
         if (dtStamp) event.dtStamp = dtStamp.toJSDate().toISOString();
 
         // Add other properties
-        const status = icalEvent.component.getFirstPropertyValue('status');
+        const status = icalEvent.component.getFirstPropertyValue("status");
         if (status) event.status = status;
 
-        const transparency = icalEvent.component.getFirstPropertyValue('transp');
+        const transparency = icalEvent.component.getFirstPropertyValue("transp");
         if (transparency) event.transparency = transparency;
 
-        const sequence = icalEvent.component.getFirstPropertyValue('sequence');
+        const sequence = icalEvent.component.getFirstPropertyValue("sequence");
         if (sequence !== null) event.sequence = sequence;
 
-        const url = icalEvent.component.getFirstPropertyValue('url');
+        const url = icalEvent.component.getFirstPropertyValue("url");
         if (url) event.url = url;
     }
 
     function buildExtendedProps(event) {
         const props = {
-            description: event.description || '',
-            location: event.location || '',
-            uid: event.uid || '',
-            duration: event.duration || '',
-            status: event.status || '',
-            transparency: event.transparency || '',
-            sequence: event.sequence ? String(event.sequence) : '0'
+            description: event.description || "",
+            location: event.location || "",
+            uid: event.uid || "",
+            duration: event.duration || "",
+            status: event.status || "",
+            transparency: event.transparency || "",
+            sequence: event.sequence ? String(event.sequence) : "0",
         };
 
         // Add timestamp fields if they exist
@@ -263,10 +296,10 @@ export function createCalendarService(dependencies = {}) {
             }
 
             if (attendeeNames.length > 0) {
-                props.attendeeNames = attendeeNames.join(', ');
+                props.attendeeNames = attendeeNames.join(", ");
             }
             if (attendeeEmails.length > 0) {
-                props.attendeeEmails = attendeeEmails.join(', ');
+                props.attendeeEmails = attendeeEmails.join(", ");
             }
             props.attendeeCount = String(event.attendees.length);
         }
@@ -285,24 +318,28 @@ export function createCalendarService(dependencies = {}) {
 
             // Skip events without valid start date or title
             if (!event.start && !event.title) {
-                skippedEvents.push({ reason: 'No start date or title', event: event.uid || 'unknown' });
+                skippedEvents.push({
+                    reason: "No start date or title",
+                    event: event.uid || "unknown",
+                });
                 continue;
             }
 
             // Check if this is a detail-hidden event (empty title AND empty description AND empty location)
-            const isDetailHidden = event.title === '' && event.description === '' && event.location === '';
+            const isDetailHidden =
+                event.title === "" && event.description === "" && event.location === "";
 
             const fcEvent = {
-                title: event.title || (isDetailHidden ? '' : 'Untitled Event'),
+                title: event.title || (isDetailHidden ? "" : "Untitled Event"),
                 start: event.start,
                 allDay: event.allDay || false,
                 backgroundColor: calendar.color,
                 borderColor: calendar.color,
-                textColor: 'white',
+                textColor: "white",
                 extendedProps: {
                     ...buildExtendedProps(event),
-                    isDetailHidden: isDetailHidden
-                }
+                    isDetailHidden: isDetailHidden,
+                },
             };
 
             if (event.end) {
@@ -317,7 +354,7 @@ export function createCalendarService(dependencies = {}) {
         }
 
         if (skippedEvents.length > 0) {
-            logger.debug('Skipped', skippedEvents.length, 'invalid events:', skippedEvents);
+            logger.debug("Skipped", skippedEvents.length, "invalid events:", skippedEvents);
         }
 
         return validEvents;
@@ -327,7 +364,7 @@ export function createCalendarService(dependencies = {}) {
         if (!events || events.length === 0) {
             return {
                 publicEvents: buildFullCalendarEvents(calendar, []),
-                authenticatedEvents: buildFullCalendarEvents(calendar, events)
+                authenticatedEvents: buildFullCalendarEvents(calendar, events),
             };
         }
 
@@ -344,9 +381,9 @@ export function createCalendarService(dependencies = {}) {
                 const event = events[i];
                 strippedEvents[i] = {
                     uid: event.uid,
-                    title: '', // Hide title completely
-                    description: '', // Hide description completely
-                    location: '', // Hide location completely
+                    title: "", // Hide title completely
+                    description: "", // Hide description completely
+                    location: "", // Hide location completely
                     start: event.start,
                     end: event.end,
                     allDay: event.allDay,
@@ -359,7 +396,7 @@ export function createCalendarService(dependencies = {}) {
                     dtStamp: event.dtStamp,
                     created: event.created,
                     lastModified: event.lastModified,
-                    url: null // Hide URL as well
+                    url: null, // Hide URL as well
                 };
             }
             publicEvents = buildFullCalendarEvents(calendar, strippedEvents);
@@ -387,13 +424,15 @@ export function createCalendarService(dependencies = {}) {
 
             const { publicEvents, authenticatedEvents } = processEventsForViews(events, calendar);
 
-            logger.info(`Processed ${publicEvents.length} public events and ${authenticatedEvents.length} authenticated events`);
+            logger.info(
+                `Processed ${publicEvents.length} public events and ${authenticatedEvents.length} authenticated events`,
+            );
 
             await models.calendar.update(calendarId, {
                 data: rawData,
                 events: JSON.stringify(events),
                 events_public: JSON.stringify(publicEvents),
-                events_authenticated: JSON.stringify(authenticatedEvents)
+                events_authenticated: JSON.stringify(authenticatedEvents),
             });
 
             logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
@@ -407,10 +446,13 @@ export function createCalendarService(dependencies = {}) {
                     data: null,
                     events: JSON.stringify([]),
                     events_public: JSON.stringify([]),
-                    events_authenticated: JSON.stringify([])
+                    events_authenticated: JSON.stringify([]),
                 });
             } catch (updateError) {
-                logger.error(`Failed to update calendar ${calendarId} with error state:`, updateError);
+                logger.error(
+                    `Failed to update calendar ${calendarId} with error state:`,
+                    updateError,
+                );
             }
 
             throw error;
@@ -428,13 +470,17 @@ export function createCalendarService(dependencies = {}) {
                 const calendar = calendars[i];
                 try {
                     const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
-                    results[i] = { success: true, calendarId: calendar.id, ...result };
+                    results[i] = {
+                        success: true,
+                        calendarId: calendar.id,
+                        ...result,
+                    };
                 } catch (error) {
                     logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
                     results[i] = {
                         success: false,
                         calendarId: calendar.id,
-                        error: error.message
+                        error: error.message,
                     };
                 }
             }
@@ -453,13 +499,13 @@ export function createCalendarService(dependencies = {}) {
 
             return { total: calendars.length, successful, failed, results };
         } catch (error) {
-            logger.error('Failed to refetch calendars:', error);
+            logger.error("Failed to refetch calendars:", error);
             throw error;
         }
     }
 
     return {
         fetchAndProcessCalendar,
-        refetchAllCalendars
+        refetchAllCalendars,
     };
 }

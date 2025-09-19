@@ -1,8 +1,8 @@
 export function createUtils(dependencies = {}) {
     const { logger, config } = dependencies;
 
-    if (!logger) throw new Error('Logger required for utils');
-    if (!config) throw new Error('Config required for utils');
+    if (!logger) throw new Error("Logger required for utils");
+    if (!config) throw new Error("Config required for utils");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
@@ -14,17 +14,17 @@ export function createUtils(dependencies = {}) {
          * @returns {boolean}
          */
         isApiRequest(req) {
-            if (req.path.startsWith('/api/')) {
+            if (req.path.startsWith("/api/")) {
                 return true;
             }
 
-            const acceptHeader = req.get('Accept') || '';
-            if (acceptHeader.includes('application/json')) {
+            const acceptHeader = req.get("Accept") || "";
+            if (acceptHeader.includes("application/json")) {
                 return true;
             }
 
-            const contentType = req.get('Content-Type') || '';
-            if (contentType.includes('application/json')) {
+            const contentType = req.get("Content-Type") || "";
+            if (contentType.includes("application/json")) {
                 return true;
             }
 
@@ -32,7 +32,7 @@ export function createUtils(dependencies = {}) {
                 return true;
             }
 
-            if (req.get('X-Requested-With') === 'XMLHttpRequest') {
+            if (req.get("X-Requested-With") === "XMLHttpRequest") {
                 return true;
             }
 
@@ -45,7 +45,7 @@ export function createUtils(dependencies = {}) {
          * @returns {boolean}
          */
         validateEmail(email) {
-            if (typeof email !== 'string') return false;
+            if (typeof email !== "string") return false;
             return emailRegex.test(email);
         },
 
@@ -71,7 +71,7 @@ export function createUtils(dependencies = {}) {
         validateCalendarUrl(url) {
             if (!this.validateUrl(url)) return false;
 
-            const validProtocols = ['http:', 'https:', 'webcal:'];
+            const validProtocols = ["http:", "https:", "webcal:"];
             const urlObj = new URL(url);
 
             return validProtocols.includes(urlObj.protocol);
@@ -92,8 +92,8 @@ export function createUtils(dependencies = {}) {
          * @returns {string}
          */
         sanitizeString(str) {
-            if (typeof str !== 'string') return '';
-            return str.trim().replace(/<[^>]*>/g, ''); // Remove HTML tags
+            if (typeof str !== "string") return "";
+            return str.trim().replace(/<[^>]*>/g, ""); // Remove HTML tags
         },
 
         /**
@@ -102,9 +102,18 @@ export function createUtils(dependencies = {}) {
          */
         generateRandomColor() {
             const colors = [
-                '#447dfc', '#e74c3c', '#2ecc71', '#f39c12',
-                '#9b59b6', '#1abc9c', '#34495e', '#e67e22',
-                '#95a5a6', '#16a085', '#27ae60', '#2980b9'
+                "#447dfc",
+                "#e74c3c",
+                "#2ecc71",
+                "#f39c12",
+                "#9b59b6",
+                "#1abc9c",
+                "#34495e",
+                "#e67e22",
+                "#95a5a6",
+                "#16a085",
+                "#27ae60",
+                "#2980b9",
             ];
             return colors[Math.floor(Math.random() * colors.length)];
         },
@@ -115,7 +124,7 @@ export function createUtils(dependencies = {}) {
          * @returns {Promise}
          */
         sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
+            return new Promise((resolve) => setTimeout(resolve, ms));
         },
 
         /**
@@ -134,9 +143,9 @@ export function createUtils(dependencies = {}) {
          */
         isEmpty(value) {
             if (value == null) return true;
-            if (typeof value === 'string') return value.trim() === '';
+            if (typeof value === "string") return value.trim() === "";
             if (Array.isArray(value)) return value.length === 0;
-            if (typeof value === 'object') return Object.keys(value).length === 0;
+            if (typeof value === "object") return Object.keys(value).length === 0;
             return false;
         },
 
@@ -153,14 +162,13 @@ export function createUtils(dependencies = {}) {
             return id;
         },
 
-
         /**
          * Validate hex color format
          * @param {string} color - Color string to validate
          * @returns {boolean}
          */
         validateHexColor(color) {
-            if (!color || typeof color !== 'string') return false;
+            if (!color || typeof color !== "string") return false;
             return hexColorRegex.test(color);
         },
 
@@ -170,12 +178,12 @@ export function createUtils(dependencies = {}) {
          * @returns {boolean} - True if token is valid and not expired
          */
         validateSessionToken(token) {
-            if (!token || typeof token !== 'string') {
+            if (!token || typeof token !== "string") {
                 return false;
             }
 
             try {
-                const [timestamp] = token.split('.');
+                const [timestamp] = token.split(".");
                 const tokenTime = parseInt(timestamp);
 
                 if (isNaN(tokenTime)) {
@@ -185,7 +193,7 @@ export function createUtils(dependencies = {}) {
                 const now = Date.now();
                 const twentyFourHours = 24 * 60 * 60 * 1000;
 
-                return (now - tokenTime) < twentyFourHours;
+                return now - tokenTime < twentyFourHours;
             } catch (error) {
                 return false;
             }
@@ -200,6 +208,5 @@ export function createUtils(dependencies = {}) {
             const token = req.cookies?.session_token || null;
             return this.validateSessionToken(token);
         },
-
     };
 }

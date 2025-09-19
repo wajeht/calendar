@@ -1,0 +1,11 @@
+# Ignore vendor JavaScript files
+public/js/fullcalendar-*.min.js
+public/js/ical.min.js
+
+# Common ignore patterns
+node_modules/
+dist/
+build/
+coverage/
+*.min.js
+*.min.css

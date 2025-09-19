@@ -1,20 +1,45 @@
-<footer style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; flex: 0;">
-  <p>
-    <% if (typeof state !== 'undefined' && state.copyRightYear) { %>
-      Copyright © <%= state.copyRightYear %>. Made with ❤️ by <a href="https://github.com/wajeht" target="_blank" rel="noopener noreferrer">@wajeht</a>
-    <% } else { %>
-      Copyright © 2025. Made with ❤️ by <a href="https://github.com/wajeht" target="_blank" rel="noopener noreferrer">@wajeht</a>
-    <% } %>
-  </p>
-  <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
-      <span aria-hidden="true">|</span>
-      <nav aria-label="Footer navigation">
-          <ul style="display: flex; gap: 10px; padding: 0; margin: 0; list-style: none; align-items: center;">
-              <li><a href="https://github.com/wajeht/calendar" target="_blank" rel="noopener noreferrer">📂 Github</a>
-              </li>
-          </ul>
-      </nav>
-  </div>
+<footer
+    style="
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        flex: 0;
+    "
+>
+    <p>
+        <% if (typeof state !== 'undefined' && state.copyRightYear) { %> Copyright © <%=
+        state.copyRightYear %>. Made with ❤️ by
+        <a href="https://github.com/wajeht" target="_blank" rel="noopener noreferrer">@wajeht</a>
+        <% } else { %> Copyright © 2025. Made with ❤️ by
+        <a href="https://github.com/wajeht" target="_blank" rel="noopener noreferrer">@wajeht</a>
+        <% } %>
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center; align-items: center">
+        <span aria-hidden="true">|</span>
+        <nav aria-label="Footer navigation">
+            <ul
+                style="
+                    display: flex;
+                    gap: 10px;
+                    padding: 0;
+                    margin: 0;
+                    list-style: none;
+                    align-items: center;
+                "
+            >
+                <li>
+                    <a
+                        href="https://github.com/wajeht/calendar"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        >📂 Github</a
+                    >
+                </li>
+            </ul>
+        </nav>
+    </div>
 </footer>
 
 <script src="/js/global.js?v=<%= state?.version?.script || '0.0.1' %>"></script>

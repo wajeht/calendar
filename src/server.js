@@ -1,10 +1,10 @@
-import { createServer, closeServer } from './app.js';
+import { createServer, closeServer } from "./app.js";
 
 async function gracefulShutdown(signal, serverInfo) {
     console.log(`Received ${signal}, shutting down gracefully.`);
 
     setTimeout(() => {
-        console.error('Could not close connections in time, forcefully shutting down');
+        console.error("Could not close connections in time, forcefully shutting down");
         process.exit(1);
     }, 10000).unref();
 
@@ -37,15 +37,15 @@ function handleUnhandledRejection(reason, _promise) {
 
 async function main() {
     const serverInfo = await createServer();
-    process.title = 'calendar';
+    process.title = "calendar";
 
-    process.on('SIGINT', function () { gracefulShutdown('SIGINT', serverInfo); });
-    process.on('SIGTERM', function () { gracefulShutdown('SIGTERM', serverInfo); });
-    process.on('SIGQUIT', function () { gracefulShutdown('SIGQUIT', serverInfo); });
+    process.on("SIGINT", gracefulShutdown("SIGINT", serverInfo));
+    process.on("SIGTERM", gracefulShutdown("SIGTERM", serverInfo));
+    process.on("SIGQUIT", gracefulShutdown("SIGQUIT", serverInfo));
 
-    process.on('warning', handleWarning);
-    process.on('uncaughtException', handleUncaughtException);
-    process.on('unhandledRejection', handleUnhandledRejection);
+    process.on("warning", handleWarning);
+    process.on("uncaughtException", handleUncaughtException);
+    process.on("unhandledRejection", handleUnhandledRejection);
 }
 
 main().catch(function (error) {

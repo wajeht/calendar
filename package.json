@@ -1,59 +1,61 @@
 {
-  "name": "calendar",
-  "version": "0.0.1",
-  "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
-  "main": "server.js",
-  "type": "module",
-  "directories": {
-    "doc": "docs"
-  },
-  "scripts": {
-    "start": "node ./src/server.js",
-    "dev": "nodemon ./src/server.js",
-    "db:prepare:prod": "npm run db:migrate:latest",
-    "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
-    "db:migrate:make": "knex migrate:make --knexfile=./src/db/knexfile.js",
-    "db:migrate:latest": "knex migrate:latest --knexfile=./src/db/knexfile.js",
-    "db:migrate:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
-    "db:seed:make": "knex seed:make --knexfile=./src/db/knexfile.js",
-    "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
-    "rmds": "find . -name '.DS_Store' -delete",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/wajeht/calendar.git"
-  },
-  "keywords": [
-    "google",
-    "ical",
-    "calendar",
-    "fullcalendar"
-  ],
-  "author": "wajeht",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/wajeht/calendar/issues"
-  },
-  "homepage": "https://github.com/wajeht/calendar#readme",
-  "dependencies": {
-    "better-sqlite3": "^12.2.0",
-    "compression": "^1.8.1",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
-    "ejs": "^3.1.10",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.1.0",
-    "helmet": "^8.1.0",
-    "ical.js": "^2.2.1",
-    "knex": "^3.1.0",
-    "node-cron": "^4.2.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10",
-    "supertest": "^7.1.4",
-    "vitest": "^3.2.4"
-  }
+    "name": "calendar",
+    "version": "0.0.1",
+    "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
+    "main": "server.js",
+    "type": "module",
+    "directories": {
+        "doc": "docs"
+    },
+    "scripts": {
+        "start": "node ./src/server.js",
+        "dev": "nodemon ./src/server.js",
+        "db:prepare:prod": "npm run db:migrate:latest",
+        "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
+        "db:migrate:make": "knex migrate:make --knexfile=./src/db/knexfile.js",
+        "db:migrate:latest": "knex migrate:latest --knexfile=./src/db/knexfile.js",
+        "db:migrate:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
+        "db:seed:make": "knex seed:make --knexfile=./src/db/knexfile.js",
+        "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
+        "rmds": "find . -name '.DS_Store' -delete",
+        "format": "prettier --write .",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/wajeht/calendar.git"
+    },
+    "keywords": [
+        "google",
+        "ical",
+        "calendar",
+        "fullcalendar"
+    ],
+    "author": "wajeht",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/wajeht/calendar/issues"
+    },
+    "homepage": "https://github.com/wajeht/calendar#readme",
+    "dependencies": {
+        "better-sqlite3": "^12.2.0",
+        "compression": "^1.8.1",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.2",
+        "ejs": "^3.1.10",
+        "express": "^5.1.0",
+        "express-rate-limit": "^8.1.0",
+        "helmet": "^8.1.0",
+        "ical.js": "^2.2.1",
+        "knex": "^3.1.0",
+        "node-cron": "^4.2.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.10",
+        "prettier": "^3.6.2",
+        "supertest": "^7.1.4",
+        "vitest": "^3.2.4"
+    }
 }

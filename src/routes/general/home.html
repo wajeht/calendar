@@ -1,10 +1,8 @@
 <div id="calendar"></div>
 
-<%- include('../_components/password-modal.html') %>
-<%- include('../_components/toast.html') %>
-<%- include('../_components/confirm-modal.html') %>
-<%- include('../_components/calendar-modals.html') %>
-<%- include('../_components/event-modal.html') %>
+<%- include('../_components/password-modal.html') %> <%- include('../_components/toast.html') %> <%-
+include('../_components/confirm-modal.html') %> <%- include('../_components/calendar-modals.html')
+%> <%- include('../_components/event-modal.html') %>
 
 <script>
     let calendar;
@@ -12,7 +10,6 @@
     let isAuthenticated = false;
     let sharedCalendarData = [];
 
-    // Modal stack manager for ESC handling
     const modalStack = {
         stack: [],
 
@@ -33,12 +30,11 @@
 
         getTop() {
             return this.stack[this.stack.length - 1];
-        }
+        },
     };
 
-    // Global ESC handler
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
             const topModal = modalStack.getTop();
             if (topModal && topModal.close) {
                 topModal.close();
@@ -47,58 +43,58 @@
     });
 
     const viewMappings = {
-        month: 'dayGridMonth',
-        week: 'timeGridWeek',
-        day: 'timeGridDay',
-        list: 'listMonth'
+        month: "dayGridMonth",
+        week: "timeGridWeek",
+        day: "timeGridDay",
+        list: "listMonth",
     };
 
     function initCalendar() {
-        const calendarEl = document.getElementById('calendar');
+        const calendarEl = document.getElementById("calendar");
 
         const urlParams = new URLSearchParams(window.location.search);
-        const viewParam = urlParams.get('view');
-        const dateParam = urlParams.get('date');
+        const viewParam = urlParams.get("view");
+        const dateParam = urlParams.get("date");
 
-        const initialView = viewMappings[viewParam] || 'timeGridWeek';
+        const initialView = viewMappings[viewParam] || "timeGridWeek";
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: initialView,
             initialDate: dateParam || undefined,
             firstDay: 1,
             headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton'
+                left: "prev,next today",
+                center: "title",
+                right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton",
             },
             customButtons: {
                 refetchButton: {
-                    text: 'refetch',
-                    hint: 'Refetch All Calendars',
+                    text: "refetch",
+                    hint: "Refetch All Calendars",
                     click: function () {
                         refetchAllCalendars();
-                    }
+                    },
                 },
                 settingsButton: {
-                    text: 'settings',
-                    hint: 'Manage Calendars',
+                    text: "settings",
+                    hint: "Manage Calendars",
                     click: function () {
                         if (isAuthenticated) {
                             calendarModals.management.show();
                         } else {
                             passwordModal.show();
                         }
-                    }
+                    },
                 },
                 logoutButton: {
-                    text: 'logout',
-                    hint: 'Logout',
+                    text: "logout",
+                    hint: "Logout",
                     click: function () {
                         logout();
-                    }
-                }
+                    },
+                },
             },
-            height: '100%',
+            height: "100%",
             nowIndicator: true,
             expandRows: true,
             editable: false,
@@ -106,8 +102,8 @@
             selectMirror: false,
             businessHours: {
                 daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
-                startTime: '09:00',
-                endTime: '17:00'
+                startTime: "09:00",
+                endTime: "17:00",
             },
             eventSources: [],
             eventClick: function (info) {
@@ -117,25 +113,25 @@
                     return;
                 }
 
-                const sourceCalendar = eventSources.find(es => es.id == info.event.source.id);
+                const sourceCalendar = eventSources.find((es) => es.id == info.event.source.id);
 
-                if (typeof eventModal !== 'undefined' && eventModal.show) {
+                if (typeof eventModal !== "undefined" && eventModal.show) {
                     eventModal.show(info.event, sourceCalendar);
                 } else {
-                    console.error('Event modal not available');
+                    console.error("Event modal not available");
                 }
             },
             loading: function (isLoading) {
                 if (isLoading) {
-                    log.debug('Loading calendar...');
+                    log.debug("Loading calendar...");
                 }
             },
             eventSourceFailure: function (error) {
-                log.error('Calendar load failed:', error);
+                log.error("Calendar load failed:", error);
             },
             datesSet: function () {
                 updateURL();
-            }
+            },
         });
 
         calendar.render();
@@ -143,10 +139,12 @@
 
     async function loadCalendars() {
         try {
-            const response = await fetch('/api/calendars', { credentials: 'include' });
+            const response = await fetch("/api/calendars", {
+                credentials: "include",
+            });
 
             if (!response.ok) {
-                log.error('Failed to fetch calendars:', response.status);
+                log.error("Failed to fetch calendars:", response.status);
                 return;
             }
 
@@ -154,7 +152,7 @@
             sharedCalendarData = calendars;
 
             if (!calendars || calendars.length === 0) {
-                log.debug('No calendars to load');
+                log.debug("No calendars to load");
                 return;
             }
 
@@ -167,12 +165,12 @@
 
                 const events = cal.events || [];
 
-                log.debug('Loading calendar:', cal.name, 'with', events.length, 'events');
+                log.debug("Loading calendar:", cal.name, "with", events.length, "events");
 
                 const source = {
                     id: cal.id,
                     events: events,
-                    color: cal.color
+                    color: cal.color,
                 };
 
                 const eventSource = calendar.addEventSource(source);
@@ -180,12 +178,11 @@
                 eventSources.push({
                     id: cal.id,
                     name: cal.name,
-                    color: cal.color
+                    color: cal.color,
                 });
             }
-
         } catch (error) {
-            log.error('Error loading calendars:', error);
+            log.error("Error loading calendars:", error);
         }
     }
 
@@ -196,15 +193,15 @@
         }
 
         const confirmed = await confirmModal.warning(
-            'Are you sure you want to refetch all calendar data? This may take a moment.',
-            'Refetch All Calendars'
+            "Are you sure you want to refetch all calendar data? This may take a moment.",
+            "Refetch All Calendars",
         );
 
         if (confirmed) {
             try {
-                const response = await fetch('/api/calendars/refetch', {
-                    method: 'POST',
-                    credentials: 'include'
+                const response = await fetch("/api/calendars/refetch", {
+                    method: "POST",
+                    credentials: "include",
                 });
 
                 if (response.status === 401) {
@@ -215,21 +212,21 @@
 
                 if (response.ok) {
                     await loadCalendars();
-                    toast.success('Calendars refetched successfully!');
+                    toast.success("Calendars refetched successfully!");
                 } else {
-                    toast.error('Error refetching calendars');
+                    toast.error("Error refetching calendars");
                 }
             } catch (error) {
-                toast.error('Error refetching calendars: ' + error.message);
+                toast.error("Error refetching calendars: " + error.message);
             }
         }
     }
 
     async function logout() {
         try {
-            const response = await fetch('/api/auth/logout', {
-                method: 'POST',
-                credentials: 'include'
+            const response = await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
             });
 
             if (response.ok) {
@@ -237,47 +234,47 @@
                 sharedCalendarData = []; // Clear shared data
                 updateToolbar();
                 await loadCalendars(); // Reload with public data
-                toast.success('Logged out successfully');
+                toast.success("Logged out successfully");
             } else {
-                toast.error('Error during logout');
+                toast.error("Error during logout");
             }
         } catch (error) {
-            toast.error('Error during logout: ' + error.message);
+            toast.error("Error during logout: " + error.message);
         }
     }
 
     function updateToolbar() {
         if (calendar) {
             const rightButtons = isAuthenticated
-                ? 'dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton logoutButton'
-                : 'dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton';
+                ? "dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton logoutButton"
+                : "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton";
 
-            calendar.setOption('headerToolbar', {
-                left: 'prev,next today',
-                center: 'title',
-                right: rightButtons
+            calendar.setOption("headerToolbar", {
+                left: "prev,next today",
+                center: "title",
+                right: rightButtons,
             });
         }
     }
 
     async function checkAuthStatus() {
         try {
-            const response = await fetch('/api/auth/verify', {
-                method: 'GET',
-                credentials: 'include'
+            const response = await fetch("/api/auth/verify", {
+                method: "GET",
+                credentials: "include",
             });
 
             if (response.ok) {
                 isAuthenticated = true;
-                log.debug('User is authenticated');
+                log.debug("User is authenticated");
             } else {
                 isAuthenticated = false;
-                log.debug('User is not authenticated');
+                log.debug("User is not authenticated");
             }
             updateToolbar();
         } catch (error) {
             isAuthenticated = false;
-            log.debug('Auth check failed:', error);
+            log.debug("Auth check failed:", error);
             updateToolbar();
         }
     }
@@ -285,11 +282,13 @@
     function waitForModalsToLoad() {
         return new Promise((resolve) => {
             const checkModals = () => {
-                if (typeof eventModal !== 'undefined' &&
-                    typeof calendarModals !== 'undefined' &&
-                    typeof passwordModal !== 'undefined' &&
-                    typeof toast !== 'undefined' &&
-                    typeof confirmModal !== 'undefined') {
+                if (
+                    typeof eventModal !== "undefined" &&
+                    typeof calendarModals !== "undefined" &&
+                    typeof passwordModal !== "undefined" &&
+                    typeof toast !== "undefined" &&
+                    typeof confirmModal !== "undefined"
+                ) {
                     resolve();
                 } else {
                     setTimeout(checkModals, 10);
@@ -312,22 +311,23 @@
     function updateURL() {
         const view = calendar.view;
         const date = calendar.getDate();
-        const today = new Date().toISOString().split('T')[0];
-        const currentDate = date.toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
+        const currentDate = date.toISOString().split("T")[0];
 
-        const viewName = Object.keys(viewMappings).find(key => viewMappings[key] === view.type) || 'week';
+        const viewName =
+            Object.keys(viewMappings).find((key) => viewMappings[key] === view.type) || "week";
 
         const url = new URL(window.location);
-        url.searchParams.set('view', viewName);
+        url.searchParams.set("view", viewName);
 
         if (currentDate !== today) {
-            url.searchParams.set('date', currentDate);
+            url.searchParams.set("date", currentDate);
         } else {
-            url.searchParams.delete('date');
+            url.searchParams.delete("date");
         }
 
-        window.history.replaceState({}, '', url.toString());
+        window.history.replaceState({}, "", url.toString());
     }
 
-    document.addEventListener('DOMContentLoaded', () => init());
+    document.addEventListener("DOMContentLoaded", () => init());
 </script>

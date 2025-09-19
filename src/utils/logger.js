@@ -33,6 +33,6 @@ export function createLogger(config = {}) {
             if (shouldLog("debug")) {
                 console.log(styleText("magenta", `🐛 ${message}`), ...args);
             }
-        }
+        },
     };
 }

@@ -1,66 +1,105 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Calendar - Rate Limit Exceeded</title>
+    </head>
 
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendar - Rate Limit Exceeded</title>
-  </head>
+    <style>
+        :root {
+            --text-color: #333333;
+            --background-color: #ffffff;
+        }
 
-  <style>
-    :root {
-    --text-color: #333333;
-    --background-color: #ffffff;
-    }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
 
-    *,
-    *::before,
-    *::after {
-        box-sizing: border-box;
-    }
+        * {
+            margin: 0;
+        }
 
-    * {
-        margin: 0;
-    }
+        html {
+            scroll-behavior: smooth;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    html {
-        scroll-behavior: smooth;
-        -webkit-tap-highlight-color: transparent;
-    }
+        body {
+            padding: 1em 1rem;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            font-family:
+                system-ui,
+                -apple-system,
+                sans-serif;
+            line-height: 1.5;
+        }
+    </style>
 
-    body {
-        padding: 1em 1rem;
-        color: var(--text-color);
-        background-color: var(--background-color);
-        font-family: system-ui, -apple-system, sans-serif;
-        line-height: 1.5;
-    }
-  </style>
+    <body
+        style="
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            gap: 30px;
+            position: relative;
+        "
+    >
+        <main style="display: flex; justify-content: center; align-items: center; flex: 1">
+            <div>
+                <h2 style="margin: 0; padding-right: 40px; border-right: solid; display: inline">
+                    429
+                </h2>
+                <p style="margin: 0; padding-left: 20px; display: inline">
+                    Too many requests, please try again later!
+                </p>
+            </div>
+        </main>
 
-  <body style="display: flex; flex-direction: column; min-height: 100vh; gap: 30px; position: relative;">
+        <footer
+            style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+                align-items: center;
+                flex: 0;
+            "
+        >
+            <p>
+                Copyright © 2025. Made with ❤️ by
+                <a href="https://github.com/wajeht" target="_blank" rel="noopener noreferrer"
+                    >@wajeht</a
+                >
+            </p>
 
-    <main style="display: flex; justify-content: center; align-items: center; flex: 1">
-      <div>
-        <h2 style="margin: 0; padding-right: 40px; border-right: solid; display: inline;">429</h2>
-        <p style="margin: 0; padding-left: 20px; display: inline;">Too many requests, please try again later!</p>
-      </div>
-    </main>
-
-    <footer style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; flex: 0;">
-      <p>Copyright © 2025. Made with ❤️ by <a href="https://github.com/wajeht" target="_blank" rel="noopener noreferrer">@wajeht</a></p>
-
-      <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
-          <span aria-hidden="true">|</span>
-          <nav aria-label="Footer navigation">
-              <ul style="display: flex; gap: 10px; padding: 0; margin: 0; list-style: none; align-items: center;">
-                  <li><a href="https://github.com/wajeht/calendar" target="_blank" rel="noopener noreferrer">📂 Github</a>
-                  </li>
-              </ul>
-          </nav>
-      </div>
-
-    </footer>
-
-  </body>
-
+            <div style="display: flex; gap: 10px; justify-content: center; align-items: center">
+                <span aria-hidden="true">|</span>
+                <nav aria-label="Footer navigation">
+                    <ul
+                        style="
+                            display: flex;
+                            gap: 10px;
+                            padding: 0;
+                            margin: 0;
+                            list-style: none;
+                            align-items: center;
+                        "
+                    >
+                        <li>
+                            <a
+                                href="https://github.com/wajeht/calendar"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                >📂 Github</a
+                            >
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </footer>
+    </body>
 </html>

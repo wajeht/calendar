@@ -1,5 +1,5 @@
-import knex from 'knex';
-import knexConfig from './knexfile.js';
+import knex from "knex";
+import knexConfig from "./knexfile.js";
 
 export function createDatabase(config = {}) {
     const finalConfig = {
@@ -7,15 +7,15 @@ export function createDatabase(config = {}) {
         ...config,
         pool: {
             ...knexConfig.pool,
-            ...config.pool
-        }
+            ...config.pool,
+        },
     };
 
     const db = knex(finalConfig);
 
     db.healthCheck = async () => {
         try {
-            await db.raw('SELECT 1');
+            await db.raw("SELECT 1");
             return { healthy: true };
         } catch (error) {
             return { healthy: false, error: error.message };

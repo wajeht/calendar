@@ -22,8 +22,8 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '22'
-                  cache: 'npm'
+                  node-version: "22"
+                  cache: "npm"
 
             - name: Install dependencies
               run: npm ci
@@ -83,7 +83,7 @@ jobs:
             - name: Deploy Image to Server
               uses: caprover/deploy-from-github@v1.1.2
               with:
-                  server: '${{ secrets.CAPROVER_SERVER }}'
-                  app: '${{ secrets.APP_NAME }}'
-                  token: '${{ secrets.APP_TOKEN }}'
+                  server: "${{ secrets.CAPROVER_SERVER }}"
+                  app: "${{ secrets.APP_NAME }}"
+                  token: "${{ secrets.APP_TOKEN }}"
                   image: ${{ steps.image-name.outputs.IMAGE_URL }}

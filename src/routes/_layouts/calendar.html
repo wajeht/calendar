@@ -1,43 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="light">
+    <%- include('partials/head.html') %>
 
-<%- include('partials/head.html') %>
+    <body>
+        <style>
+            body {
+                padding: 0px !important;
+            }
 
-  <body>
+            #calendar {
+                height: 100vh !important;
+                width: 100vw !important;
+                overflow: hidden !important;
+            }
 
-    <style>
-      body {
-        padding: 0px !important;
-      }
+            .fc .fc-toolbar {
+                padding: 10px !important;
+            }
 
-      #calendar {
-        height: 100vh !important;
-        width: 100vw !important;
-        overflow: hidden !important;
-      }
+            .fc-non-business {
+                background-color: #e9ecef !important;
+                opacity: 0.4;
+            }
+        </style>
 
-      .fc .fc-toolbar {
-        padding: 10px !important;
-      }
+        <main><%- body %></main>
 
-      .fc-non-business {
-        background-color: #e9ecef !important;
-        opacity: 0.4;
-      }
-    </style>
-
-    <main>
-      <%- body %>
-    </main>
-
-    <script src="/js/global.js"></script>
-    <script src="/js/ical.min.js"></script>
-    <script src="/js/fullcalendar-core.min.js"></script>
-    <script src="/js/fullcalendar-daygrid.min.js"></script>
-    <script src="/js/fullcalendar-timegrid.min.js"></script>
-    <script src="/js/fullcalendar-list.min.js"></script>
-    <script src="/js/fullcalendar-interaction.min.js"></script>
-    <script src="/js/fullcalendar-icalendar.min.js"></script>
-  </body>
-
+        <script src="/js/global.js"></script>
+        <script src="/js/ical.min.js"></script>
+        <script src="/js/fullcalendar-core.min.js"></script>
+        <script src="/js/fullcalendar-daygrid.min.js"></script>
+        <script src="/js/fullcalendar-timegrid.min.js"></script>
+        <script src="/js/fullcalendar-list.min.js"></script>
+        <script src="/js/fullcalendar-interaction.min.js"></script>
+        <script src="/js/fullcalendar-icalendar.min.js"></script>
+    </body>
 </html>

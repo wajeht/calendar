@@ -1,8 +1,8 @@
 export function createValidators(dependencies = {}) {
     const { errors, utils } = dependencies;
 
-    if (!errors) throw new Error('Errors required for validators');
-    if (!utils) throw new Error('Utils required for validators');
+    if (!errors) throw new Error("Errors required for validators");
+    if (!utils) throw new Error("Utils required for validators");
 
     const { ValidationError } = errors;
 
@@ -15,7 +15,7 @@ export function createValidators(dependencies = {}) {
         validateId(idStr) {
             const id = utils.parseId(idStr);
             if (id === null) {
-                throw new ValidationError({ id: 'Invalid ID' });
+                throw new ValidationError({ id: "Invalid ID" });
             }
             return id;
         },
@@ -26,8 +26,10 @@ export function createValidators(dependencies = {}) {
          * @returns {Object} Validated body
          */
         validateBody(body) {
-            if (!body || typeof body !== 'object' || Array.isArray(body)) {
-                throw new ValidationError({ body: 'Request body must be a valid JSON object' });
+            if (!body || typeof body !== "object" || Array.isArray(body)) {
+                throw new ValidationError({
+                    body: "Request body must be a valid JSON object",
+                });
             }
             return body;
         },
@@ -37,9 +39,11 @@ export function createValidators(dependencies = {}) {
          * @param {string} color - Color to validate
          * @param {string} field - Field name for error
          */
-        validateColor(color, field = 'color') {
+        validateColor(color, field = "color") {
             if (color && !utils.validateHexColor(color)) {
-                throw new ValidationError({ [field]: 'Color must be a valid hex color (e.g., #447dfc)' });
+                throw new ValidationError({
+                    [field]: "Color must be a valid hex color (e.g., #447dfc)",
+                });
             }
         },
 
@@ -49,12 +53,16 @@ export function createValidators(dependencies = {}) {
          * @param {string} field - Field name for error
          * @param {boolean} required - Whether name is required
          */
-        validateCalendarName(name, field = 'name', required = true) {
+        validateCalendarName(name, field = "name", required = true) {
             if (required && utils.isEmpty(name)) {
-                throw new ValidationError({ [field]: 'Calendar name is required' });
+                throw new ValidationError({
+                    [field]: "Calendar name is required",
+                });
             }
-            if (name !== undefined && (typeof name !== 'string' || utils.isEmpty(name))) {
-                throw new ValidationError({ [field]: 'Calendar name must be a non-empty string' });
+            if (name !== undefined && (typeof name !== "string" || utils.isEmpty(name))) {
+                throw new ValidationError({
+                    [field]: "Calendar name must be a non-empty string",
+                });
             }
         },
 
@@ -64,12 +72,16 @@ export function createValidators(dependencies = {}) {
          * @param {string} field - Field name for error
          * @param {boolean} required - Whether URL is required
          */
-        validateCalendarUrl(url, field = 'url', required = true) {
+        validateCalendarUrl(url, field = "url", required = true) {
             if (required && utils.isEmpty(url)) {
-                throw new ValidationError({ [field]: 'Calendar URL is required' });
+                throw new ValidationError({
+                    [field]: "Calendar URL is required",
+                });
             }
             if (url !== undefined && !utils.validateCalendarUrl(url)) {
-                throw new ValidationError({ [field]: 'Invalid calendar URL format' });
+                throw new ValidationError({
+                    [field]: "Invalid calendar URL format",
+                });
             }
         },
 
@@ -79,8 +91,10 @@ export function createValidators(dependencies = {}) {
          * @param {string} field - Field name
          */
         validateBoolean(value, field) {
-            if (value !== undefined && typeof value !== 'boolean') {
-                throw new ValidationError({ [field]: `${field} must be a boolean value` });
+            if (value !== undefined && typeof value !== "boolean") {
+                throw new ValidationError({
+                    [field]: `${field} must be a boolean value`,
+                });
             }
         },
 
@@ -93,9 +107,9 @@ export function createValidators(dependencies = {}) {
 
             const { name, url, color } = data;
 
-            this.validateCalendarName(name, 'name', true);
-            this.validateCalendarUrl(url, 'url', true);
-            this.validateColor(color, 'color');
+            this.validateCalendarName(name, "name", true);
+            this.validateCalendarUrl(url, "url", true);
+            this.validateColor(color, "color");
         },
 
         /**
@@ -116,19 +130,19 @@ export function createValidators(dependencies = {}) {
             const { name, url, color } = data;
 
             try {
-                this.validateCalendarName(name, 'name', true);
+                this.validateCalendarName(name, "name", true);
             } catch (error) {
                 errors.name = error.message;
             }
 
             try {
-                this.validateCalendarUrl(url, 'url', true);
+                this.validateCalendarUrl(url, "url", true);
             } catch (error) {
                 errors.url = error.message;
             }
 
             try {
-                this.validateColor(color, 'color');
+                this.validateColor(color, "color");
             } catch (error) {
                 errors.color = error.message;
             }
@@ -148,24 +162,24 @@ export function createValidators(dependencies = {}) {
             const { name, url, color, hidden, details } = data;
 
             if (name !== undefined) {
-                this.validateCalendarName(name, 'name', false);
+                this.validateCalendarName(name, "name", false);
             }
 
             if (url !== undefined) {
-                this.validateCalendarUrl(url, 'url', false);
+                this.validateCalendarUrl(url, "url", false);
             }
 
             if (color !== undefined && color !== null) {
-                this.validateColor(color, 'color');
+                this.validateColor(color, "color");
             }
 
             if (hidden !== undefined) {
-                this.validateBoolean(hidden, 'hidden');
+                this.validateBoolean(hidden, "hidden");
             }
 
             if (details !== undefined) {
-                this.validateBoolean(details, 'details');
+                this.validateBoolean(details, "details");
             }
-        }
+        },
     };
 }
