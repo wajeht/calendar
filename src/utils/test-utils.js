@@ -45,10 +45,19 @@ export async function createTestServer() {
         }
     }
 
+    const testModels = {
+        calendar: {
+            create: (data) => ctx.models.calendar.create(data),
+            getById: (id) => ctx.models.calendar.getById(id),
+            update: (id, data) => ctx.models.calendar.update(id, data),
+            delete: (id) => ctx.models.calendar.delete(id)
+        }
+    };
+
     return {
         ctx: {
             db: ctx.db,
-            models: ctx.models
+            models: testModels
         },
         login,
         logout,
