@@ -65,24 +65,59 @@
 
             <div class="fc-form-group">
                 <label>Status Information:</label>
-                <div class="status-display">
-                    <div class="status-item">
-                        <strong>Status:</strong> <span id="cron-status">Loading...</span>
+                <div class="status-refresh-container">
+                    <div class="status-display">
+                        <div class="status-item">
+                            <strong>Status:</strong> <span id="cron-status">Loading...</span>
+                        </div>
+                        <div class="status-item">
+                            <strong>Last Run:</strong> <span id="cron-last-run">Never</span>
+                        </div>
                     </div>
-                    <div class="status-item">
-                        <strong>Last Run:</strong> <span id="cron-last-run">Never</span>
+                    <div class="refresh-button-container">
+                        <button
+                            onclick="settingsModal.manualRefresh()"
+                            class="fc-button fc-button-primary"
+                        >
+                            Refresh All Calendars Now
+                        </button>
+                        <div class="help-text">Manually trigger a refresh of all calendars</div>
                     </div>
                 </div>
             </div>
 
-            <div class="manual-refresh-section">
-                <button
-                    onclick="settingsModal.manualRefresh()"
-                    class="fc-button fc-button-primary standalone"
-                >
-                    Refresh All Calendars Now
-                </button>
-                <div class="help-text">Manually trigger a refresh of all calendars</div>
+            <!-- Import/Export Section -->
+            <div class="import-export-section">
+                <div class="fc-form-group">
+                    <label>Import/Export Calendars:</label>
+                    <div class="import-export-container">
+                        <div class="export-section">
+                            <button
+                                onclick="settingsModal.exportCalendars()"
+                                class="fc-button fc-button-primary"
+                            >
+                                Export Calendar URLs
+                            </button>
+                            <div class="help-text">
+                                Export all calendar URLs, names, and colors (no event data)
+                            </div>
+                        </div>
+                        <div class="import-section">
+                            <div class="import-controls">
+                                <input type="file" id="import-file" accept=".json" />
+                                <button
+                                    onclick="settingsModal.importCalendars()"
+                                    class="fc-button fc-button-primary"
+                                >
+                                    Import
+                                </button>
+                            </div>
+                            <div class="help-text">
+                                Import calendar URLs, names, and colors from a JSON file
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -226,12 +261,35 @@
         line-height: 1.4;
     }
 
+    .status-refresh-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 4px;
+        align-items: flex-start;
+    }
+
     .status-display {
         background: #fafafa;
         border: 1px solid #ddd;
         border-radius: 3px;
         padding: 12px;
-        margin-top: 4px;
+        flex: 1;
+    }
+
+    .refresh-button-container {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 6px;
+        min-height: 72px;
+    }
+
+    .refresh-button-container .help-text {
+        text-align: right;
+        max-width: 200px;
+        font-size: 12px;
     }
 
     .status-item {
@@ -252,12 +310,6 @@
         color: #333;
     }
 
-    .manual-refresh-section {
-        text-align: right;
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid #ddd;
-    }
 
     #cron-status {
         padding: 2px 6px;
@@ -287,6 +339,74 @@
 
     .modal-footer .fc-button-danger {
         min-width: 120px;
+    }
+
+    .import-export-section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid #ddd;
+    }
+
+    .fc-form-group {
+        margin-bottom: 20px;
+    }
+
+    .fc-form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .import-export-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 4px;
+        align-items: flex-start;
+    }
+
+    .export-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+    }
+
+    .import-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .export-section .fc-button {
+        min-width: 180px;
+        width: auto;
+    }
+
+    .import-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #import-file {
+        flex: 1;
+        font-size: 13px;
+        padding: 4px 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        background: white;
+    }
+
+    .import-controls .fc-button {
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: 80px;
+    }
+
+    .export-section .help-text,
+    .import-section .help-text {
+        margin-top: 6px;
+        line-height: 1.3;
     }
 </style>
 
@@ -831,6 +951,111 @@
             } catch (error) {
                 console.error("Error refreshing calendars:", error);
                 toast.error("Error refreshing calendars: " + error.message);
+            }
+        }
+
+        async exportCalendars() {
+            try {
+                const response = await fetch("/api/calendars/export", {
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    const exportData = await response.json();
+
+                    const dataStr = JSON.stringify(exportData.data, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `calendar-export-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    toast.success(`Exported ${exportData.data.calendars.length} calendars successfully`);
+                } else {
+                    toast.error("Failed to export calendars");
+                }
+            } catch (error) {
+                console.error("Error exporting calendars:", error);
+                toast.error("Error exporting calendars: " + error.message);
+            }
+        }
+
+        async importCalendars() {
+            const fileInput = document.getElementById("import-file");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                toast.error("Please select a file to import");
+                return;
+            }
+
+            try {
+                const fileContent = await file.text();
+                const importData = JSON.parse(fileContent);
+
+                if (!importData.calendars || !Array.isArray(importData.calendars)) {
+                    toast.error("Invalid file format: calendars array not found");
+                    return;
+                }
+
+                const response = await fetch("/api/calendars/import", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ calendars: importData.calendars }),
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const { imported, skipped, errors } = result.data;
+
+                    let message = `Import completed: ${imported} calendars imported`;
+                    if (skipped > 0) {
+                        message += `, ${skipped} skipped (already exist)`;
+                    }
+                    if (errors.length > 0) {
+                        message += `, ${errors.length} errors`;
+                    }
+
+                    if (errors.length > 0) {
+                        console.warn("Import errors:", errors);
+                        toast.warning(message);
+                    } else {
+                        toast.success(message);
+                    }
+
+                    // Clear the file input
+                    fileInput.value = "";
+
+                    // Reload calendar data
+                    await this.loadCalendarList();
+                    await loadCalendars();
+                } else {
+                    const errorData = await response.json();
+                    toast.error("Import failed: " + (errorData.error || "Unknown error"));
+                }
+            } catch (error) {
+                console.error("Error importing calendars:", error);
+                toast.error("Error importing calendars: " + error.message);
             }
         }
 

@@ -504,8 +504,100 @@ export function createCalendarService(dependencies = {}) {
         }
     }
 
+    async function exportCalendars() {
+        try {
+            const calendars = await models.calendar.getAll({ includeEvents: false });
+
+            const exportData = calendars.map(calendar => ({
+                name: calendar.name,
+                url: calendar.url,
+                color: calendar.color
+            }));
+
+            logger.info(`Exported ${exportData.length} calendars`);
+
+            return {
+                calendars: exportData,
+                exportedAt: new Date().toISOString(),
+                version: "1.0"
+            };
+        } catch (error) {
+            logger.error("Calendar export failed:", error);
+            throw error;
+        }
+    }
+
+    async function importCalendars(calendarsData, utils) {
+        try {
+            if (!Array.isArray(calendarsData)) {
+                throw new Error("Calendars must be an array");
+            }
+
+            const results = {
+                imported: 0,
+                skipped: 0,
+                errors: []
+            };
+
+            for (const calendarData of calendarsData) {
+                try {
+                    if (!calendarData.name || !calendarData.url) {
+                        results.errors.push({
+                            calendar: calendarData,
+                            error: "Name and URL are required"
+                        });
+                        continue;
+                    }
+
+                    const existingCalendar = await models.calendar.getByUrl(calendarData.url);
+
+                    if (existingCalendar) {
+                        results.skipped++;
+                        continue;
+                    }
+
+                    const sanitizedName = utils.sanitizeString(calendarData.name);
+
+                    if (utils.isEmpty(sanitizedName)) {
+                        results.errors.push({
+                            calendar: calendarData,
+                            error: "Calendar name cannot be empty after sanitization"
+                        });
+                        continue;
+                    }
+
+                    const newCalendarData = {
+                        name: sanitizedName,
+                        url: calendarData.url,
+                        color: calendarData.color || utils.generateRandomColor(),
+                        hidden: false,
+                        details: false
+                    };
+
+                    await models.calendar.create(newCalendarData);
+                    results.imported++;
+
+                } catch (error) {
+                    results.errors.push({
+                        calendar: calendarData,
+                        error: error.message
+                    });
+                }
+            }
+
+            logger.info(`Calendar import completed: ${results.imported} imported, ${results.skipped} skipped, ${results.errors.length} errors`);
+
+            return results;
+        } catch (error) {
+            logger.error("Calendar import failed:", error);
+            throw error;
+        }
+    }
+
     return {
         fetchAndProcessCalendar,
         refetchAllCalendars,
+        exportCalendars,
+        importCalendars,
     };
 }

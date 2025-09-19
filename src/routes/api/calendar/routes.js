@@ -24,6 +24,28 @@ export function createCalendarRouter(dependencies = {}) {
         res.json(calendars);
     });
 
+    router.get("/export", requireAuth, async (req, res) => {
+        const exportData = await services.calendar.exportCalendars();
+
+        res.json({
+            success: true,
+            data: exportData
+        });
+    });
+
+    router.post("/import", requireAuth, async (req, res) => {
+        validators.validateBody(req.body);
+
+        const { calendars } = req.body;
+
+        const results = await services.calendar.importCalendars(calendars, utils);
+
+        res.json({
+            success: true,
+            data: results
+        });
+    });
+
     router.get("/:id", requireAuth, async (req, res) => {
         const id = validators.validateId(req.params.id);
 
