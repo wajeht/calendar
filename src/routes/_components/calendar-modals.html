@@ -76,7 +76,7 @@ class CalendarManagementModal {
         this.overlay = document.getElementById('calendarModalOverlay');
         this.calendarList = document.getElementById('calendarList');
         this.isOpen = false;
-        this.calendarsData = []; // Cache calendar data to avoid re-fetching
+        this.calendarsData = [];
 
         this.setupEventListeners();
     }
@@ -103,12 +103,10 @@ class CalendarManagementModal {
         this.modal.classList.add('show');
         this.overlay.classList.add('show');
 
-        // Use shared calendar data if available, otherwise fetch from backend
         if (typeof sharedCalendarData !== 'undefined' && sharedCalendarData.length > 0) {
             this.calendarsData = sharedCalendarData;
             this.displayCalendarList(sharedCalendarData);
         } else {
-            // Fallback to loading from backend (first time or if shared data is empty)
             await this.loadCalendarList();
         }
     }
@@ -191,12 +189,10 @@ class CalendarManagementModal {
     }
 
     showEditFromCache(calendarId) {
-        // Find calendar in cached data instead of fetching from backend
         const calendar = this.calendarsData.find(cal => cal.id === calendarId);
         if (calendar) {
             calendarModals.form.showEditWithData(calendar);
         } else {
-            // Fallback to original method if data not found in cache
             calendarModals.form.showEdit(calendarId);
         }
     }
