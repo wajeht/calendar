@@ -39,9 +39,9 @@ async function main() {
     const serverInfo = await createServer();
     process.title = "calendar";
 
-    process.on("SIGINT", gracefulShutdown("SIGINT", serverInfo));
-    process.on("SIGTERM", gracefulShutdown("SIGTERM", serverInfo));
-    process.on("SIGQUIT", gracefulShutdown("SIGQUIT", serverInfo));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT", serverInfo));
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM", serverInfo));
+    process.on("SIGQUIT", () => gracefulShutdown("SIGQUIT", serverInfo));
 
     process.on("warning", handleWarning);
     process.on("uncaughtException", handleUncaughtException);
