@@ -13,6 +13,7 @@ import { createUtils } from "./utils/utils.js";
 import { createLogger } from "./utils/logger.js";
 import { createValidators } from "./utils/validators.js";
 import { createCalendar } from "./routes/api/calendar/model.js";
+import { createSettings } from "./routes/api/settings/model.js";
 import { createAuthMiddleware } from "./routes/api/auth/middleware.js";
 import { createCalendarService } from "./routes/api/calendar/service.js";
 
@@ -41,6 +42,7 @@ export function createContext(customConfig = {}) {
     const validators = createValidators({ errors, utils });
     const models = {
         calendar: createCalendar({ db, errors, utils }),
+        settings: createSettings({ db, errors }),
     };
 
     const middleware = {
@@ -64,6 +66,7 @@ export function createContext(customConfig = {}) {
     services.cron = createCronService({
         logger,
         services,
+        models,
     });
 
     const context = {
