@@ -104,7 +104,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         let calendarId;
 
         before(async () => {
-            const calendar = await testServer.ctx.models.calendar.create({
+            const calendar = await testServer.createCalendar({
                 name: 'Get Test Calendar',
                 url: 'https://calendar.google.com/calendar/ical/get-test@gmail.com/public/basic.ics'
             });
@@ -142,7 +142,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         let calendarId;
 
         before(async () => {
-            const calendar = await testServer.ctx.models.calendar.create({
+            const calendar = await testServer.createCalendar({
                 name: 'Update Test Calendar',
                 url: 'https://calendar.google.com/calendar/ical/update-test@gmail.com/public/basic.ics'
             });
@@ -203,7 +203,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         let calendarId;
 
         before(async () => {
-            const calendar = await testServer.ctx.models.calendar.create({
+            const calendar = await testServer.createCalendar({
                 name: 'Delete Test Calendar',
                 url: 'https://calendar.google.com/calendar/ical/delete-test@gmail.com/public/basic.ics'
             });
