@@ -153,32 +153,7 @@ export function createCalendar(dependencies = {}) {
          * @throws {ValidationError} When validation fails
          */
         async create(data) {
-            if (!data || typeof data !== 'object') {
-                throw new ValidationError('Calendar data must be an object');
-            }
-
             const { name, url, color = '#447dfc', hidden = false, details = false, data: calendarData = null, events = null } = data;
-
-            // Validate required fields
-            if (utils.isEmpty(name)) {
-                throw new ValidationError('Calendar name is required', 'name');
-            }
-
-            if (typeof name !== 'string' || name.trim().length === 0) {
-                throw new ValidationError('Calendar name must be a non-empty string', 'name');
-            }
-
-            if (utils.isEmpty(url)) {
-                throw new ValidationError('Calendar URL is required', 'url');
-            }
-
-            if (!utils.validateCalendarUrl(url)) {
-                throw new ValidationError('Invalid calendar URL format', 'url');
-            }
-
-            if (color && !utils.validateHexColor(color)) {
-                throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', 'color');
-            }
 
             try {
                 const [id] = await db('calendars').insert({
@@ -227,32 +202,6 @@ export function createCalendar(dependencies = {}) {
 
             if (Object.keys(updateData).length === 0) {
                 throw new ValidationError('At least one field must be provided for update');
-            }
-
-            // Validate specific fields if provided
-            if (updateData.name !== undefined) {
-                if (utils.isEmpty(updateData.name)) {
-                    throw new ValidationError('Name cannot be empty', 'name');
-                }
-                if (typeof updateData.name !== 'string' || updateData.name.trim().length === 0) {
-                    throw new ValidationError('Name must be a non-empty string', 'name');
-                }
-                updateData.name = updateData.name.trim();
-            }
-
-            if (updateData.url !== undefined) {
-                if (utils.isEmpty(updateData.url)) {
-                    throw new ValidationError('URL cannot be empty', 'url');
-                }
-                if (!utils.validateCalendarUrl(updateData.url)) {
-                    throw new ValidationError('URL must be a valid calendar URL', 'url');
-                }
-            }
-
-            if (updateData.color !== undefined && updateData.color !== null) {
-                if (!utils.validateHexColor(updateData.color)) {
-                    throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', 'color');
-                }
             }
 
             if (updateData.hidden !== undefined && typeof updateData.hidden !== 'boolean') {
