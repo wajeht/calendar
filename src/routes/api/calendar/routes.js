@@ -13,11 +13,14 @@ export function createCalendarRouter(dependencies = {}) {
     const { ValidationError, NotFoundError } = errors;
 
     const router = express.Router();
+
     const verifyToken = middleware.auth.requireAuth();
 
     router.get('/', async (req, res) => {
         const isAuthenticated = utils.isAuthenticated(req);
+
         const calendars = await models.calendar.getAllForAccess(isAuthenticated);
+
         res.json(calendars);
     });
 
@@ -25,22 +28,27 @@ export function createCalendarRouter(dependencies = {}) {
         const id = validators.validateId(req.params.id);
 
         const calendar = await models.calendar.getById(id);
+
         if (!calendar) {
             throw new NotFoundError('Calendar');
         }
+
         res.json({ success: true, data: calendar });
     });
 
     router.post('/', verifyToken, async (req, res) => {
         validators.validateCalendarCreate(req.body);
+
         const { name, url, color } = req.body;
 
         const sanitizedName = utils.sanitizeString(name);
+
         if (utils.isEmpty(sanitizedName)) {
             throw new ValidationError('Calendar name cannot be empty after sanitization', 'name');
         }
 
         const existingCalendar = await models.calendar.getByUrl(url);
+
         if (existingCalendar) {
             throw new ValidationError('Calendar with this URL already exists', 'url');
         }
@@ -52,6 +60,7 @@ export function createCalendarRouter(dependencies = {}) {
         };
 
         const calendar = await models.calendar.create(calendarData);
+
         logger.info(`Calendar created: ${calendar.name}`);
 
         setImmediate(async () => {
@@ -69,11 +78,13 @@ export function createCalendarRouter(dependencies = {}) {
         const id = validators.validateId(req.params.id);
 
         const calendar = await models.calendar.getById(id);
+
         if (!calendar) {
             throw new NotFoundError('Calendar');
         }
 
         const updateData = { ...req.body };
+
         if ('visible' in updateData) {
             updateData.hidden = !updateData.visible;
             delete updateData.visible;
@@ -89,6 +100,7 @@ export function createCalendarRouter(dependencies = {}) {
         }
 
         const updatedCalendar = await models.calendar.update(id, updateData);
+
         if (!updatedCalendar) {
             throw new NotFoundError('Calendar');
         }
@@ -105,6 +117,7 @@ export function createCalendarRouter(dependencies = {}) {
         }
 
         logger.info(`Calendar updated: ${updatedCalendar.name}`);
+
         res.json(updatedCalendar);
     });
 
@@ -112,11 +125,13 @@ export function createCalendarRouter(dependencies = {}) {
         const id = validators.validateId(req.params.id);
 
         const calendar = await models.calendar.delete(id);
+
         if (!calendar) {
             throw new NotFoundError('Calendar');
         }
 
         logger.info(`Calendar deleted: ${calendar.name}`);
+
         res.json(calendar);
     });
 

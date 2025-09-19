@@ -176,7 +176,6 @@ export function createCalendar(dependencies = {}) {
                 throw new ValidationError('Invalid calendar URL format', 'url');
             }
 
-            // Validate color format if provided
             if (color && !utils.validateHexColor(color)) {
                 throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', 'color');
             }
