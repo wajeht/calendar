@@ -46,8 +46,10 @@ export async function createTestServer() {
     }
 
     return {
-        app,
-        ctx,
+        ctx: {
+            db: ctx.db,
+            models: ctx.models
+        },
         login,
         logout,
         cleanDatabase,
@@ -55,7 +57,8 @@ export async function createTestServer() {
         get: (path) => agent.get(path),
         post: (path, body = null) => body ? agent.post(path).send(body) : agent.post(path),
         put: (path, body = null) => body ? agent.put(path).send(body) : agent.put(path),
-        delete: (path) => agent.delete(path)
+        delete: (path) => agent.delete(path),
+        request: (method, path) => agent[method](path)
     };
 }
 

@@ -63,12 +63,13 @@ describe('Auth API - Real HTTP Tests', () => {
         });
 
         it('should reject invalid session token', async () => {
-            const request = await import('supertest');
-            const response = await request.default(testServer.app)
-                .get('/api/auth/verify')
+            await testServer.logout();
+
+            const response = await testServer.request('get', '/api/auth/verify')
                 .set('Cookie', 'session_token=invalid-token');
 
             assert.strictEqual(response.status, 401);
+            await testServer.login();
         });
 
         it('should reject missing session token', async () => {

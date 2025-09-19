@@ -166,7 +166,7 @@ export function createCalendar(dependencies = {}) {
                     events
                 });
 
-                return await this.getById(id);
+                return await db('calendars').where('id', id).first();
             } catch (error) {
                 if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
                     throw new ValidationError('Calendar with this URL already exists');
@@ -221,7 +221,7 @@ export function createCalendar(dependencies = {}) {
                     return null;
                 }
 
-                return await this.getById(id);
+                return await db('calendars').where('id', id).first();
             } catch (error) {
                 if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
                     throw new ValidationError('Calendar with this URL already exists');
@@ -241,7 +241,7 @@ export function createCalendar(dependencies = {}) {
             }
 
             try {
-                const calendar = await this.getById(id);
+                const calendar = await db('calendars').where('id', id).first();
                 if (!calendar) {
                     return null;
                 }
