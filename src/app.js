@@ -69,9 +69,13 @@ export async function createApp(customConfig = {}) {
         })
         .use((req, res, next) => {
             const start = Date.now();
+            const correlationId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            req.correlationId = correlationId;
+            res.setHeader('X-Correlation-ID', correlationId);
 
             if (ctx.config.app.env !== 'test') {
-                ctx.logger.debug(`${req.method} ${req.url}`);
+                ctx.logger.debug(`[${correlationId}] ${req.method} ${req.url}`);
             }
 
             res.on('finish', () => {
@@ -79,7 +83,7 @@ export async function createApp(customConfig = {}) {
                 const level = res.statusCode >= 400 ? 'warn' : 'debug';
 
                 if (ctx.config.app.env !== 'test') {
-                    ctx.logger[level](`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+                    ctx.logger[level](`[${correlationId}] ${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
                 }
             });
 
