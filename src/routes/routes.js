@@ -1,6 +1,7 @@
 import express from "express";
 import { createCalendarRouter } from "./api/calendar/routes.js";
 import { createAuthRouter } from "./api/auth/routes.js";
+import { createCronRouter } from "./api/cron/routes.js";
 import { createGeneralRouter, notFoundHandler, errorHandler } from "./general/routes.js";
 
 export function createRouter(dependencies = {}) {
@@ -34,6 +35,18 @@ export function createRouter(dependencies = {}) {
         "/api/calendars",
         createCalendarRouter({
             models,
+            services,
+            middleware,
+            utils,
+            logger,
+            errors,
+            validators,
+        }),
+    );
+
+    router.use(
+        "/api/cron",
+        createCronRouter({
             services,
             middleware,
             utils,
