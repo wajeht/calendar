@@ -8,8 +8,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "start": "NODE_ENV=production node ./src/server.js",
-    "dev": "nodemon ./src/server.js",
+    "start": "test -f .env && node --env-file=.env ./src/server.js || node ./src/server.js",
+    "dev": "node --watch --env-file=.env ./src/server.js",
     "db:prepare:prod": "npm run db:migrate:latest",
     "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
     "db:migrate:make": "knex migrate:make --knexfile=./src/db/knexfile.js",
@@ -35,7 +35,6 @@
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
@@ -44,7 +43,5 @@
     "knex": "^3.1.0",
     "node-cron": "^4.2.1"
   },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  }
+  "devDependencies": {}
 }
