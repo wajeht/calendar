@@ -99,6 +99,46 @@ export function createValidators(dependencies = {}) {
         },
 
         /**
+         * Validate complete calendar data for creation (batch validation)
+         * @param {Object} data - Calendar data
+         * @throws {ValidationError} When validation fails
+         */
+        validateCalendarCreateBatch(data) {
+            const validationErrors = new ValidationError({});
+
+            try {
+                this.validateBody(data);
+            } catch (error) {
+                validationErrors.addError('body', error.message);
+                throw validationErrors;
+            }
+
+            const { name, url, color } = data;
+
+            try {
+                this.validateCalendarName(name, 'name', true);
+            } catch (error) {
+                validationErrors.addError('name', error.message);
+            }
+
+            try {
+                this.validateCalendarUrl(url, 'url', true);
+            } catch (error) {
+                validationErrors.addError('url', error.message);
+            }
+
+            try {
+                this.validateColor(color, 'color');
+            } catch (error) {
+                validationErrors.addError('color', error.message);
+            }
+
+            if (validationErrors.hasErrors()) {
+                throw validationErrors;
+            }
+        },
+
+        /**
          * Validate calendar data for updates (partial)
          * @param {Object} data - Update data
          */

@@ -28,10 +28,12 @@
             <div class="fc-form-group">
                 <label for="calendar-name">Name:</label>
                 <input type="text" id="calendar-name" placeholder="Calendar name" required>
+                <div id="calendar-name-error" class="error-message">Please enter a calendar name</div>
             </div>
             <div class="fc-form-group">
                 <label for="calendar-url">URL:</label>
                 <input type="url" id="calendar-url" placeholder="https://example.com/calendar.ics" required>
+                <div id="calendar-url-error" class="error-message">Please enter a valid calendar URL</div>
             </div>
             <div class="fc-form-group">
                 <label for="calendar-color">Color:</label>
@@ -209,6 +211,8 @@ class CalendarFormModal {
         this.colorInput = document.getElementById('calendar-color');
         this.hiddenInput = document.getElementById('calendar-hidden');
         this.hideDetailsInput = document.getElementById('calendar-hide-details');
+        this.nameError = document.getElementById('calendar-name-error');
+        this.urlError = document.getElementById('calendar-url-error');
 
         this.currentEditingId = null;
         this.isOpen = false;
@@ -234,6 +238,7 @@ class CalendarFormModal {
         this.saveButton.textContent = 'Add Calendar';
 
         this.clearForm();
+        this.hideAllErrors();
         this.show();
     }
 
@@ -262,6 +267,7 @@ class CalendarFormModal {
             this.saveButton.textContent = 'Update Calendar';
 
             this.populateForm(calendar);
+            this.hideAllErrors();
             this.show();
         } catch (error) {
             toast.error('Error loading calendar details: ' + error.message);
@@ -274,6 +280,7 @@ class CalendarFormModal {
         this.saveButton.textContent = 'Update Calendar';
 
         this.populateForm(calendar);
+        this.hideAllErrors();
         this.show();
     }
 
@@ -288,6 +295,7 @@ class CalendarFormModal {
         this.isOpen = false;
         this.modal.classList.remove('show');
         this.overlay.classList.remove('show');
+        this.hideAllErrors();
         calendarModals.management.show();
     }
 
@@ -297,6 +305,30 @@ class CalendarFormModal {
         this.colorInput.value = '#447dfc';
         this.hiddenInput.checked = false;
         this.hideDetailsInput.checked = false;
+        this.hideAllErrors();
+    }
+
+    showNameError(message = 'Please enter a calendar name') {
+        this.nameError.textContent = message;
+        this.nameError.style.display = 'block';
+    }
+
+    showUrlError(message = 'Please enter a valid calendar URL') {
+        this.urlError.textContent = message;
+        this.urlError.style.display = 'block';
+    }
+
+    hideNameError() {
+        this.nameError.style.display = 'none';
+    }
+
+    hideUrlError() {
+        this.urlError.style.display = 'none';
+    }
+
+    hideAllErrors() {
+        this.hideNameError();
+        this.hideUrlError();
     }
 
     populateForm(calendar) {
@@ -314,10 +346,7 @@ class CalendarFormModal {
         const hidden = this.hiddenInput.checked;
         const hideDetails = this.hideDetailsInput.checked;
 
-        if (!name || !url) {
-            toast.warning('Please fill in all required fields');
-            return;
-        }
+        this.hideAllErrors();
 
         try {
             const isEditing = this.currentEditingId !== null;
@@ -353,9 +382,31 @@ class CalendarFormModal {
                 const action = isEditing ? 'updated' : 'added';
                 toast.success(`Calendar ${action} successfully!`);
             } else {
-                const error = await response.json();
-                const action = isEditing ? 'updating' : 'adding';
-                toast.error(`Error ${action} calendar: ` + (error.error || 'Unknown error'));
+                const errorData = await response.json();
+
+                // Handle validation errors (always in errors object now)
+                if (errorData.errors && Object.keys(errorData.errors).length > 0) {
+                    if (errorData.errors.name) {
+                        this.showNameError(errorData.errors.name);
+                    }
+                    if (errorData.errors.url) {
+                        this.showUrlError(errorData.errors.url);
+                    }
+                    // If there are other errors not handled by specific fields, show as toast
+                    const unhandledErrors = Object.keys(errorData.errors).filter(
+                        field => !['name', 'url'].includes(field)
+                    );
+                    if (unhandledErrors.length > 0) {
+                        const messages = unhandledErrors.map(field => errorData.errors[field]);
+                        const action = isEditing ? 'updating' : 'adding';
+                        toast.error(`Error ${action} calendar: ` + messages.join(', '));
+                    }
+                } else {
+                    // No validation errors, show generic error as toast
+                    const errorMessage = errorData.error || 'Unknown error';
+                    const action = isEditing ? 'updating' : 'adding';
+                    toast.error(`Error ${action} calendar: ` + errorMessage);
+                }
             }
         } catch (error) {
             const action = this.currentEditingId ? 'updating' : 'adding';

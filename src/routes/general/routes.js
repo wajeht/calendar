@@ -52,9 +52,9 @@ export function errorHandler(dependencies = {}) {
         if (err instanceof ValidationError) {
             const response = {
                 success: false,
-                error: err.message
+                error: err.message,
+                errors: err.errors
             };
-            if (err.field) response.field = err.field;
 
             if (utils.isApiRequest(req)) {
                 return res.status(400).json(response);

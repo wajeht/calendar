@@ -37,7 +37,7 @@ export function createCalendarRouter(dependencies = {}) {
     });
 
     router.post('/', requireAuth, async (req, res) => {
-        validators.validateCalendarCreate(req.body);
+        validators.validateCalendarCreateBatch(req.body);
 
         const { name, url, color } = req.body;
 
