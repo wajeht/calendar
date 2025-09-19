@@ -63,13 +63,15 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info(`Calendar created: ${calendar.name}`);
 
-        setImmediate(async () => {
-            try {
-                await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
-            } catch (error) {
-                logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
-            }
-        });
+        if (process.env.NODE_ENV !== 'test') {
+            setImmediate(async () => {
+                try {
+                    await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
+                } catch (error) {
+                    logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
+                }
+            });
+        }
 
         res.status(201).json(calendar);
     });
@@ -106,14 +108,16 @@ export function createCalendarRouter(dependencies = {}) {
         }
 
         if (updateData.hidden !== undefined || updateData.details !== undefined) {
-            setImmediate(async () => {
-                try {
-                    await services.calendar.fetchAndProcessCalendar(updatedCalendar.id, updatedCalendar.url);
-                    logger.info(`Calendar events reprocessed for ${updatedCalendar.name}`);
-                } catch (error) {
-                    logger.error(`Background calendar reprocessing failed for ${updatedCalendar.id}:`, error);
-                }
-            });
+            if (process.env.NODE_ENV !== 'test') {
+                setImmediate(async () => {
+                    try {
+                        await services.calendar.fetchAndProcessCalendar(updatedCalendar.id, updatedCalendar.url);
+                        logger.info(`Calendar events reprocessed for ${updatedCalendar.name}`);
+                    } catch (error) {
+                        logger.error(`Background calendar reprocessing failed for ${updatedCalendar.id}:`, error);
+                    }
+                });
+            }
         }
 
         logger.info(`Calendar updated: ${updatedCalendar.name}`);
@@ -138,13 +142,15 @@ export function createCalendarRouter(dependencies = {}) {
     router.post('/refetch', verifyToken, async (_req, res) => {
         logger.info('Calendar refetch requested');
 
-        setImmediate(async () => {
-            try {
-                await services.calendar.refetchAllCalendars();
-            } catch (error) {
-                logger.error('Background refetch failed:', error);
-            }
-        });
+        if (process.env.NODE_ENV !== 'test') {
+            setImmediate(async () => {
+                try {
+                    await services.calendar.refetchAllCalendars();
+                } catch (error) {
+                    logger.error('Background refetch failed:', error);
+                }
+            });
+        }
 
         res.json({ success: true, message: 'Calendar refetch initiated' });
     });
