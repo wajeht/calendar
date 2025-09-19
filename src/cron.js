@@ -3,8 +3,8 @@ import cron from 'node-cron';
 export function createCronService(dependencies = {}) {
     const { logger, services } = dependencies;
 
-    if (!logger) throw new Error('Logger is required for cron service');
-    if (!services?.calendar) throw new Error('Calendar service is required for cron service');
+    if (!logger) throw new Error('Logger required for cron service');
+    if (!services?.calendar) throw new Error('Calendar service required for cron service');
 
     let cronJobs = [];
     let isRefetchRunning = false;
