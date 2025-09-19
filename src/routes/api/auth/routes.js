@@ -23,10 +23,45 @@ export function createAuthRouter(dependencies = {}) {
             throw new ValidationError('Password is required', 'password');
         }
 
+        const failedAttempts = parseInt(req.cookies.failed_attempts || '0');
+        const lockedUntil = parseInt(req.cookies.locked_until || '0');
+
+        if (lockedUntil && Date.now() < lockedUntil) {
+            const timeLeft = Math.ceil((lockedUntil - Date.now()) / 1000 / 60);
+            logger.warn(`Login attempt on locked session. ${timeLeft} minutes remaining`);
+            throw new ValidationError(`Account locked. Try again in ${timeLeft} minutes`, 'password');
+        }
+
         if (password !== config.auth.password) {
-            logger.warn('Failed login attempt');
+            const newFailedAttempts = failedAttempts + 1;
+
+            if (newFailedAttempts >= 5) {
+                const lockUntil = Date.now() + (15 * 60 * 1000); // 15 minutes
+                res.cookie('locked_until', lockUntil.toString(), {
+                    httpOnly: true,
+                    secure: config.app.env === 'production',
+                    sameSite: 'strict',
+                    maxAge: 15 * 60 * 1000, // 15 minutes
+                    path: '/'
+                });
+                logger.warn(`Account locked after 5 failed attempts`);
+                throw new ValidationError('Too many failed attempts. Account locked for 15 minutes', 'password');
+            }
+
+            res.cookie('failed_attempts', newFailedAttempts.toString(), {
+                httpOnly: true,
+                secure: config.app.env === 'production',
+                sameSite: 'strict',
+                maxAge: 60 * 60 * 1000, // 1 hour
+                path: '/'
+            });
+
+            logger.warn(`Failed login attempt ${newFailedAttempts}/5`);
             throw new ValidationError('Invalid password', 'password');
         }
+
+        res.clearCookie('failed_attempts', { path: '/' });
+        res.clearCookie('locked_until', { path: '/' });
 
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2);

@@ -55,6 +55,13 @@
                             passwordModal.show();
                         }
                     }
+                },
+                logoutButton: {
+                    text: 'logout',
+                    hint: 'Logout',
+                    click: function () {
+                        logout();
+                    }
                 }
             },
             height: '100%',
@@ -184,6 +191,41 @@
         }
     }
 
+    async function logout() {
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                isAuthenticated = false;
+                sharedCalendarData = []; // Clear shared data
+                updateToolbar();
+                await loadCalendars(); // Reload with public data
+                toast.success('Logged out successfully');
+            } else {
+                toast.error('Error during logout');
+            }
+        } catch (error) {
+            toast.error('Error during logout: ' + error.message);
+        }
+    }
+
+    function updateToolbar() {
+        if (calendar) {
+            const rightButtons = isAuthenticated
+                ? 'dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton logoutButton'
+                : 'dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton';
+
+            calendar.setOption('headerToolbar', {
+                left: 'prev,next today',
+                center: 'title',
+                right: rightButtons
+            });
+        }
+    }
+
     async function checkAuthStatus() {
         try {
             const response = await fetch('/api/auth/verify', {
@@ -198,9 +240,11 @@
                 isAuthenticated = false;
                 log.debug('User is not authenticated');
             }
+            updateToolbar();
         } catch (error) {
             isAuthenticated = false;
             log.debug('Auth check failed:', error);
+            updateToolbar();
         }
     }
 
@@ -225,6 +269,7 @@
         await waitForModalsToLoad();
         await checkAuthStatus();
         initCalendar();
+        updateToolbar();
         requestAnimationFrame(() => {
             loadCalendars();
         });
