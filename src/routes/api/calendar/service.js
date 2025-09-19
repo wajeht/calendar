@@ -26,7 +26,6 @@ export function createCalendarService(dependencies = {}) {
         try {
             logger.debug('Parsing iCal data with ical.js...');
 
-            // Parse according to ical.js best practices
             const jCalData = ICAL.parse(icalData);
             const comp = new ICAL.Component(jCalData);
             const vevents = comp.getAllSubcomponents('vevent');
@@ -42,7 +41,8 @@ export function createCalendarService(dependencies = {}) {
             const rangeStart = ICAL.Time.fromJSDate(now, false);
             const rangeEnd = ICAL.Time.fromJSDate(futureLimit, false);
 
-            for (const vevent of vevents) {
+            for (let i = 0; i < vevents.length; i++) {
+                const vevent = vevents[i];
                 try {
                     const event = new ICAL.Event(vevent);
                     logger.debug(`Processing event: ${event.summary}, recurring: ${event.isRecurring()}`);
@@ -59,7 +59,6 @@ export function createCalendarService(dependencies = {}) {
                         let next;
                         let count = 0;
 
-                        // Best practice iteration from ical.js documentation
                         while ((next = expand.next()) && count < 1000 && next.compare(rangeEnd) < 0) {
                             if (next.compare(rangeStart) < 0) {
                                 continue; // Skip dates before our range
@@ -263,11 +262,13 @@ export function createCalendarService(dependencies = {}) {
         const validEvents = [];
         const skippedEvents = [];
 
-        events.forEach(event => {
+        for (let i = 0; i < events.length; i++) {
+            const event = events[i];
+
             // Skip events without valid start date or title
             if (!event.start && !event.title) {
                 skippedEvents.push({ reason: 'No start date or title', event: event.uid || 'unknown' });
-                return;
+                continue;
             }
 
             // Check if this is a detail-hidden event (empty title AND empty description AND empty location)
@@ -295,7 +296,7 @@ export function createCalendarService(dependencies = {}) {
             }
 
             validEvents.push(fcEvent);
-        });
+        }
 
         if (skippedEvents.length > 0) {
             logger.debug('Skipped', skippedEvents.length, 'invalid events:', skippedEvents);
@@ -320,25 +321,29 @@ export function createCalendarService(dependencies = {}) {
             publicEvents = [];
         } else if (calendar.details) {
             // If details should be hidden for public view, strip ALL sensitive information
-            const strippedEvents = events.map(event => ({
-                uid: event.uid,
-                title: '', // Hide title completely
-                description: '', // Hide description completely
-                location: '', // Hide location completely
-                start: event.start,
-                end: event.end,
-                allDay: event.allDay,
-                // Remove all personal/sensitive details
-                organizer: null,
-                attendees: null,
-                status: event.status,
-                transparency: event.transparency,
-                sequence: event.sequence,
-                dtStamp: event.dtStamp,
-                created: event.created,
-                lastModified: event.lastModified,
-                url: null // Hide URL as well
-            }));
+            const strippedEvents = [];
+            for (let i = 0; i < events.length; i++) {
+                const event = events[i];
+                strippedEvents[i] = {
+                    uid: event.uid,
+                    title: '', // Hide title completely
+                    description: '', // Hide description completely
+                    location: '', // Hide location completely
+                    start: event.start,
+                    end: event.end,
+                    allDay: event.allDay,
+                    // Remove all personal/sensitive details
+                    organizer: null,
+                    attendees: null,
+                    status: event.status,
+                    transparency: event.transparency,
+                    sequence: event.sequence,
+                    dtStamp: event.dtStamp,
+                    created: event.created,
+                    lastModified: event.lastModified,
+                    url: null // Hide URL as well
+                };
+            }
             publicEvents = buildFullCalendarEvents(calendar, strippedEvents);
         } else {
             // Show everything for public view
@@ -357,18 +362,15 @@ export function createCalendarService(dependencies = {}) {
 
             logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
 
-            // Get calendar settings to determine processing
             const calendar = await models.calendar.getById(calendarId);
             if (!calendar) {
                 throw new Error(`Calendar ${calendarId} not found`);
             }
 
-            // Pre-process events for public and authenticated views
             const { publicEvents, authenticatedEvents } = processEventsForViews(events, calendar);
 
             logger.info(`Processed ${publicEvents.length} public events and ${authenticatedEvents.length} authenticated events`);
 
-            // Always clear existing events and completely rebuild from scratch to avoid stale data
             await models.calendar.update(calendarId, {
                 data: rawData,
                 events: JSON.stringify(events),
@@ -404,22 +406,30 @@ export function createCalendarService(dependencies = {}) {
 
             const results = [];
 
-            for (const calendar of calendars) {
+            for (let i = 0; i < calendars.length; i++) {
+                const calendar = calendars[i];
                 try {
                     const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
-                    results.push({ success: true, calendarId: calendar.id, ...result });
+                    results[i] = { success: true, calendarId: calendar.id, ...result };
                 } catch (error) {
                     logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
-                    results.push({
+                    results[i] = {
                         success: false,
                         calendarId: calendar.id,
                         error: error.message
-                    });
+                    };
                 }
             }
 
-            const successful = results.filter(r => r.success).length;
-            const failed = results.filter(r => !r.success).length;
+            let successful = 0;
+            let failed = 0;
+            for (let i = 0; i < results.length; i++) {
+                if (results[i].success) {
+                    successful++;
+                } else {
+                    failed++;
+                }
+            }
 
             logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
 
