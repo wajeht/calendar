@@ -14,7 +14,7 @@ export function createCalendarRouter(dependencies = {}) {
 
     const router = express.Router();
 
-    const verifyToken = middleware.auth.requireAuth();
+    const requireAuth = middleware.auth.requireAuth();
 
     router.get('/', async (req, res) => {
         const isAuthenticated = utils.isAuthenticated(req);
@@ -36,7 +36,7 @@ export function createCalendarRouter(dependencies = {}) {
         res.json({ success: true, data: calendar });
     });
 
-    router.post('/', verifyToken, async (req, res) => {
+    router.post('/', requireAuth, async (req, res) => {
         validators.validateCalendarCreate(req.body);
 
         const { name, url, color } = req.body;
