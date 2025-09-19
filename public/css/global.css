@@ -386,3 +386,10 @@ body {
     background: #fafafa;
 }
 
+/* Required field asterisk */
+.required {
+    color: #e74c3c;
+    margin-left: 2px;
+    font-weight: bold;
+}
+
