@@ -18,8 +18,8 @@
     "db:seed:make": "knex seed:make --knexfile=./src/db/knexfile.js",
     "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
     "rmds": "find . -name '.DS_Store' -delete",
-    "test": "node --test --env-file=.env src/**/*.test.js",
-    "test:watch": "node --test --watch --env-file=.env src/**/*.test.js"
+    "test": "NODE_ENV=test node --test --env-file=.env src/**/*.test.js",
+    "test:watch": "NODE_ENV=test node --test --watch --env-file=.env src/**/*.test.js"
   },
   "repository": {
     "type": "git",
@@ -45,5 +45,7 @@
     "knex": "^3.1.0",
     "node-cron": "^4.2.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "supertest": "^7.1.4"
+  }
 }

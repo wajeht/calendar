@@ -1,10 +1,10 @@
 import ICAL from 'ical.js';
 import { config } from './config.js';
-import { createUtils } from './utils.js';
-import { createLogger } from './logger.js';
 import { createDatabase } from './db/db.js';
 import { createCronService } from './cron.js';
-import { createValidators } from './validators.js';
+import { createUtils } from './utils/utils.js';
+import { createLogger } from './utils/logger.js';
+import { createValidators } from './utils/validators.js';
 import { createCalendar } from './routes/api/calendar/model.js';
 import { createAuthMiddleware } from './routes/api/auth/middleware.js';
 import { createCalendarService } from './routes/api/calendar/service.js';

@@ -55,9 +55,8 @@ const knexConfig = {
 };
 
 if (process.env.NODE_ENV === 'test') {
-	knexConfig.connection = {
-		filename: ':memory:',
-	};
+	console.log('🧪 Using in-memory database for tests');
+	knexConfig.connection = { filename: ':memory:' };
 }
 
 export default knexConfig;
