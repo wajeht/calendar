@@ -17,24 +17,9 @@ export function createRouter(dependencies = {}) {
 
     router.use('/', createGeneralRouter());
 
-    router.use('/api/auth', createAuthRouter({
-        middleware,
-        utils,
-        logger,
-        config,
-        errors,
-        validators
-    }));
+    router.use('/api/auth', createAuthRouter({ middleware, utils, logger, config, errors, validators }));
 
-    router.use('/api/calendars', createCalendarRouter({
-        models,
-        services,
-        middleware,
-        utils,
-        logger,
-        errors,
-        validators
-    }));
+    router.use('/api/calendars', createCalendarRouter({ models, services, middleware, utils, logger, errors, validators }));
 
     router.use(notFoundHandler({ logger, utils }));
 
