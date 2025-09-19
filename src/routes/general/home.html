@@ -118,8 +118,9 @@
             calendar.removeAllEventSources();
             eventSources = [];
 
-            calendars.forEach(cal => {
-                if (!cal || !cal.id) return;
+            for (let i = 0; i < calendars.length; i++) {
+                const cal = calendars[i];
+                if (!cal || !cal.id) continue;
 
                 const events = cal.events || [];
 
@@ -138,7 +139,7 @@
                     name: cal.name,
                     color: cal.color
                 });
-            });
+            }
 
         } catch (error) {
             log.error('Error loading calendars:', error);

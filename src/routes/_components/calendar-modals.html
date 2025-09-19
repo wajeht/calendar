@@ -141,7 +141,9 @@ class CalendarManagementModal {
             return;
         }
 
-        this.calendarList.innerHTML = calendars.map(cal => {
+        const htmlParts = [];
+        for (let i = 0; i < calendars.length; i++) {
+            const cal = calendars[i];
             const isVisible = !cal.hidden;
             const showDetails = !cal.details;
             const statusParts = [];
@@ -156,7 +158,7 @@ class CalendarManagementModal {
                 statusParts.push('Details hidden');
             }
 
-            return `
+            htmlParts[i] = `
             <div class="calendar-item">
                 <div class="calendar-color" style="background: ${cal.color};"></div>
                 <div class="calendar-info">
@@ -177,7 +179,8 @@ class CalendarManagementModal {
                 </div>
             </div>
         `;
-        }).join('');
+        }
+        this.calendarList.innerHTML = htmlParts.join('');
     }
 }
 

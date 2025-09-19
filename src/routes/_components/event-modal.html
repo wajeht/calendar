@@ -51,111 +51,113 @@ class EventModal {
     }
 
     buildEventDetails(event, sourceCalendar = null) {
-        let detailsHTML = '';
+        const details = [];
 
         // Date and time information
         if (event.allDay) {
-            detailsHTML += `<div class="event-detail"><label>When:</label> All day event</div>`;
+            details.push(`<div class="event-detail"><label>When:</label> All day event</div>`);
         }
 
-        detailsHTML += `<div class="event-detail"><label>Start:</label> ${this.formatDate(event.start, event.allDay)}</div>`;
+        details.push(`<div class="event-detail"><label>Start:</label> ${this.formatDate(event.start, event.allDay)}</div>`);
 
         if (event.end) {
-            detailsHTML += `<div class="event-detail"><label>End:</label> ${this.formatDate(event.end, event.allDay)}</div>`;
+            details.push(`<div class="event-detail"><label>End:</label> ${this.formatDate(event.end, event.allDay)}</div>`);
         }
 
         // Duration calculation
         if (event.start && event.end && !event.allDay) {
             const duration = (event.end - event.start) / 1000 / 60;
             if (duration < 60) {
-                detailsHTML += `<div class="event-detail"><label>Duration:</label> ${duration} minutes</div>`;
+                details.push(`<div class="event-detail"><label>Duration:</label> ${duration} minutes</div>`);
             } else {
                 const hours = Math.floor(duration / 60);
                 const mins = duration % 60;
-                detailsHTML += `<div class="event-detail"><label>Duration:</label> ${hours}h ${mins > 0 ? mins + 'm' : ''}</div>`;
+                details.push(`<div class="event-detail"><label>Duration:</label> ${hours}h ${mins > 0 ? mins + 'm' : ''}</div>`);
             }
         }
 
         // Location
         if (event.extendedProps && event.extendedProps.location) {
             const locationWithLinks = this.linkify(event.extendedProps.location);
-            detailsHTML += `<div class="event-detail"><label>Location:</label> ${locationWithLinks}</div>`;
+            details.push(`<div class="event-detail"><label>Location:</label> ${locationWithLinks}</div>`);
         }
 
         // Description
         if (event.extendedProps && event.extendedProps.description) {
             const descriptionWithLinks = this.linkify(event.extendedProps.description);
-            detailsHTML += `<div class="event-detail"><label>Description:</label><br>${descriptionWithLinks}</div>`;
+            details.push(`<div class="event-detail"><label>Description:</label><br>${descriptionWithLinks}</div>`);
         }
 
         // Status
         if (event.extendedProps && event.extendedProps.status) {
-            detailsHTML += `<div class="event-detail"><label>Status:</label> ${event.extendedProps.status}</div>`;
+            details.push(`<div class="event-detail"><label>Status:</label> ${event.extendedProps.status}</div>`);
         }
 
         // Organizer
         if (event.extendedProps && (event.extendedProps.organizerName || event.extendedProps.organizerEmail)) {
-            let organizerInfo = '';
+            const organizerParts = [];
             if (event.extendedProps.organizerName) {
-                organizerInfo += event.extendedProps.organizerName;
+                organizerParts.push(event.extendedProps.organizerName);
             }
             if (event.extendedProps.organizerEmail) {
                 const emailLink = `<a href="mailto:${event.extendedProps.organizerEmail}">${event.extendedProps.organizerEmail}</a>`;
-                organizerInfo += organizerInfo ? ` (${emailLink})` : emailLink;
+                organizerParts.push(organizerParts.length > 0 ? ` (${emailLink})` : emailLink);
             }
-            detailsHTML += `<div class="event-detail"><label>Organizer:</label> ${organizerInfo}</div>`;
+            details.push(`<div class="event-detail"><label>Organizer:</label> ${organizerParts.join('')}</div>`);
         }
 
         // Attendees
         if (event.extendedProps && event.extendedProps.attendeeCount && parseInt(event.extendedProps.attendeeCount) > 0) {
-            detailsHTML += `<div class="event-detail"><label>Attendees:</label> ${event.extendedProps.attendeeCount} attendee(s)</div>`;
+            details.push(`<div class="event-detail"><label>Attendees:</label> ${event.extendedProps.attendeeCount} attendee(s)</div>`);
 
             if (event.extendedProps.attendeeNames) {
-                detailsHTML += `<div class="event-detail"><label>Names:</label> ${event.extendedProps.attendeeNames}</div>`;
+                details.push(`<div class="event-detail"><label>Names:</label> ${event.extendedProps.attendeeNames}</div>`);
             }
 
             if (event.extendedProps.attendeeEmails) {
-                const emailList = event.extendedProps.attendeeEmails.split(', ')
-                    .map(email => `<a href="mailto:${email}">${email}</a>`)
-                    .join(', ');
-                detailsHTML += `<div class="event-detail"><label>Emails:</label> ${emailList}</div>`;
+                const emails = event.extendedProps.attendeeEmails.split(', ');
+                const emailParts = [];
+                for (let i = 0; i < emails.length; i++) {
+                    emailParts[i] = `<a href="mailto:${emails[i]}">${emails[i]}</a>`;
+                }
+                details.push(`<div class="event-detail"><label>Emails:</label> ${emailParts.join(', ')}</div>`);
             }
         }
 
         // Transparency
         if (event.extendedProps && event.extendedProps.transparency) {
             const transparencyText = event.extendedProps.transparency === 'OPAQUE' ? 'Busy' : 'Free';
-            detailsHTML += `<div class="event-detail"><label>Show as:</label> ${transparencyText}</div>`;
+            details.push(`<div class="event-detail"><label>Show as:</label> ${transparencyText}</div>`);
         }
 
         // Timestamps
         if (event.extendedProps && event.extendedProps.created) {
             const createdDate = new Date(event.extendedProps.created);
-            detailsHTML += `<div class="event-detail"><label>Created:</label> ${createdDate.toLocaleString()}</div>`;
+            details.push(`<div class="event-detail"><label>Created:</label> ${createdDate.toLocaleString()}</div>`);
         }
 
         if (event.extendedProps && event.extendedProps.lastModified) {
             const modifiedDate = new Date(event.extendedProps.lastModified);
-            detailsHTML += `<div class="event-detail"><label>Modified:</label> ${modifiedDate.toLocaleString()}</div>`;
+            details.push(`<div class="event-detail"><label>Modified:</label> ${modifiedDate.toLocaleString()}</div>`);
         }
 
         // Event UID
         if (event.extendedProps && event.extendedProps.uid) {
-            detailsHTML += `<div class="event-detail"><label>Event ID:</label> <code style="font-size: 0.8em; background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">${event.extendedProps.uid}</code></div>`;
+            details.push(`<div class="event-detail"><label>Event ID:</label> <code style="font-size: 0.8em; background: #f5f5f5; padding: 2px 4px; border-radius: 3px;">${event.extendedProps.uid}</code></div>`);
         }
 
         // Calendar source
         if (sourceCalendar) {
             const calendarDisplayName = sourceCalendar.name || 'Unknown Calendar';
-            detailsHTML += `<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${calendarDisplayName}</div>`;
+            details.push(`<div class="event-detail"><label>Calendar:</label> <span style="display:inline-block; width:12px; height:12px; background:${sourceCalendar.color}; border-radius:2px;"></span> ${calendarDisplayName}</div>`);
         }
 
         // Event URL
         if (event.url) {
-            detailsHTML += `<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank" rel="noopener noreferrer">Open in calendar</a></div>`;
+            details.push(`<div class="event-detail"><label>Link:</label> <a href="${event.url}" target="_blank" rel="noopener noreferrer">Open in calendar</a></div>`);
         }
 
-        return detailsHTML;
+        return details.join('');
     }
 
     formatDate(date, allDay = false) {
@@ -175,8 +177,13 @@ class EventModal {
 
         const words = text.split(/(\s+)/);
 
-        return words.map(word => {
-            if (/^\s+$/.test(word)) return word;
+        const resultWords = [];
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            if (/^\s+$/.test(word)) {
+                resultWords[i] = word;
+                continue;
+            }
 
             let potentialContact = word;
             let trailingPunctuation = '';
@@ -190,7 +197,8 @@ class EventModal {
             // Email detection
             const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
             if (emailRegex.test(potentialContact)) {
-                return `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
+                resultWords[i] = `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
+                continue;
             }
 
             // Phone number detection
@@ -198,19 +206,22 @@ class EventModal {
             const phoneMatch = potentialContact.match(phoneRegex);
             if (phoneMatch) {
                 const cleanPhone = potentialContact.replace(/[^\d+]/g, '');
-                return `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
+                resultWords[i] = `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
+                continue;
             }
 
             // URL detection
             try {
                 const url = new URL(potentialContact);
                 if (url.protocol === 'http:' || url.protocol === 'https:') {
-                    return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
+                    resultWords[i] = `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
+                    continue;
                 }
             } catch (e) { }
 
-            return word;
-        }).join('');
+            resultWords[i] = word;
+        }
+        return resultWords.join('');
     }
 }
 
