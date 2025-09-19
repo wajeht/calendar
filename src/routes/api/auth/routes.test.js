@@ -1,7 +1,7 @@
-import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { createTestServer } from '../../../utils/test-utils.js';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 
-describe('Auth API - Real HTTP Tests', () => {
+describe('Auth', () => {
     let testServer;
 
     beforeAll(async () => {
@@ -14,7 +14,7 @@ describe('Auth API - Real HTTP Tests', () => {
         }
     });
 
-    describe('POST /api/auth (Login)', () => {
+    describe('POST /api/auth', () => {
         it('should login successfully with correct password', async () => {
             const response = await testServer.post('/api/auth', {
                 password: process.env.APP_PASSWORD || 'password'
@@ -48,7 +48,7 @@ describe('Auth API - Real HTTP Tests', () => {
         });
     });
 
-    describe('GET /api/auth/verify (Session Verification)', () => {
+    describe('GET /api/auth/verify', () => {
         beforeAll(async () => {
             await testServer.login();
         });
@@ -81,7 +81,7 @@ describe('Auth API - Real HTTP Tests', () => {
         });
     });
 
-    describe('POST /api/auth/logout (Logout)', () => {
+    describe('POST /api/auth/logout', () => {
         it('should logout successfully', async () => {
             const response = await testServer.post('/api/auth/logout');
 

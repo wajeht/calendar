@@ -1,7 +1,7 @@
 import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { setupAuthenticatedServer } from '../../../utils/test-utils.js';
 
-describe('Calendar API - Real HTTP Tests', () => {
+describe('Calendar', () => {
     let testServer;
 
     beforeAll(async () => {
@@ -15,7 +15,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         }
     });
 
-    describe('GET /api/calendars (List Calendars)', () => {
+    describe('GET /api/calendars', () => {
         it('should get calendars list regardless of auth status', async () => {
             let response = await testServer.get('/api/calendars');
             expect(response.status).toBe(200);
@@ -30,7 +30,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('POST /api/calendars (Create Calendar)', () => {
+    describe('POST /api/calendars', () => {
         it('should create a new calendar', async () => {
             const calendarData = {
                 name: 'Test Calendar',
@@ -99,7 +99,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('GET /api/calendars/:id (Get Calendar)', () => {
+    describe('GET /api/calendars/:id', () => {
         let calendarId;
 
         beforeAll(async () => {
@@ -137,7 +137,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('PUT /api/calendars/:id (Update Calendar)', () => {
+    describe('PUT /api/calendars/:id', () => {
         let calendarId;
 
         beforeAll(async () => {
@@ -198,7 +198,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('DELETE /api/calendars/:id (Delete Calendar)', () => {
+    describe('DELETE /api/calendars/:id', () => {
         let calendarId;
 
         beforeAll(async () => {
@@ -238,7 +238,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('POST /api/calendars/refetch (Refetch All Calendars)', () => {
+    describe('POST /api/calendars/refetch', () => {
         it('should initiate calendar refetch', async () => {
             const response = await testServer.post('/api/calendars/refetch');
             const data = response.body;
