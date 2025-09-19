@@ -371,7 +371,10 @@ class CalendarModals {
     }
 
     async deleteCalendar(calendarId) {
-        const confirmed = await confirmModal.delete('this calendar');
+        const calendar = this.management.calendarsData.find(cal => cal.id === calendarId);
+        const calendarName = calendar ? `"${calendar.name}"` : 'this calendar';
+
+        const confirmed = await confirmModal.delete(calendarName);
         if (!confirmed) {
             return;
         }
