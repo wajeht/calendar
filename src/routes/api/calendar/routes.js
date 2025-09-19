@@ -151,20 +151,14 @@ export function createCalendarRouter(dependencies = {}) {
         res.json(calendar);
     });
 
-    router.post("/refetch", requireAuth, async (_req, res) => {
-        logger.info("Calendar refetch requested");
+    router.post("/refresh", requireAuth, async (_req, res) => {
+        logger.info("Calendar refresh requested");
 
-        if (process.env.NODE_ENV !== "test") {
-            setImmediate(async () => {
-                try {
-                    await services.calendar.refetchAllCalendars();
-                } catch (error) {
-                    logger.error("Background refetch failed:", error);
-                }
-            });
-        }
+        const result = await services.calendar.refetchAllCalendars();
 
-        res.json({ success: true, message: "Calendar refetch initiated" });
+        await services.cron.updateLastRun();
+
+        res.json(result);
     });
 
     return router;
