@@ -67,16 +67,9 @@
             headerToolbar: {
                 left: "prev,next today",
                 center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton",
+                right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton",
             },
             customButtons: {
-                refetchButton: {
-                    text: "refetch",
-                    hint: "Refetch All Calendars",
-                    click: function () {
-                        refetchAllCalendars();
-                    },
-                },
                 settingsButton: {
                     text: "settings",
                     hint: "Manage Calendars",
@@ -86,13 +79,6 @@
                         } else {
                             passwordModal.show();
                         }
-                    },
-                },
-                logoutButton: {
-                    text: "logout",
-                    hint: "Logout",
-                    click: function () {
-                        logout();
                     },
                 },
             },
@@ -247,9 +233,7 @@
 
     function updateToolbar() {
         if (calendar) {
-            const rightButtons = isAuthenticated
-                ? "dayGridMonth,timeGridWeek,timeGridDay,listMonth refetchButton settingsButton logoutButton"
-                : "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton";
+            const rightButtons = "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton";
 
             calendar.setOption("headerToolbar", {
                 left: "prev,next today",

@@ -11,8 +11,8 @@
             <button class="tab-button active" onclick="settingsModal.showTab('calendars')">
                 Calendars
             </button>
-            <button class="tab-button" onclick="settingsModal.showTab('automation')">
-                Automation
+            <button class="tab-button" onclick="settingsModal.showTab('settings')">
+                Settings
             </button>
         </div>
 
@@ -31,8 +31,8 @@
             </div>
         </div>
 
-        <!-- Automation Tab Content -->
-        <div class="tab-content" id="automation-tab" style="display: none">
+        <!-- Settings Tab Content -->
+        <div class="tab-content" id="settings-tab" style="display: none">
             <div class="fc-form-group">
                 <table class="fc-checkbox-table">
                     <tr>
@@ -81,9 +81,11 @@
                 </button>
                 <div class="help-text">Manually trigger a refresh of all calendars</div>
             </div>
+
         </div>
     </div>
     <div class="modal-footer">
+        <button onclick="settingsModal.logout()" class="fc-button fc-button-danger">Logout</button>
         <button onclick="settingsModal.close()" class="fc-button">Close</button>
     </div>
 </div>
@@ -587,7 +589,7 @@
                 } else {
                     this.loadCalendarList();
                 }
-            } else if (tabName === "automation") {
+            } else if (tabName === "settings") {
                 this.loadAutomationSettings();
             }
         }
@@ -826,6 +828,28 @@
             } catch (error) {
                 console.error("Error refreshing calendars:", error);
                 toast.error("Error refreshing calendars: " + error.message);
+            }
+        }
+
+        async logout() {
+            try {
+                const response = await fetch("/api/auth/logout", {
+                    method: "POST",
+                    credentials: "include",
+                });
+
+                if (response.ok) {
+                    isAuthenticated = false;
+                    sharedCalendarData = [];
+                    this.close();
+                    updateToolbar();
+                    await loadCalendars();
+                    toast.success("Logged out successfully");
+                } else {
+                    toast.error("Error during logout");
+                }
+            } catch (error) {
+                toast.error("Error during logout: " + error.message);
             }
         }
     }
