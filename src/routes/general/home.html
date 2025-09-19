@@ -1,8 +1,10 @@
 <div id="calendar"></div>
 
-<%- include('../_components/password-modal.html') %> <%- include('../_components/toast.html') %> <%-
-include('../_components/confirm-modal.html') %> <%- include('../_components/calendar-modals.html')
-%> <%- include('../_components/event-modal.html') %>
+<%- include('../_components/password-modal.html') %>
+<%- include('../_components/toast.html') %>
+<%- include('../_components/confirm-modal.html') %>
+<%- include('../_components/settings-modal.html') %>
+<%- include('../_components/event-modal.html') %>
 
 <script>
     let calendar;
@@ -80,7 +82,7 @@ include('../_components/confirm-modal.html') %> <%- include('../_components/cale
                     hint: "Manage Calendars",
                     click: function () {
                         if (isAuthenticated) {
-                            calendarModals.management.show();
+                            settingsModal.show();
                         } else {
                             passwordModal.show();
                         }
@@ -284,7 +286,7 @@ include('../_components/confirm-modal.html') %> <%- include('../_components/cale
             const checkModals = () => {
                 if (
                     typeof eventModal !== "undefined" &&
-                    typeof calendarModals !== "undefined" &&
+                    typeof settingsModal !== "undefined" &&
                     typeof passwordModal !== "undefined" &&
                     typeof toast !== "undefined" &&
                     typeof confirmModal !== "undefined"

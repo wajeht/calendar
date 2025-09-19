@@ -1,0 +1,834 @@
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModalOverlay"></div>
+<div class="modal" id="settingsModal" style="max-width: 800px">
+    <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" onclick="settingsModal.close()">×</button>
+    </div>
+    <div class="modal-body">
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="settingsModal.showTab('calendars')">
+                Calendars
+            </button>
+            <button class="tab-button" onclick="settingsModal.showTab('automation')">
+                Automation
+            </button>
+        </div>
+
+        <!-- Calendars Tab Content -->
+        <div class="tab-content" id="calendars-tab">
+            <div class="calendar-list" id="calendarList">
+                <!-- Calendar list will be populated here -->
+            </div>
+            <div class="tab-actions">
+                <button
+                    onclick="settingsModal.calendars.showAdd()"
+                    class="fc-button fc-button-primary"
+                >
+                    Add Calendar
+                </button>
+            </div>
+        </div>
+
+        <!-- Automation Tab Content -->
+        <div class="tab-content" id="automation-tab" style="display: none">
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="cron-enabled" />
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="cron-enabled">Enable automatic calendar refresh</label>
+                            <div class="help-text">When enabled, calendars will be automatically refreshed according to your schedule</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="fc-form-group">
+                <label for="cron-schedule">Refresh Schedule:</label>
+                <select id="cron-schedule">
+                    <option value="0 * * * *">Every hour</option>
+                    <option value="0 */2 * * *">Every 2 hours</option>
+                    <option value="0 */4 * * *">Every 4 hours</option>
+                    <option value="0 */6 * * *">Every 6 hours</option>
+                    <option value="0 */12 * * *">Every 12 hours</option>
+                    <option value="0 0 * * *">Daily at midnight</option>
+                </select>
+                <div class="help-text">Choose how often calendars should be refreshed automatically</div>
+            </div>
+
+            <div class="fc-form-group">
+                <label>Status Information:</label>
+                <div class="status-display">
+                    <div class="status-item">
+                        <strong>Status:</strong> <span id="cron-status">Loading...</span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Last Run:</strong> <span id="cron-last-run">Never</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="manual-refresh-section">
+                <button
+                    onclick="settingsModal.manualRefresh()"
+                    class="fc-button fc-button-primary standalone"
+                >
+                    Refresh All Calendars Now
+                </button>
+                <div class="help-text">Manually trigger a refresh of all calendars</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button onclick="settingsModal.close()" class="fc-button">Close</button>
+    </div>
+</div>
+
+<!-- Add/Edit Calendar Form Modal -->
+<div class="modal-overlay modal-overlay-high" id="addCalendarModalOverlay"></div>
+<div class="modal modal-high" id="addCalendarModal" style="max-width: 450px">
+    <div class="modal-header">
+        <h2 id="addCalendarModalTitle">Add New Calendar</h2>
+        <button class="modal-close" onclick="settingsModal.calendars.close()">×</button>
+    </div>
+    <div class="modal-body">
+        <div class="fc-form">
+            <div class="fc-form-group">
+                <label for="calendar-name">Name: <span class="required">*</span></label>
+                <input type="text" id="calendar-name" placeholder="Calendar name" required />
+                <div id="calendar-name-error" class="error-message">
+                    Please enter a calendar name
+                </div>
+            </div>
+            <div class="fc-form-group">
+                <label for="calendar-url">URL: <span class="required">*</span></label>
+                <input
+                    type="url"
+                    id="calendar-url"
+                    placeholder="https://example.com/calendar.ics"
+                    required
+                />
+                <div id="calendar-url-error" class="error-message">
+                    Please enter a valid calendar URL
+                </div>
+            </div>
+            <div class="fc-form-group">
+                <label for="calendar-color">Color:</label>
+                <input type="color" id="calendar-color" value="#447dfc" />
+            </div>
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="calendar-hidden" />
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="calendar-hidden">Hide calendar from public view</label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="fc-form-group">
+                <table class="fc-checkbox-table">
+                    <tr>
+                        <td class="fc-checkbox-cell">
+                            <input type="checkbox" id="calendar-hide-details" />
+                        </td>
+                        <td class="fc-label-cell">
+                            <label for="calendar-hide-details"
+                                >Hide event details for public view (show as time blocks
+                                only)</label
+                            >
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button
+            onclick="settingsModal.calendars.save()"
+            class="fc-button fc-button-primary"
+            id="saveCalendarButton"
+        >
+            Add Calendar
+        </button>
+        <button onclick="settingsModal.calendars.close()" class="fc-button">Cancel</button>
+    </div>
+</div>
+
+<style>
+    .tab-navigation {
+        display: flex;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+
+    .tab-button {
+        position: relative;
+        display: inline-block;
+        padding: 4px 12px;
+        margin: 0 0 0 -1px;
+        line-height: 1.428571429;
+        color: #333;
+        text-decoration: none;
+        background-color: #fff;
+        background-image: linear-gradient(to bottom, #fff 0%, #e6e6e6 100%);
+        border: 1px solid #ccc;
+        border-radius: 0;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: normal;
+        text-align: center;
+        vertical-align: middle;
+        white-space: nowrap;
+        user-select: none;
+        flex: 1;
+    }
+
+    .tab-button:first-child {
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px;
+    }
+
+    .tab-button:last-child {
+        border-top-right-radius: 3px;
+        border-bottom-right-radius: 3px;
+    }
+
+    .tab-button:hover {
+        background-color: #e6e6e6;
+        background-image: linear-gradient(to bottom, #e6e6e6 0%, #d4d4d4 100%);
+        border-color: #adadad;
+    }
+
+    .tab-button.active {
+        background-color: #2c3e50;
+        background-image: linear-gradient(to bottom, #2c3e50 0%, #34495e 100%);
+        border-color: #2c3e50;
+        color: white;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 4px;
+        line-height: 1.4;
+    }
+
+    .status-display {
+        background: #fafafa;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 12px;
+        margin-top: 4px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+        font-size: 13px;
+        gap: 8px;
+    }
+
+    .status-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .status-item strong {
+        min-width: 80px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .manual-refresh-section {
+        text-align: right;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+    }
+
+    #cron-status {
+        padding: 2px 6px;
+        border-radius: 2px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    #cron-status.enabled {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    #cron-status.disabled {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .tab-actions {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+        text-align: right;
+    }
+</style>
+
+<script>
+
+    class CalendarFormModal {
+        constructor(parentModal) {
+            this.parentModal = parentModal;
+            this.modal = document.getElementById("addCalendarModal");
+            this.overlay = document.getElementById("addCalendarModalOverlay");
+            this.title = document.getElementById("addCalendarModalTitle");
+            this.saveButton = document.getElementById("saveCalendarButton");
+            this.nameInput = document.getElementById("calendar-name");
+            this.urlInput = document.getElementById("calendar-url");
+            this.colorInput = document.getElementById("calendar-color");
+            this.hiddenInput = document.getElementById("calendar-hidden");
+            this.hideDetailsInput = document.getElementById("calendar-hide-details");
+            this.nameError = document.getElementById("calendar-name-error");
+            this.urlError = document.getElementById("calendar-url-error");
+
+            this.currentEditingId = null;
+            this.isOpen = false;
+
+            this.setupEventListeners();
+        }
+
+        setupEventListeners() {
+            this.overlay.addEventListener("click", () => {
+                this.close();
+            });
+        }
+
+        showAdd() {
+            this.currentEditingId = null;
+            this.title.textContent = "Add New Calendar";
+            this.saveButton.textContent = "Add Calendar";
+
+            this.clearForm();
+            this.hideAllErrors();
+            this.show();
+        }
+
+        async showEdit(calendarId) {
+            try {
+                const response = await fetch(`/api/calendars/${calendarId}`, {
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (!response.ok) {
+                    toast.error("Error loading calendar details");
+                    return;
+                }
+
+                const result = await response.json();
+                const calendar = result.data;
+
+                this.currentEditingId = calendarId;
+                this.title.textContent = "Edit Calendar";
+                this.saveButton.textContent = "Update Calendar";
+
+                this.populateForm(calendar);
+                this.hideAllErrors();
+                this.show();
+            } catch (error) {
+                toast.error("Error loading calendar details: " + error.message);
+            }
+        }
+
+        showEditWithData(calendar) {
+            this.currentEditingId = calendar.id;
+            this.title.textContent = "Edit Calendar";
+            this.saveButton.textContent = "Update Calendar";
+
+            this.populateForm(calendar);
+            this.hideAllErrors();
+            this.show();
+        }
+
+        show() {
+            this.isOpen = true;
+            this.modal.classList.add("show");
+            this.overlay.classList.add("show");
+            this.nameInput.focus();
+
+            if (typeof modalStack !== "undefined") {
+                modalStack.push(this);
+            }
+        }
+
+        close() {
+            this.isOpen = false;
+            this.modal.classList.remove("show");
+            this.overlay.classList.remove("show");
+            this.hideAllErrors();
+
+            if (typeof modalStack !== "undefined") {
+                modalStack.remove(this);
+            }
+
+            this.parentModal.show();
+        }
+
+        clearForm() {
+            this.nameInput.value = "";
+            this.urlInput.value = "";
+            this.colorInput.value = "#447dfc";
+            this.hiddenInput.checked = false;
+            this.hideDetailsInput.checked = false;
+            this.hideAllErrors();
+        }
+
+        showNameError(message = "Please enter a calendar name") {
+            this.nameError.textContent = message;
+            this.nameError.style.display = "block";
+        }
+
+        showUrlError(message = "Please enter a valid calendar URL") {
+            this.urlError.textContent = message;
+            this.urlError.style.display = "block";
+        }
+
+        hideNameError() {
+            this.nameError.style.display = "none";
+        }
+
+        hideUrlError() {
+            this.urlError.style.display = "none";
+        }
+
+        hideAllErrors() {
+            this.hideNameError();
+            this.hideUrlError();
+        }
+
+        populateForm(calendar) {
+            this.nameInput.value = calendar.name || "";
+            this.urlInput.value = calendar.url || "";
+            this.colorInput.value = calendar.color || "#447dfc";
+            this.hiddenInput.checked = calendar.hidden || false;
+            this.hideDetailsInput.checked = calendar.details || false;
+        }
+
+        async save() {
+            const name = this.nameInput.value.trim();
+            const url = this.urlInput.value.trim();
+            const color = this.colorInput.value;
+            const hidden = this.hiddenInput.checked;
+            const hideDetails = this.hideDetailsInput.checked;
+
+            this.hideAllErrors();
+
+            try {
+                const isEditing = this.currentEditingId !== null;
+                const apiUrl = isEditing
+                    ? `/api/calendars/${this.currentEditingId}`
+                    : "/api/calendars";
+                const method = isEditing ? "PUT" : "POST";
+
+                const response = await fetch(apiUrl, {
+                    method: method,
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        name,
+                        url,
+                        color,
+                        hidden,
+                        details: hideDetails,
+                    }),
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    this.close();
+                    await this.parentModal.loadCalendarList();
+                    await loadCalendars();
+
+                    const action = isEditing ? "updated" : "added";
+                    toast.success(`Calendar ${action} successfully!`);
+                } else {
+                    const errorData = await response.json();
+
+                    if (errorData.errors && Object.keys(errorData.errors).length > 0) {
+                        if (errorData.errors.name) {
+                            this.showNameError(errorData.errors.name);
+                        }
+                        if (errorData.errors.url) {
+                            this.showUrlError(errorData.errors.url);
+                        }
+                        const unhandledErrors = Object.keys(errorData.errors).filter(
+                            (field) => !["name", "url"].includes(field),
+                        );
+                        if (unhandledErrors.length > 0) {
+                            const messages = unhandledErrors.map(
+                                (field) => errorData.errors[field],
+                            );
+                            const action = isEditing ? "updating" : "adding";
+                            toast.error(`Error ${action} calendar: ` + messages.join(", "));
+                        }
+                    } else {
+                        const errorMessage = errorData.error || "Unknown error";
+                        const action = isEditing ? "updating" : "adding";
+                        toast.error(`Error ${action} calendar: ` + errorMessage);
+                    }
+                }
+            } catch (error) {
+                const action = this.currentEditingId ? "updating" : "adding";
+                toast.error(`Error ${action} calendar: ` + error.message);
+            }
+        }
+    }
+
+
+    class SettingsModal {
+        constructor() {
+            this.modal = document.getElementById("settingsModal");
+            this.overlay = document.getElementById("settingsModalOverlay");
+            this.calendarList = document.getElementById("calendarList");
+            this.isOpen = false;
+            this.calendarsData = [];
+            this.currentTab = "calendars";
+
+            // Initialize sub-components
+            this.calendars = new CalendarFormModal(this);
+
+            this.setupEventListeners();
+            this.setupAutomationListeners();
+        }
+
+        setupEventListeners() {
+            this.overlay.addEventListener("click", () => {
+                this.close();
+            });
+        }
+
+        setupAutomationListeners() {
+            const cronEnabledInput = document.getElementById("cron-enabled");
+            const cronScheduleSelect = document.getElementById("cron-schedule");
+
+            if (cronEnabledInput) {
+                cronEnabledInput.addEventListener("change", () => {
+                    this.updateCronSettings();
+                });
+            }
+
+            if (cronScheduleSelect) {
+                cronScheduleSelect.addEventListener("change", () => {
+                    this.updateCronSettings();
+                });
+            }
+        }
+
+        async show() {
+            if (!isAuthenticated) {
+                showPasswordModal();
+                return;
+            }
+
+            this.isOpen = true;
+            this.modal.classList.add("show");
+            this.overlay.classList.add("show");
+
+            if (typeof modalStack !== "undefined") {
+                modalStack.push(this);
+            }
+
+            await this.showTab("calendars");
+        }
+
+        showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll(".tab-button").forEach((button) => {
+                button.classList.remove("active");
+            });
+            document
+                .querySelector(`[onclick="settingsModal.showTab('${tabName}')"]`)
+                .classList.add("active");
+
+            // Hide all tab content
+            document.querySelectorAll(".tab-content").forEach((content) => {
+                content.style.display = "none";
+            });
+
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).style.display = "block";
+            this.currentTab = tabName;
+
+            // Load tab-specific data
+            if (tabName === "calendars") {
+                if (typeof sharedCalendarData !== "undefined" && sharedCalendarData.length > 0) {
+                    this.calendarsData = sharedCalendarData;
+                    this.displayCalendarList(sharedCalendarData);
+                } else {
+                    this.loadCalendarList();
+                }
+            } else if (tabName === "automation") {
+                this.loadAutomationSettings();
+            }
+        }
+
+        close() {
+            this.isOpen = false;
+            this.modal.classList.remove("show");
+            this.overlay.classList.remove("show");
+
+            if (typeof modalStack !== "undefined") {
+                modalStack.remove(this);
+            }
+        }
+
+        async loadCalendarList() {
+            try {
+                const response = await fetch("/api/calendars", {
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    const calendars = await response.json();
+                    this.calendarsData = calendars;
+                    this.displayCalendarList(calendars);
+                }
+            } catch (error) {
+                console.error("Error loading calendar list:", error);
+                toast.error("Failed to load calendar list");
+            }
+        }
+
+        displayCalendarList(calendars) {
+            if (!calendars || calendars.length === 0) {
+                this.calendarList.innerHTML =
+                    '<div class="no-calendars-message">No calendars found. Add your first calendar!</div>';
+                return;
+            }
+
+            const htmlParts = [];
+            for (let i = 0; i < calendars.length; i++) {
+                const cal = calendars[i];
+                const isVisible = !cal.hidden;
+                const showDetails = !cal.details;
+                const statusParts = [];
+
+                if (isVisible) {
+                    statusParts.push("Visible");
+                } else {
+                    statusParts.push("Hidden");
+                }
+
+                if (!showDetails) {
+                    statusParts.push("Details hidden");
+                }
+
+                htmlParts[i] = `
+            <div class="calendar-item">
+                <div class="calendar-color" style="background: ${cal.color};"></div>
+                <div class="calendar-info">
+                    <div class="calendar-name">${cal.name}</div>
+                    <div class="calendar-url">${cal.url}</div>
+                    <div class="calendar-meta">
+                        ${statusParts.join(" • ")} •
+                        Last updated: ${cal.updated_at ? new Date(cal.updated_at).toLocaleDateString() : "Never"}
+                    </div>
+                </div>
+                <div class="calendar-actions">
+                    <button onclick="settingsModal.showEditFromCache(${cal.id})" class="fc-button" style="margin-right: 8px;">
+                        Edit
+                    </button>
+                    <button onclick="settingsModal.deleteCalendar(${cal.id})" class="fc-button fc-button-danger">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `;
+            }
+            this.calendarList.innerHTML = htmlParts.join("");
+        }
+
+        showEditFromCache(calendarId) {
+            const calendar = this.calendarsData.find((cal) => cal.id === calendarId);
+            if (calendar) {
+                this.calendars.showEditWithData(calendar);
+            } else {
+                this.calendars.showEdit(calendarId);
+            }
+        }
+
+        async deleteCalendar(calendarId) {
+            const calendar = this.calendarsData.find((cal) => cal.id === calendarId);
+            const calendarName = calendar ? `"${calendar.name}"` : "this calendar";
+
+            const confirmed = await confirmModal.delete(calendarName);
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/calendars/${calendarId}`, {
+                    method: "DELETE",
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    await this.loadCalendarList();
+                    await loadCalendars();
+                    toast.success("Calendar deleted successfully");
+                } else {
+                    toast.error("Error deleting calendar");
+                }
+            } catch (error) {
+                toast.error("Error deleting calendar: " + error.message);
+            }
+        }
+
+        async loadAutomationSettings() {
+            try {
+                const response = await fetch("/api/cron/status", {
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const cronEnabledInput = document.getElementById("cron-enabled");
+                    const cronScheduleSelect = document.getElementById("cron-schedule");
+
+                    if (cronEnabledInput) cronEnabledInput.checked = data.enabled;
+                    if (cronScheduleSelect) cronScheduleSelect.value = data.schedule || "0 * * * *";
+                    this.updateStatusDisplay(data.enabled, data.lastRun);
+                }
+            } catch (error) {
+                console.error("Error loading cron settings:", error);
+                toast.error("Failed to load automation settings");
+            }
+        }
+
+        updateStatusDisplay(enabled, lastRun) {
+            const cronStatus = document.getElementById("cron-status");
+            const cronLastRun = document.getElementById("cron-last-run");
+
+            if (cronStatus) {
+                cronStatus.textContent = enabled ? "Enabled" : "Disabled";
+                cronStatus.className = enabled ? "enabled" : "disabled";
+            }
+
+            if (cronLastRun) {
+                if (lastRun) {
+                    cronLastRun.textContent = new Date(lastRun).toLocaleString();
+                } else {
+                    cronLastRun.textContent = "Never";
+                }
+            }
+        }
+
+        async updateCronSettings() {
+            const cronEnabledInput = document.getElementById("cron-enabled");
+            const cronScheduleSelect = document.getElementById("cron-schedule");
+
+            if (!cronEnabledInput || !cronScheduleSelect) return;
+
+            try {
+                const response = await fetch("/api/cron/settings", {
+                    method: "PUT",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        enabled: cronEnabledInput.checked,
+                        schedule: cronScheduleSelect.value,
+                    }),
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.updateStatusDisplay(data.enabled, data.lastRun);
+                    toast.success("Automation settings updated successfully");
+                } else {
+                    toast.error("Failed to update automation settings");
+                }
+            } catch (error) {
+                console.error("Error updating cron settings:", error);
+                toast.error("Error updating automation settings: " + error.message);
+            }
+        }
+
+        async manualRefresh() {
+            try {
+                const response = await fetch("/api/calendars/refresh", {
+                    method: "POST",
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    isAuthenticated = false;
+                    showPasswordModal();
+                    return;
+                }
+
+                if (response.ok) {
+                    const result = await response.json();
+                    toast.success(
+                        `Calendar refresh completed - ${result.successful}/${result.total} calendars updated`,
+                    );
+
+                    await loadCalendars();
+                    await this.loadAutomationSettings();
+                } else {
+                    toast.error("Failed to refresh calendars");
+                }
+            } catch (error) {
+                console.error("Error refreshing calendars:", error);
+                toast.error("Error refreshing calendars: " + error.message);
+            }
+        }
+    }
+
+    const settingsModal = new SettingsModal();
+</script>
