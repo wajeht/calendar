@@ -7,7 +7,6 @@ export async function createTestServer() {
 
     await ctx.db.migrate.latest();
 
-
     const agent = request.agent(app);
     let sessionToken = null;
 
@@ -32,10 +31,8 @@ export async function createTestServer() {
     }
 
     async function logout() {
-        if (sessionToken) {
-            await agent.post('/api/auth/logout');
-            sessionToken = null;
-        }
+        await agent.post('/api/auth/logout');
+        sessionToken = null;
     }
 
     async function cleanDatabase() {

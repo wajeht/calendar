@@ -1,5 +1,5 @@
-import assert from 'node:assert';
 import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert';
 import { setupAuthenticatedServer } from '../../../utils/test-utils.js';
 
 describe('Calendar API - Real HTTP Tests', () => {
@@ -17,18 +17,13 @@ describe('Calendar API - Real HTTP Tests', () => {
     });
 
     describe('GET /api/calendars (List Calendars)', () => {
-        it('should get calendars list when authenticated', async () => {
-            const response = await testServer.get('/api/calendars');
-
+        it('should get calendars list regardless of auth status', async () => {
+            let response = await testServer.get('/api/calendars');
             assert.strictEqual(response.status, 200);
             assert.ok(Array.isArray(response.body));
-        });
 
-        it('should get calendars list when not authenticated', async () => {
             await testServer.logout();
-
-            const response = await testServer.get('/api/calendars');
-
+            response = await testServer.get('/api/calendars');
             assert.strictEqual(response.status, 200);
             assert.ok(Array.isArray(response.body));
 
@@ -46,9 +41,6 @@ describe('Calendar API - Real HTTP Tests', () => {
 
             const response = await testServer.post('/api/calendars', calendarData);
 
-            if (response.status !== 201) {
-                console.log('Calendar creation error:', response.body);
-            }
             assert.strictEqual(response.status, 201);
             assert.strictEqual(response.body.name, 'Test Calendar');
             assert.strictEqual(response.body.url, calendarData.url);
@@ -104,7 +96,6 @@ describe('Calendar API - Real HTTP Tests', () => {
 
             assert.strictEqual(response.status, 401);
 
-            // Login back for other tests
             await testServer.login();
         });
     });
@@ -113,7 +104,6 @@ describe('Calendar API - Real HTTP Tests', () => {
         let calendarId;
 
         before(async () => {
-            // Create a calendar for testing using factory
             const calendar = await testServer.ctx.models.calendar.create({
                 name: 'Get Test Calendar',
                 url: 'https://calendar.google.com/calendar/ical/get-test@gmail.com/public/basic.ics'
@@ -152,7 +142,6 @@ describe('Calendar API - Real HTTP Tests', () => {
         let calendarId;
 
         before(async () => {
-            // Create a calendar for testing using factory
             const calendar = await testServer.ctx.models.calendar.create({
                 name: 'Update Test Calendar',
                 url: 'https://calendar.google.com/calendar/ical/update-test@gmail.com/public/basic.ics'
@@ -182,7 +171,7 @@ describe('Calendar API - Real HTTP Tests', () => {
             const data = response.body;
 
             assert.strictEqual(response.status, 200);
-            assert.strictEqual(!!data.hidden, true); // visible: false -> hidden: true (SQLite returns 1/0)
+            assert.strictEqual(!!data.hidden, true);
         });
 
         it('should return 404 for non-existent calendar', async () => {
@@ -214,7 +203,6 @@ describe('Calendar API - Real HTTP Tests', () => {
         let calendarId;
 
         before(async () => {
-            // Create a calendar for testing using factory
             const calendar = await testServer.ctx.models.calendar.create({
                 name: 'Delete Test Calendar',
                 url: 'https://calendar.google.com/calendar/ical/delete-test@gmail.com/public/basic.ics'
@@ -230,7 +218,6 @@ describe('Calendar API - Real HTTP Tests', () => {
             assert.strictEqual(data.name, 'Delete Test Calendar');
             assert.strictEqual(data.id, calendarId);
 
-            // Verify calendar is deleted
             const getResponse = await testServer.get(`/api/calendars/${calendarId}`);
             assert.strictEqual(getResponse.status, 404);
         });

@@ -1,6 +1,5 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
-import request from 'supertest';
 import { createTestServer } from '../../../utils/test-utils.js';
 
 describe('Auth API - Real HTTP Tests', () => {
@@ -64,7 +63,8 @@ describe('Auth API - Real HTTP Tests', () => {
         });
 
         it('should reject invalid session token', async () => {
-            const response = await request(testServer.app)
+            const request = await import('supertest');
+            const response = await request.default(testServer.app)
                 .get('/api/auth/verify')
                 .set('Cookie', 'session_token=invalid-token');
 
