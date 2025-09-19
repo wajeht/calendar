@@ -10,6 +10,7 @@
     let calendar;
     let eventSources = [];
     let isAuthenticated = false;
+    let sharedCalendarData = [];
 
     const viewMappings = {
         month: 'dayGridMonth',
@@ -109,6 +110,7 @@
             }
 
             const calendars = await response.json();
+            sharedCalendarData = calendars;
 
             if (!calendars || calendars.length === 0) {
                 log.debug('No calendars to load');
