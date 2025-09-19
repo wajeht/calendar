@@ -1,15 +1,14 @@
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert';
+import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { createTestServer } from '../../../utils/test-utils.js';
 
 describe('Auth API - Real HTTP Tests', () => {
     let testServer;
 
-    before(async () => {
+    beforeAll(async () => {
         testServer = await createTestServer();
     });
 
-    after(async () => {
+    afterAll(async () => {
         if (testServer) {
             await testServer.stop();
         }
@@ -21,13 +20,13 @@ describe('Auth API - Real HTTP Tests', () => {
                 password: process.env.APP_PASSWORD || 'password'
             });
 
-            assert.strictEqual(response.status, 200);
-            assert.strictEqual(response.body.success, true);
-            assert.strictEqual(response.body.message, 'Authentication successful');
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe('Authentication successful');
 
             const cookies = response.headers['set-cookie'];
-            assert.ok(cookies);
-            assert.ok(cookies.some(cookie => cookie.includes('session_token')));
+            expect(cookies).toBeTruthy();
+            expect(cookies.some(cookie => cookie.includes('session_token'))).toBe(true);
         });
 
         it('should reject login with wrong password', async () => {
@@ -35,31 +34,31 @@ describe('Auth API - Real HTTP Tests', () => {
                 password: 'wrong-password'
             });
 
-            assert.strictEqual(response.status, 400);
-            assert.ok(response.body.error);
-            assert.ok(response.body.error.includes('Invalid password'));
+            expect(response.status).toBe(400);
+            expect(response.body.error).toBeTruthy();
+            expect(response.body.error.includes('Invalid password')).toBe(true);
         });
 
         it('should reject login with missing password', async () => {
             const response = await testServer.post('/api/auth', {});
 
-            assert.strictEqual(response.status, 400);
-            assert.ok(response.body.error);
-            assert.ok(response.body.error.includes('Password is required'));
+            expect(response.status).toBe(400);
+            expect(response.body.error).toBeTruthy();
+            expect(response.body.error.includes('Password is required')).toBe(true);
         });
     });
 
     describe('GET /api/auth/verify (Session Verification)', () => {
-        before(async () => {
+        beforeAll(async () => {
             await testServer.login();
         });
 
         it('should verify valid session token', async () => {
             const response = await testServer.get('/api/auth/verify');
 
-            assert.strictEqual(response.status, 200);
-            assert.strictEqual(response.body.success, true);
-            assert.strictEqual(response.body.message, 'Session is valid');
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe('Session is valid');
         });
 
         it('should reject invalid session token', async () => {
@@ -68,7 +67,7 @@ describe('Auth API - Real HTTP Tests', () => {
             const response = await testServer.request('get', '/api/auth/verify')
                 .set('Cookie', 'session_token=invalid-token');
 
-            assert.strictEqual(response.status, 401);
+            expect(response.status).toBe(401);
             await testServer.login();
         });
 
@@ -76,7 +75,7 @@ describe('Auth API - Real HTTP Tests', () => {
             await testServer.logout();
 
             const response = await testServer.get('/api/auth/verify');
-            assert.strictEqual(response.status, 401);
+            expect(response.status).toBe(401);
 
             await testServer.login();
         });
@@ -86,28 +85,28 @@ describe('Auth API - Real HTTP Tests', () => {
         it('should logout successfully', async () => {
             const response = await testServer.post('/api/auth/logout');
 
-            assert.strictEqual(response.status, 200);
-            assert.strictEqual(response.body.success, true);
-            assert.strictEqual(response.body.message, 'Logged out successfully');
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe('Logged out successfully');
 
             const cookies = response.headers['set-cookie'];
-            assert.ok(cookies);
-            assert.ok(cookies.some(cookie => cookie.includes('session_token=;')));
+            expect(cookies).toBeTruthy();
+            expect(cookies.some(cookie => cookie.includes('session_token=;'))).toBe(true);
         });
     });
 
     describe('Full Auth Flow', () => {
         it('should complete login -> verify -> logout flow', async () => {
             const sessionToken = await testServer.login();
-            assert.ok(sessionToken);
+            expect(sessionToken).toBeTruthy();
 
             const verifyResponse = await testServer.get('/api/auth/verify');
-            assert.strictEqual(verifyResponse.status, 200);
+            expect(verifyResponse.status).toBe(200);
 
             await testServer.logout();
 
             const invalidVerifyResponse = await testServer.get('/api/auth/verify');
-            assert.strictEqual(invalidVerifyResponse.status, 401);
+            expect(invalidVerifyResponse.status).toBe(401);
         });
     });
 });

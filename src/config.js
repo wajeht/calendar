@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 function deepFreeze(obj) {
     Object.values(obj).forEach(val => {
         if (typeof val === 'object' && val !== null) {
