@@ -11,9 +11,7 @@
             <button class="tab-button active" onclick="settingsModal.showTab('calendars')">
                 Calendars
             </button>
-            <button class="tab-button" onclick="settingsModal.showTab('settings')">
-                Settings
-            </button>
+            <button class="tab-button" onclick="settingsModal.showTab('settings')">Settings</button>
         </div>
 
         <!-- Calendars Tab Content -->
@@ -41,7 +39,10 @@
                         </td>
                         <td class="fc-label-cell">
                             <label for="cron-enabled">Enable automatic calendar refresh</label>
-                            <div class="help-text">When enabled, calendars will be automatically refreshed according to your schedule</div>
+                            <div class="help-text">
+                                When enabled, calendars will be automatically refreshed according to
+                                your schedule
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -57,7 +58,9 @@
                     <option value="0 */12 * * *">Every 12 hours</option>
                     <option value="0 0 * * *">Daily at midnight</option>
                 </select>
-                <div class="help-text">Choose how often calendars should be refreshed automatically</div>
+                <div class="help-text">
+                    Choose how often calendars should be refreshed automatically
+                </div>
             </div>
 
             <div class="fc-form-group">
@@ -81,7 +84,6 @@
                 </button>
                 <div class="help-text">Manually trigger a refresh of all calendars</div>
             </div>
-
         </div>
     </div>
     <div class="modal-footer">
@@ -289,7 +291,6 @@
 </style>
 
 <script>
-
     class CalendarFormModal {
         constructor(parentModal) {
             this.parentModal = parentModal;
@@ -510,7 +511,6 @@
         }
     }
 
-
     class SettingsModal {
         constructor() {
             this.modal = document.getElementById("settingsModal");
@@ -520,7 +520,6 @@
             this.calendarsData = [];
             this.currentTab = "calendars";
 
-            // Initialize sub-components
             this.calendars = new CalendarFormModal(this);
 
             this.setupEventListeners();
