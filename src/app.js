@@ -8,9 +8,8 @@ import { createContext } from './context.js';
 import { rateLimit } from 'express-rate-limit';
 import { createRouter } from './routes/routes.js';
 
-export async function createServer(customConfig = {}) {
+export async function createApp(customConfig = {}) {
     const ctx = createContext(customConfig);
-    const PORT = ctx.config.app.port;
 
     const app = express()
         .use(cors(ctx.config.cors || {}))
@@ -112,6 +111,13 @@ export async function createServer(customConfig = {}) {
         validators: ctx.validators
     }));
 
+    return { app, ctx };
+}
+
+export async function createServer(customConfig = {}) {
+    const { app, ctx } = await createApp(customConfig);
+    const PORT = ctx.config.app.port;
+
     const server = app.listen(PORT);
 
     server.timeout = 120000; // 2 minutes
@@ -122,10 +128,12 @@ export async function createServer(customConfig = {}) {
     server.on('listening', () => {
         ctx.logger.success(`Server running on http://localhost:${PORT}`);
 
-        try {
-            ctx.services.cron.start();
-        } catch (error) {
-            ctx.logger.error('Failed to start cron service:', error.message);
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                ctx.services.cron.start();
+            } catch (error) {
+                ctx.logger.error('Failed to start cron service:', error.message);
+            }
         }
     });
 
@@ -157,16 +165,18 @@ export async function closeServer({ server, ctx }) {
     ctx.logger.info('Shutting down server gracefully...');
 
     try {
-        try {
-            ctx.services.cron.stop();
-            ctx.logger.info('Cron service stopped');
-        } catch (error) {
-            ctx.logger.warn('Error stopping cron service:', error.message);
+        if (process.env.NODE_ENV !== 'test') {
+            try {
+                ctx.services.cron.stop();
+                ctx.logger.info('Cron service stopped');
+            } catch (error) {
+                ctx.logger.warn('Error stopping cron service:', error.message);
+            }
         }
 
         try {
-            if (ctx.db && typeof ctx.db.close === 'function') {
-                await ctx.db.close();
+            if (ctx.db && typeof ctx.db.destroy === 'function') {
+                await ctx.db.destroy();
                 ctx.logger.info('Database connections closed');
             }
         } catch (error) {
