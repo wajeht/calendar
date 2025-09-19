@@ -49,15 +49,37 @@ export function createCalendar(dependencies = {}) {
 
                 return calendars.map(calendar => {
                     if (isAuthenticated) {
-                        // Authenticated users get full data
-                        return {
-                            ...calendar,
-                            events: calendar.events_authenticated || calendar.events
-                        };
+                        // Authenticated users get full data with formatted events
+                        const result = { ...calendar };
+
+                        // Parse and return ready-to-use FullCalendar events
+                        try {
+                            result.events = calendar.events_authenticated
+                                ? JSON.parse(calendar.events_authenticated)
+                                : (calendar.events ? JSON.parse(calendar.events) : []);
+                        } catch (error) {
+                            result.events = [];
+                        }
+
+                        // Clean up raw data fields
+                        delete result.events_public;
+                        delete result.events_authenticated;
+
+                        return result;
                     } else {
                         // Public users - filter out hidden calendars and sensitive data
                         if (calendar.hidden) {
                             return null; // Skip hidden calendars
+                        }
+
+                        // Parse and return ready-to-use FullCalendar events for public
+                        let events = [];
+                        try {
+                            events = calendar.events_public
+                                ? JSON.parse(calendar.events_public)
+                                : (calendar.events ? JSON.parse(calendar.events) : []);
+                        } catch (error) {
+                            events = [];
                         }
 
                         // Return only safe fields for public users
@@ -67,7 +89,7 @@ export function createCalendar(dependencies = {}) {
                             color: calendar.color,
                             hidden: calendar.hidden,
                             details: calendar.details,
-                            events: calendar.events_public || calendar.events,
+                            events: events,
                             created_at: calendar.created_at,
                             updated_at: calendar.updated_at
                         };

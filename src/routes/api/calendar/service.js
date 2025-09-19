@@ -199,12 +199,120 @@ export function createCalendarService(dependencies = {}) {
         if (url) event.url = url;
     }
 
-    function processEventsForViews(events, calendar) {
-        if (!events || events.length === 0) {
-            return { publicEvents: [], authenticatedEvents: events };
+    function buildExtendedProps(event) {
+        const props = {
+            description: event.description || '',
+            location: event.location || '',
+            uid: event.uid || '',
+            duration: event.duration || '',
+            status: event.status || '',
+            transparency: event.transparency || '',
+            sequence: event.sequence ? String(event.sequence) : '0'
+        };
+
+        // Add timestamp fields if they exist
+        if (event.dtStamp) {
+            props.dtStamp = event.dtStamp;
+        }
+        if (event.created) {
+            props.created = event.created;
+        }
+        if (event.lastModified) {
+            props.lastModified = event.lastModified;
         }
 
-        const authenticatedEvents = events;
+        // Add organizer information if it exists
+        if (event.organizer) {
+            if (event.organizer.name) {
+                props.organizerName = event.organizer.name;
+            }
+            if (event.organizer.email) {
+                props.organizerEmail = event.organizer.email;
+            }
+        }
+
+        // Add attendee information if it exists
+        if (event.attendees && Array.isArray(event.attendees) && event.attendees.length > 0) {
+            const attendeeNames = [];
+            const attendeeEmails = [];
+
+            for (const attendee of event.attendees) {
+                if (attendee.name) {
+                    attendeeNames.push(attendee.name);
+                }
+                if (attendee.email) {
+                    attendeeEmails.push(attendee.email);
+                }
+            }
+
+            if (attendeeNames.length > 0) {
+                props.attendeeNames = attendeeNames.join(', ');
+            }
+            if (attendeeEmails.length > 0) {
+                props.attendeeEmails = attendeeEmails.join(', ');
+            }
+            props.attendeeCount = String(event.attendees.length);
+        }
+
+        return props;
+    }
+
+    function buildFullCalendarEvents(calendar, events) {
+        if (!events || events.length === 0) return [];
+
+        const validEvents = [];
+        const skippedEvents = [];
+
+        events.forEach(event => {
+            // Skip events without valid start date or title
+            if (!event.start && !event.title) {
+                skippedEvents.push({ reason: 'No start date or title', event: event.uid || 'unknown' });
+                return;
+            }
+
+            // Check if this is a detail-hidden event (empty title AND empty description AND empty location)
+            const isDetailHidden = event.title === '' && event.description === '' && event.location === '';
+
+            const fcEvent = {
+                title: event.title || (isDetailHidden ? '' : 'Untitled Event'),
+                start: event.start,
+                allDay: event.allDay || false,
+                backgroundColor: calendar.color,
+                borderColor: calendar.color,
+                textColor: 'white',
+                extendedProps: {
+                    ...buildExtendedProps(event),
+                    isDetailHidden: isDetailHidden
+                }
+            };
+
+            if (event.end) {
+                fcEvent.end = event.end;
+            }
+
+            if (event.url) {
+                fcEvent.url = event.url;
+            }
+
+            validEvents.push(fcEvent);
+        });
+
+        if (skippedEvents.length > 0) {
+            logger.debug('Skipped', skippedEvents.length, 'invalid events:', skippedEvents);
+        }
+
+        return validEvents;
+    }
+
+    function processEventsForViews(events, calendar) {
+        if (!events || events.length === 0) {
+            return {
+                publicEvents: buildFullCalendarEvents(calendar, []),
+                authenticatedEvents: buildFullCalendarEvents(calendar, events)
+            };
+        }
+
+        const authenticatedEvents = buildFullCalendarEvents(calendar, events);
         let publicEvents;
 
         // If calendar is hidden, no public events at all
@@ -212,7 +320,7 @@ export function createCalendarService(dependencies = {}) {
             publicEvents = [];
         } else if (calendar.details) {
             // If details should be hidden for public view, strip ALL sensitive information
-            publicEvents = events.map(event => ({
+            const strippedEvents = events.map(event => ({
                 uid: event.uid,
                 title: '', // Hide title completely
                 description: '', // Hide description completely
@@ -231,9 +339,10 @@ export function createCalendarService(dependencies = {}) {
                 lastModified: event.lastModified,
                 url: null // Hide URL as well
             }));
+            publicEvents = buildFullCalendarEvents(calendar, strippedEvents);
         } else {
             // Show everything for public view
-            publicEvents = events;
+            publicEvents = buildFullCalendarEvents(calendar, events);
         }
 
         return { publicEvents, authenticatedEvents };

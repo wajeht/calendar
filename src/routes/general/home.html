@@ -6,12 +6,17 @@
 <%- include('../_components/calendar-modals.html') %>
 <%- include('../_components/event-modal.html') %>
 
-
-
 <script>
     let calendar;
     let eventSources = [];
     let isAuthenticated = false;
+
+    const viewMappings = {
+        month: 'dayGridMonth',
+        week: 'timeGridWeek',
+        day: 'timeGridDay',
+        list: 'listMonth'
+    };
 
     function initCalendar() {
         const calendarEl = document.getElementById('calendar');
@@ -20,23 +25,7 @@
         const viewParam = urlParams.get('view');
         const dateParam = urlParams.get('date');
 
-        let initialView = 'timeGridWeek';
-        if (viewParam) {
-            switch (viewParam) {
-                case 'month':
-                    initialView = 'dayGridMonth';
-                    break;
-                case 'week':
-                    initialView = 'timeGridWeek';
-                    break;
-                case 'day':
-                    initialView = 'timeGridDay';
-                    break;
-                case 'list':
-                    initialView = 'listMonth';
-                    break;
-            }
-        }
+        const initialView = viewMappings[viewParam] || 'timeGridWeek';
 
         calendar = new FullCalendar.Calendar(calendarEl, {
             initialView: initialView,
@@ -112,9 +101,7 @@
 
     async function loadCalendars() {
         try {
-            const response = await fetch('/api/calendars', {
-                credentials: 'include'
-            });
+            const response = await fetch('/api/calendars', { credentials: 'include' });
 
             if (!response.ok) {
                 log.error('Failed to fetch calendars:', response.status);
@@ -128,51 +115,19 @@
                 return;
             }
 
-            // Clear existing event sources
-            eventSources.forEach(es => {
-                if (es.source) {
-                    es.source.remove();
-                }
-            });
+            calendar.removeAllEventSources();
             eventSources = [];
 
-            // Load each calendar
             calendars.forEach(cal => {
                 if (!cal || !cal.id) return;
 
-                // Parse events from the pre-processed events field
-                let events = [];
-                try {
-                    if (cal.events) {
-                        events = typeof cal.events === 'string'
-                            ? JSON.parse(cal.events)
-                            : cal.events;
-                    }
-                } catch (error) {
-                    log.error('Failed to parse events for calendar', cal.id, error);
-                    events = [];
-                }
+                const events = cal.events || [];
 
                 log.debug('Loading calendar:', cal.name, 'with', events.length, 'events');
 
-                // Log sample of events for debugging
-                if (events.length > 0) {
-                    log.debug('Sample events:', events.slice(0, 3).map(e => ({
-                        title: e.title,
-                        start: e.start,
-                        end: e.end,
-                        uid: e.uid
-                    })));
-                }
-
-                // Build FullCalendar events (no need for authentication filtering - backend handles this)
-                const fullCalendarEvents = buildFullCalendarEvents(cal, events);
-
-                log.debug('Built', fullCalendarEvents.length, 'FullCalendar events for calendar:', cal.name);
-
                 const source = {
                     id: cal.id,
-                    events: fullCalendarEvents,
+                    events: events,
                     color: cal.color
                 };
 
@@ -181,11 +136,7 @@
                 eventSources.push({
                     id: cal.id,
                     name: cal.name,
-                    color: cal.color,
-                    source: eventSource,
-                    visible: true, // All calendars returned by backend are visible to current user
-                    lastUpdate: new Date(),
-                    status: 'fresh'
+                    color: cal.color
                 });
             });
 
@@ -193,153 +144,6 @@
             log.error('Error loading calendars:', error);
         }
     }
-
-    function buildFullCalendarEvents(calendar, events) {
-        if (!events || events.length === 0) return [];
-
-        const validEvents = [];
-        const skippedEvents = [];
-
-        events.forEach(event => {
-            // Skip events without valid start date or title
-            if (!event.start && !event.title) {
-                skippedEvents.push({ reason: 'No start date or title', event: event.uid || 'unknown' });
-                return;
-            }
-
-            // Check if this is a detail-hidden event (empty title AND empty description AND empty location)
-            const isDetailHidden = event.title === '' && event.description === '' && event.location === '';
-
-            const fcEvent = {
-                title: event.title || (isDetailHidden ? '' : 'Untitled Event'),
-                start: event.start,
-                allDay: event.allDay || false,
-                backgroundColor: calendar.color,
-                borderColor: calendar.color,
-                textColor: 'white',
-                extendedProps: {
-                    ...buildExtendedProps(event),
-                    isDetailHidden: isDetailHidden
-                }
-            };
-
-            if (event.end) {
-                fcEvent.end = event.end;
-            }
-
-            if (event.url) {
-                fcEvent.url = event.url;
-            }
-
-            validEvents.push(fcEvent);
-        });
-
-        if (skippedEvents.length > 0) {
-            log.debug('Skipped', skippedEvents.length, 'invalid events:', skippedEvents);
-        }
-
-        return validEvents;
-    }
-
-    function buildExtendedProps(event) {
-        const props = {
-            description: event.description || '',
-            location: event.location || '',
-            uid: event.uid || '',
-            duration: event.duration || '',
-            status: event.status || '',
-            transparency: event.transparency || '',
-            sequence: event.sequence ? String(event.sequence) : '0'
-        };
-
-        // Add timestamp fields if they exist
-        if (event.dtStamp) {
-            props.dtStamp = event.dtStamp;
-        }
-        if (event.created) {
-            props.created = event.created;
-        }
-        if (event.lastModified) {
-            props.lastModified = event.lastModified;
-        }
-
-        // Add organizer information if it exists
-        if (event.organizer) {
-            if (event.organizer.name) {
-                props.organizerName = event.organizer.name;
-            }
-            if (event.organizer.email) {
-                props.organizerEmail = event.organizer.email;
-            }
-        }
-
-        // Add attendee information if it exists
-        if (event.attendees && Array.isArray(event.attendees) && event.attendees.length > 0) {
-            const attendeeNames = [];
-            const attendeeEmails = [];
-
-            for (const attendee of event.attendees) {
-                if (attendee.name) {
-                    attendeeNames.push(attendee.name);
-                }
-                if (attendee.email) {
-                    attendeeEmails.push(attendee.email);
-                }
-            }
-
-            if (attendeeNames.length > 0) {
-                props.attendeeNames = attendeeNames.join(', ');
-            }
-            if (attendeeEmails.length > 0) {
-                props.attendeeEmails = attendeeEmails.join(', ');
-            }
-            props.attendeeCount = String(event.attendees.length);
-        }
-
-        return props;
-    }
-
-    function linkify(text) {
-        if (!text) return text;
-
-        const words = text.split(/(\s+)/);
-
-        return words.map(word => {
-            if (/^\s+$/.test(word)) return word;
-
-            let potentialContact = word;
-            let trailingPunctuation = '';
-
-            const punctuationMatch = word.match(/^(.+?)([.,;:!?)\]}>]+)$/);
-            if (punctuationMatch) {
-                potentialContact = punctuationMatch[1];
-                trailingPunctuation = punctuationMatch[2];
-            }
-
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (emailRegex.test(potentialContact)) {
-                return `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
-            }
-
-            const phoneRegex = /^(\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
-            const phoneMatch = potentialContact.match(phoneRegex);
-            if (phoneMatch) {
-                const cleanPhone = potentialContact.replace(/[^\d+]/g, '');
-                return `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
-            }
-
-            try {
-                const url = new URL(potentialContact);
-                if (url.protocol === 'http:' || url.protocol === 'https:') {
-                    return `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
-                }
-            } catch (e) { }
-
-            return word;
-        }).join('');
-    }
-
-
 
     async function refetchAllCalendars() {
         if (!isAuthenticated) {
@@ -366,7 +170,6 @@
                 }
 
                 if (response.ok) {
-                    // Reload calendars after refetch
                     await loadCalendars();
                     toast.success('Calendars refetched successfully!');
                 } else {
@@ -430,23 +233,7 @@
         const today = new Date().toISOString().split('T')[0];
         const currentDate = date.toISOString().split('T')[0];
 
-        let viewName;
-        switch (view.type) {
-            case 'dayGridMonth':
-                viewName = 'month';
-                break;
-            case 'timeGridWeek':
-                viewName = 'week';
-                break;
-            case 'timeGridDay':
-                viewName = 'day';
-                break;
-            case 'listMonth':
-                viewName = 'list';
-                break;
-            default:
-                viewName = 'week';
-        }
+        const viewName = Object.keys(viewMappings).find(key => viewMappings[key] === view.type) || 'week';
 
         const url = new URL(window.location);
         url.searchParams.set('view', viewName);
@@ -460,8 +247,5 @@
         window.history.replaceState({}, '', url.toString());
     }
 
-
-    document.addEventListener('DOMContentLoaded', () => {
-        init();
-    });
+    document.addEventListener('DOMContentLoaded', () => init());
 </script>
