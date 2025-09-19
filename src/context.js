@@ -19,7 +19,7 @@ export function createContext(customConfig = {}) {
     const icalLibrary = customConfig.ICAL || ICAL;
 
     const logger = createLogger(finalConfig.logger);
-    const db = createDatabase(finalConfig.db);
+    const db = finalConfig.database?.instance || createDatabase(finalConfig.db);
     const errors = { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError };
     const utils = createUtils({ logger, config: finalConfig });
     const validators = createValidators({ errors, utils });
