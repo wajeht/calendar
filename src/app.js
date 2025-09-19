@@ -112,6 +112,21 @@ export async function createApp(customConfig = {}) {
         .set('view engine', 'html')
         .set('view cache', ctx.config.app.env === 'production')
         .set('views', './src/routes')
+        .use((req, res, next) => {
+            const isProd = ctx.config.app?.env === 'production';
+            const randomNumber = Math.random();
+
+            res.locals.state = {
+                copyRightYear: new Date().getFullYear(),
+                env: ctx.config.app?.env || 'development',
+                version: {
+                    style: isProd ? '0.0.1' : randomNumber,
+                    script: isProd ? '0.0.1' : randomNumber,
+                },
+            };
+
+            next();
+        })
         .use((_req, res, next) => {
             const originalRender = res.render;
             res.render = function (view, viewOptions = {}, callback) {
