@@ -2,7 +2,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import { setupAuthenticatedServer } from '../../../utils/test-utils.js';
 
-describe('Calendar API - Real HTTP Tests', { skip: process.env.CI ? 'Skipped in CI due to Node.js test runner serialization issues' : false }, () => {
+describe('Calendar API - Real HTTP Tests', () => {
     let testServer;
 
     before(async () => {
@@ -199,7 +199,7 @@ describe('Calendar API - Real HTTP Tests', { skip: process.env.CI ? 'Skipped in 
         });
     });
 
-    describe('DELETE /api/calendars/:id (Delete Calendar)', () => {
+    describe('DELETE /api/calendars/:id (Delete Calendar)', { skip: process.env.CI ? 'Skipped in CI due to Node.js test runner serialization issues' : false }, () => {
         let calendarId;
 
         before(async () => {
@@ -239,7 +239,7 @@ describe('Calendar API - Real HTTP Tests', { skip: process.env.CI ? 'Skipped in 
         });
     });
 
-    describe('POST /api/calendars/refetch (Refetch All Calendars)', () => {
+    describe('POST /api/calendars/refetch (Refetch All Calendars)', { skip: process.env.CI ? 'Skipped in CI due to Node.js test runner serialization issues' : false }, () => {
         it('should initiate calendar refetch', async () => {
             const response = await testServer.post('/api/calendars/refetch');
             const data = response.body;
