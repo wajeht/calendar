@@ -45,56 +45,57 @@ export function createCalendar(dependencies = {}) {
          */
         async getAllForAccess(isAuthenticated = false) {
             try {
-                const calendars = await this.getAll();
+                const fields = isAuthenticated
+                    ? ['id', 'name', 'url', 'color', 'hidden', 'details', 'events_authenticated', 'events', 'created_at', 'updated_at']
+                    : ['id', 'name', 'color', 'hidden', 'details', 'events_public', 'events', 'created_at', 'updated_at'];
 
-                return calendars.map(calendar => {
+                let query = db('calendars').select(fields);
+
+                if (!isAuthenticated) {
+                    query = query.where('hidden', false);
+                }
+
+                const calendars = await query;
+
+                const parseEvents = (eventsStr, fallbackStr) => {
+                    try {
+                        return eventsStr ? JSON.parse(eventsStr) : (fallbackStr ? JSON.parse(fallbackStr) : []);
+                    } catch {
+                        return [];
+                    }
+                };
+
+                const result = [];
+                for (let i = 0; i < calendars.length; i++) {
+                    const calendar = calendars[i];
+
                     if (isAuthenticated) {
-                        // Authenticated users get full data with formatted events
-                        const result = { ...calendar };
-
-                        // Parse and return ready-to-use FullCalendar events
-                        try {
-                            result.events = calendar.events_authenticated
-                                ? JSON.parse(calendar.events_authenticated)
-                                : (calendar.events ? JSON.parse(calendar.events) : []);
-                        } catch (error) {
-                            result.events = [];
-                        }
-
-                        // Clean up raw data fields
-                        delete result.events_public;
-                        delete result.events_authenticated;
-
-                        return result;
+                        result[i] = {
+                            id: calendar.id,
+                            name: calendar.name,
+                            url: calendar.url,
+                            color: calendar.color,
+                            hidden: calendar.hidden,
+                            details: calendar.details,
+                            events: parseEvents(calendar.events_authenticated, calendar.events),
+                            created_at: calendar.created_at,
+                            updated_at: calendar.updated_at
+                        };
                     } else {
-                        // Public users - filter out hidden calendars and sensitive data
-                        if (calendar.hidden) {
-                            return null; // Skip hidden calendars
-                        }
-
-                        // Parse and return ready-to-use FullCalendar events for public
-                        let events = [];
-                        try {
-                            events = calendar.events_public
-                                ? JSON.parse(calendar.events_public)
-                                : (calendar.events ? JSON.parse(calendar.events) : []);
-                        } catch (error) {
-                            events = [];
-                        }
-
-                        // Return only safe fields for public users
-                        return {
+                        result[i] = {
                             id: calendar.id,
                             name: calendar.name,
                             color: calendar.color,
                             hidden: calendar.hidden,
                             details: calendar.details,
-                            events: events,
+                            events: parseEvents(calendar.events_public, calendar.events),
                             created_at: calendar.created_at,
                             updated_at: calendar.updated_at
                         };
                     }
-                }).filter(Boolean); // Remove null entries
+                }
+
+                return result;
             } catch (error) {
                 throw new DatabaseError('Failed to fetch calendars for access level', error);
             }
