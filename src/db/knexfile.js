@@ -54,7 +54,7 @@ const knexConfig = {
 	},
 };
 
-if (process.env.NODE_ENV === 'testing') {
+if (process.env.NODE_ENV === 'test') {
 	knexConfig.connection = {
 		filename: ':memory:',
 	};
