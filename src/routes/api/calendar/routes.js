@@ -24,7 +24,7 @@ export function createCalendarRouter(dependencies = {}) {
         res.json(calendars);
     });
 
-    router.get('/:id', verifyToken, async (req, res) => {
+    router.get('/:id', requireAuth, async (req, res) => {
         const id = validators.validateId(req.params.id);
 
         const calendar = await models.calendar.getById(id);
@@ -76,7 +76,7 @@ export function createCalendarRouter(dependencies = {}) {
         res.status(201).json(calendar);
     });
 
-    router.put('/:id', verifyToken, async (req, res) => {
+    router.put('/:id', requireAuth, async (req, res) => {
         const id = validators.validateId(req.params.id);
 
         const calendar = await models.calendar.getById(id);
@@ -125,7 +125,7 @@ export function createCalendarRouter(dependencies = {}) {
         res.json(updatedCalendar);
     });
 
-    router.delete('/:id', verifyToken, async (req, res) => {
+    router.delete('/:id', requireAuth, async (req, res) => {
         const id = validators.validateId(req.params.id);
 
         const calendar = await models.calendar.delete(id);
@@ -139,7 +139,7 @@ export function createCalendarRouter(dependencies = {}) {
         res.json(calendar);
     });
 
-    router.post('/refetch', verifyToken, async (_req, res) => {
+    router.post('/refetch', requireAuth, async (_req, res) => {
         logger.info('Calendar refetch requested');
 
         if (process.env.NODE_ENV !== 'test') {
