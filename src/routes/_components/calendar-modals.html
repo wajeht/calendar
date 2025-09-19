@@ -84,12 +84,6 @@ class CalendarManagementModal {
     }
 
     setupEventListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.close();
-            }
-        });
-
         this.overlay.addEventListener('click', () => {
             this.close();
         });
@@ -105,6 +99,11 @@ class CalendarManagementModal {
         this.modal.classList.add('show');
         this.overlay.classList.add('show');
 
+        // Register with modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.push(this);
+        }
+
         if (typeof sharedCalendarData !== 'undefined' && sharedCalendarData.length > 0) {
             this.calendarsData = sharedCalendarData;
             this.displayCalendarList(sharedCalendarData);
@@ -117,6 +116,11 @@ class CalendarManagementModal {
         this.isOpen = false;
         this.modal.classList.remove('show');
         this.overlay.classList.remove('show');
+
+        // Unregister from modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.remove(this);
+        }
     }
 
     async loadCalendarList() {
@@ -221,12 +225,6 @@ class CalendarFormModal {
     }
 
     setupEventListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.close();
-            }
-        });
-
         this.overlay.addEventListener('click', () => {
             this.close();
         });
@@ -289,6 +287,11 @@ class CalendarFormModal {
         this.modal.classList.add('show');
         this.overlay.classList.add('show');
         this.nameInput.focus();
+
+        // Register with modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.push(this);
+        }
     }
 
     close() {
@@ -296,6 +299,12 @@ class CalendarFormModal {
         this.modal.classList.remove('show');
         this.overlay.classList.remove('show');
         this.hideAllErrors();
+
+        // Unregister from modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.remove(this);
+        }
+
         calendarModals.management.show();
     }
 

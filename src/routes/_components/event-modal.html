@@ -22,12 +22,6 @@ class EventModal {
     }
 
     setupEventListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.close();
-            }
-        });
-
         this.overlay.addEventListener('click', () => {
             this.close();
         });
@@ -42,12 +36,22 @@ class EventModal {
 
         this.modal.classList.add('show');
         this.overlay.classList.add('show');
+
+        // Register with modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.push(this);
+        }
     }
 
     close() {
         this.isOpen = false;
         this.modal.classList.remove('show');
         this.overlay.classList.remove('show');
+
+        // Unregister from modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.remove(this);
+        }
     }
 
     buildEventDetails(event, sourceCalendar = null) {

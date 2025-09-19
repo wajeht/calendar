@@ -35,11 +35,6 @@ class ConfirmModal {
             this.resolve(false);
         });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.resolve(false);
-            }
-        });
     }
 
     show(options = {}) {
@@ -69,6 +64,11 @@ class ConfirmModal {
             this.modal.classList.add('show');
             this.overlay.classList.add('show');
 
+            // Register with modal stack
+            if (typeof modalStack !== 'undefined') {
+                modalStack.push(this);
+            }
+
             // Focus confirm button
             this.confirmBtn.focus();
         });
@@ -81,10 +81,19 @@ class ConfirmModal {
         this.modal.classList.remove('show');
         this.overlay.classList.remove('show');
 
+        // Unregister from modal stack
+        if (typeof modalStack !== 'undefined') {
+            modalStack.remove(this);
+        }
+
         const resolve = this.currentResolve;
         this.currentResolve = null;
 
         resolve(result);
+    }
+
+    close() {
+        this.resolve(false);
     }
 
     confirm(message, title = 'Confirm Action') {

@@ -12,6 +12,40 @@
     let isAuthenticated = false;
     let sharedCalendarData = [];
 
+    // Modal stack manager for ESC handling
+    const modalStack = {
+        stack: [],
+
+        push(modal) {
+            this.stack.push(modal);
+        },
+
+        pop() {
+            return this.stack.pop();
+        },
+
+        remove(modal) {
+            const index = this.stack.indexOf(modal);
+            if (index > -1) {
+                this.stack.splice(index, 1);
+            }
+        },
+
+        getTop() {
+            return this.stack[this.stack.length - 1];
+        }
+    };
+
+    // Global ESC handler
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const topModal = modalStack.getTop();
+            if (topModal && topModal.close) {
+                topModal.close();
+            }
+        }
+    });
+
     const viewMappings = {
         month: 'dayGridMonth',
         week: 'timeGridWeek',
