@@ -4,6 +4,9 @@ export function createUtils(dependencies = {}) {
     if (!logger) throw new Error('Logger required for utils');
     if (!config) throw new Error('Config required for utils');
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+
     return {
         /**
          * Check if a request is an API request
@@ -42,7 +45,7 @@ export function createUtils(dependencies = {}) {
          * @returns {boolean}
          */
         validateEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (typeof email !== 'string') return false;
             return emailRegex.test(email);
         },
 
@@ -158,7 +161,7 @@ export function createUtils(dependencies = {}) {
          */
         validateHexColor(color) {
             if (!color || typeof color !== 'string') return false;
-            return /^#[0-9A-Fa-f]{6}$/.test(color);
+            return hexColorRegex.test(color);
         },
 
         /**

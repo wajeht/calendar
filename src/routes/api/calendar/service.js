@@ -6,18 +6,35 @@ export function createCalendarService(dependencies = {}) {
     if (!logger) throw new Error('Logger required for calendar service');
 
     async function fetchICalData(url) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         try {
             const response = await fetch(url, {
-                headers: { 'User-Agent': 'Calendar-App/1.0' },
-                timeout: 30000
+                headers: {
+                    'User-Agent': 'Calendar-App/1.0',
+                    'Accept': 'text/calendar, application/calendar, text/plain'
+                },
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
+            const contentType = response.headers.get('content-type');
+            if (contentType && !contentType.includes('calendar') && !contentType.includes('text')) {
+                logger.warn(`Unexpected content type: ${contentType} for ${url}`);
+            }
+
             return await response.text();
         } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error(`Request timeout after 30s for ${url}`);
+            }
             throw new Error(`Failed to fetch iCal data from ${url}: ${error.message}`);
         }
     }

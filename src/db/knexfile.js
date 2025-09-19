@@ -21,7 +21,8 @@ const knexConfig = {
 		max: 10,
 		acquireTimeoutMillis: 30000, // 30 seconds
 		createTimeoutMillis: 30000, // 30 seconds
-		idleTimeoutMillis: 30000, // 30 seconds
+		idleTimeoutMillis: 600000, // 10 minutes
+		destroyTimeoutMillis: 5000, // 5 seconds
 		reapIntervalMillis: 1000, // 1 second
 		afterCreate: (conn, done) => {
 			try {

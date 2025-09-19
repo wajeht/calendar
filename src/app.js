@@ -36,7 +36,15 @@ export async function createApp(customConfig = {}) {
             },
             crossOriginEmbedderPolicy: false
         }))
-        .use(compression(ctx.config.compression || {}))
+        .use(compression({
+            ...ctx.config.compression,
+            filter: (req, res) => {
+                if (res.getHeader('Cache-Control')?.includes('no-compress')) {
+                    return false;
+                }
+                return compression.filter(req, res);
+            }
+        }))
         .use(rateLimit({
             ...ctx.config.rateLimit,
             handler: async (req, res) => {
@@ -56,6 +64,24 @@ export async function createApp(customConfig = {}) {
             res.setHeader('X-Frame-Options', 'DENY');
             res.setHeader('X-XSS-Protection', '1; mode=block');
             res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+            next();
+        })
+        .use((req, res, next) => {
+            const start = Date.now();
+
+            if (ctx.config.app.env !== 'test') {
+                ctx.logger.debug(`${req.method} ${req.url}`);
+            }
+
+            res.on('finish', () => {
+                const duration = Date.now() - start;
+                const level = res.statusCode >= 400 ? 'warn' : 'debug';
+
+                if (ctx.config.app.env !== 'test') {
+                    ctx.logger[level](`${req.method} ${req.url} ${res.statusCode} ${duration}ms`);
+                }
+            });
 
             next();
         })
@@ -98,7 +124,26 @@ export async function createApp(customConfig = {}) {
             next();
         })
 
-    app.get('/health', (_req, res) => res.status(200).json({ message: "ok" }));
+    app.get('/health', async (_req, res) => {
+        try {
+            const dbHealth = await ctx.db.healthCheck();
+            const health = {
+                status: dbHealth.healthy ? 'healthy' : 'unhealthy',
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                database: dbHealth
+            };
+
+            const statusCode = dbHealth.healthy ? 200 : 503;
+            res.status(statusCode).json(health);
+        } catch (error) {
+            res.status(503).json({
+                status: 'unhealthy',
+                timestamp: new Date().toISOString(),
+                error: error.message
+            });
+        }
+    });
 
     app.use('/', createRouter({
         models: ctx.models,

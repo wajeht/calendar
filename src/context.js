@@ -11,6 +11,10 @@ import { createCalendarService } from './routes/api/calendar/service.js';
 import { ValidationError, NotFoundError, CalendarFetchError, DatabaseError, AuthenticationError } from './errors.js';
 
 export function createContext(customConfig = {}) {
+    if (customConfig && typeof customConfig !== 'object') {
+        throw new Error('customConfig must be an object');
+    }
+
     const finalConfig = {
         ...config,
         ...customConfig
@@ -45,7 +49,7 @@ export function createContext(customConfig = {}) {
         services
     });
 
-    return {
+    const context = {
         config: finalConfig,
         db,
         logger,
@@ -56,4 +60,6 @@ export function createContext(customConfig = {}) {
         middleware,
         services
     };
+
+    return process.env.NODE_ENV === 'test' ? context : Object.freeze(context);
 }
