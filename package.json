@@ -19,7 +19,7 @@
     "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
     "rmds": "find . -name '.DS_Store' -delete",
     "test": "node --no-warnings --test --test-concurrency=1 --env-file=.env.test ./src/**/*.test.js",
-    "test:watch": "node --no-warnings --test --watch ./src/**/*.test.js"
+    "test:watch": "node --no-warnings --test --env-file=.env.test --watch ./src/**/*.test.js"
   },
   "repository": {
     "type": "git",

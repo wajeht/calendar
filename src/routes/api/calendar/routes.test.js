@@ -199,7 +199,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('DELETE /api/calendars/:id (Delete Calendar)', { skip: process.env.CI ? 'Skipped in CI due to Node.js test runner serialization issues' : false }, () => {
+    describe('DELETE /api/calendars/:id (Delete Calendar)', () => {
         let calendarId;
 
         before(async () => {
@@ -239,7 +239,7 @@ describe('Calendar API - Real HTTP Tests', () => {
         });
     });
 
-    describe('POST /api/calendars/refetch (Refetch All Calendars)', { skip: process.env.CI ? 'Skipped in CI due to Node.js test runner serialization issues' : false }, () => {
+    describe('POST /api/calendars/refetch (Refetch All Calendars)', () => {
         it('should initiate calendar refetch', async () => {
             const response = await testServer.post('/api/calendars/refetch');
             const data = response.body;
