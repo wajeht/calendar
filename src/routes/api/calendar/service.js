@@ -151,9 +151,11 @@ export function createCalendarService(dependencies = {}) {
 
         // Add attendees
         if (icalEvent.attendees && icalEvent.attendees.length > 0) {
-            event.attendees = icalEvent.attendees.map(attendee => {
+            const attendees = [];
+            for (let i = 0; i < icalEvent.attendees.length; i++) {
+                const attendee = icalEvent.attendees[i];
                 try {
-                    return {
+                    attendees[i] = {
                         name: (typeof attendee.getParameter === 'function' ? attendee.getParameter('cn') : '') || '',
                         email: (typeof attendee.getFirstValue === 'function' ? attendee.getFirstValue()?.replace('mailto:', '') : attendee.toString().replace('mailto:', '')) || '',
                         role: (typeof attendee.getParameter === 'function' ? attendee.getParameter('role') : '') || '',
@@ -163,7 +165,7 @@ export function createCalendarService(dependencies = {}) {
                 } catch (error) {
                     // Fallback for attendee as string value
                     const attendeeStr = attendee.toString();
-                    return {
+                    attendees[i] = {
                         name: '',
                         email: attendeeStr.replace('mailto:', '') || '',
                         role: '',
@@ -171,7 +173,8 @@ export function createCalendarService(dependencies = {}) {
                         type: ''
                     };
                 }
-            });
+            }
+            event.attendees = attendees;
         }
 
         // Add timestamps

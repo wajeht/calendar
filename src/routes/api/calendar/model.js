@@ -58,11 +58,20 @@ export function createCalendar(dependencies = {}) {
                 const calendars = await query;
 
                 const parseEvents = (eventsStr, fallbackStr) => {
-                    try {
-                        return eventsStr ? JSON.parse(eventsStr) : (fallbackStr ? JSON.parse(fallbackStr) : []);
-                    } catch {
-                        return [];
+                    if (eventsStr) {
+                        try {
+                            return JSON.parse(eventsStr);
+                        } catch {}
                     }
+
+                    if (fallbackStr) {
+                        try {
+                            return JSON.parse(fallbackStr);
+                        } catch {
+                            return [];
+                        }
+                    }
+                    return [];
                 };
 
                 const result = [];
