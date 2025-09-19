@@ -13,8 +13,8 @@ export function createValidators(dependencies = {}) {
          * @returns {number} Parsed ID
          */
         validateId(idStr) {
-            const id = parseInt(idStr);
-            if (isNaN(id) || id <= 0) {
+            const id = utils.parseId(idStr);
+            if (id === null) {
                 throw new ValidationError('Invalid ID');
             }
             return id;

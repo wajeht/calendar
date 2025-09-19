@@ -82,12 +82,11 @@
             eventClick: function (info) {
                 info.jsEvent.preventDefault();
 
-                const sourceCalendar = eventSources.find(es => es.id == info.event.source.id);
-
-                if (!isAuthenticated && sourceCalendar && sourceCalendar.details) {
-                    log.public('Details hidden for public view');
+                if (info.event.extendedProps && info.event.extendedProps.isDetailHidden) {
                     return;
                 }
+
+                const sourceCalendar = eventSources.find(es => es.id == info.event.source.id);
 
                 if (typeof eventModal !== 'undefined' && eventModal.show) {
                     eventModal.show(info.event, sourceCalendar);
@@ -166,8 +165,8 @@
                     })));
                 }
 
-                // Build FullCalendar events with authentication-based detail hiding
-                const fullCalendarEvents = buildFullCalendarEvents(cal, events, isAuthenticated);
+                // Build FullCalendar events (no need for authentication filtering - backend handles this)
+                const fullCalendarEvents = buildFullCalendarEvents(cal, events);
 
                 log.debug('Built', fullCalendarEvents.length, 'FullCalendar events for calendar:', cal.name);
 
@@ -184,10 +183,9 @@
                     name: cal.name,
                     color: cal.color,
                     source: eventSource,
-                    visible: !cal.hidden,
+                    visible: true, // All calendars returned by backend are visible to current user
                     lastUpdate: new Date(),
-                    status: 'fresh',
-                    details: cal.details
+                    status: 'fresh'
                 });
             });
 
@@ -196,7 +194,7 @@
         }
     }
 
-    function buildFullCalendarEvents(calendar, events, isAuthenticated) {
+    function buildFullCalendarEvents(calendar, events) {
         if (!events || events.length === 0) return [];
 
         const validEvents = [];
@@ -209,23 +207,21 @@
                 return;
             }
 
-            const shouldHideDetails = !isAuthenticated && calendar.details;
+            // Check if this is a detail-hidden event (empty title AND empty description AND empty location)
+            const isDetailHidden = event.title === '' && event.description === '' && event.location === '';
 
             const fcEvent = {
-                title: event.title || 'Untitled Event',
+                title: event.title || (isDetailHidden ? '' : 'Untitled Event'),
                 start: event.start,
                 allDay: event.allDay || false,
                 backgroundColor: calendar.color,
                 borderColor: calendar.color,
                 textColor: 'white',
-                extendedProps: buildExtendedProps(event)
+                extendedProps: {
+                    ...buildExtendedProps(event),
+                    isDetailHidden: isDetailHidden
+                }
             };
-
-            if (shouldHideDetails) {
-                fcEvent.title = '';
-                fcEvent.extendedProps.description = '';
-                fcEvent.extendedProps.location = '';
-            }
 
             if (event.end) {
                 fcEvent.end = event.end;

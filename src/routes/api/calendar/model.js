@@ -39,6 +39,46 @@ export function createCalendar(dependencies = {}) {
         },
 
         /**
+         * Get calendars filtered for public or authenticated access
+         * @param {boolean} isAuthenticated - Whether user is authenticated
+         * @returns {Promise<Calendar[]>} Array of filtered calendar objects
+         */
+        async getAllForAccess(isAuthenticated = false) {
+            try {
+                const calendars = await this.getAll();
+
+                return calendars.map(calendar => {
+                    if (isAuthenticated) {
+                        // Authenticated users get full data
+                        return {
+                            ...calendar,
+                            events: calendar.events_authenticated || calendar.events
+                        };
+                    } else {
+                        // Public users - filter out hidden calendars and sensitive data
+                        if (calendar.hidden) {
+                            return null; // Skip hidden calendars
+                        }
+
+                        // Return only safe fields for public users
+                        return {
+                            id: calendar.id,
+                            name: calendar.name,
+                            color: calendar.color,
+                            hidden: calendar.hidden,
+                            details: calendar.details,
+                            events: calendar.events_public || calendar.events,
+                            created_at: calendar.created_at,
+                            updated_at: calendar.updated_at
+                        };
+                    }
+                }).filter(Boolean); // Remove null entries
+            } catch (error) {
+                throw new DatabaseError('Failed to fetch calendars for access level', error);
+            }
+        },
+
+        /**
          * Get calendar by ID
          * @param {number} id - Calendar ID
          * @returns {Promise<Calendar|null>} Calendar object or null
@@ -146,7 +186,7 @@ export function createCalendar(dependencies = {}) {
 
             // Only validate provided fields (partial validation)
             const updateData = {};
-            const allowedFields = ['name', 'url', 'color', 'hidden', 'details', 'data', 'events'];
+            const allowedFields = ['name', 'url', 'color', 'hidden', 'details', 'data', 'events', 'events_public', 'events_authenticated'];
 
             for (const field of allowedFields) {
                 if (data[field] !== undefined) {

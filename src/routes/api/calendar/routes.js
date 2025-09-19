@@ -15,8 +15,9 @@ export function createCalendarRouter(dependencies = {}) {
     const router = express.Router();
     const verifyToken = middleware.auth.requireAuth();
 
-    router.get('/', async (_req, res) => {
-        const calendars = await models.calendar.getAll();
+    router.get('/', async (req, res) => {
+        const isAuthenticated = utils.isAuthenticated(req);
+        const calendars = await models.calendar.getAllForAccess(isAuthenticated);
         res.json(calendars);
     });
 
@@ -90,6 +91,17 @@ export function createCalendarRouter(dependencies = {}) {
         const updatedCalendar = await models.calendar.update(id, updateData);
         if (!updatedCalendar) {
             throw new NotFoundError('Calendar');
+        }
+
+        if (updateData.hidden !== undefined || updateData.details !== undefined) {
+            setImmediate(async () => {
+                try {
+                    await services.calendar.fetchAndProcessCalendar(updatedCalendar.id, updatedCalendar.url);
+                    logger.info(`Calendar events reprocessed for ${updatedCalendar.name}`);
+                } catch (error) {
+                    logger.error(`Background calendar reprocessing failed for ${updatedCalendar.id}:`, error);
+                }
+            });
         }
 
         logger.info(`Calendar updated: ${updatedCalendar.name}`);

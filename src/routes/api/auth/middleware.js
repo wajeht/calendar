@@ -10,26 +10,10 @@ export function createAuthMiddleware(dependencies = {}) {
 
     return {
         requireAuth() {
-            return (req, res, next) => {
+            return (req, _res, next) => {
                 const token = req.cookies?.session_token || null;
 
-                if (!token) {
-                    throw new AuthenticationError();
-                }
-
-                try {
-                    const [timestamp] = token.split('.');
-                    const tokenTime = parseInt(timestamp);
-                    const now = Date.now();
-                    const twentyFourHours = 24 * 60 * 60 * 1000;
-
-                    if ((now - tokenTime) >= twentyFourHours) {
-                        throw new AuthenticationError();
-                    }
-                } catch (error) {
-                    if (error instanceof AuthenticationError) {
-                        throw error;
-                    }
+                if (!token || !utils.validateSessionToken(token)) {
                     throw new AuthenticationError();
                 }
 

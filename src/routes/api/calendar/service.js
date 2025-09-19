@@ -25,8 +25,10 @@ export function createCalendarService(dependencies = {}) {
     function parseICalToEvents(icalData) {
         try {
             logger.debug('Parsing iCal data with ical.js...');
-            const jcalData = ICAL.parse(icalData);
-            const comp = new ICAL.Component(jcalData);
+
+            // Parse according to ical.js best practices
+            const jCalData = ICAL.parse(icalData);
+            const comp = new ICAL.Component(jCalData);
             const vevents = comp.getAllSubcomponents('vevent');
 
             logger.debug(`Found ${vevents.length} VEVENT components`);
@@ -36,29 +38,42 @@ export function createCalendarService(dependencies = {}) {
             const futureLimit = new Date();
             futureLimit.setFullYear(now.getFullYear() + 2);
 
+            // Convert to ICAL.Time for proper comparison
+            const rangeStart = ICAL.Time.fromJSDate(now, false);
+            const rangeEnd = ICAL.Time.fromJSDate(futureLimit, false);
+
             for (const vevent of vevents) {
                 try {
                     const event = new ICAL.Event(vevent);
                     logger.debug(`Processing event: ${event.summary}, recurring: ${event.isRecurring()}`);
 
                     if (event.isRecurring()) {
-                        // Handle recurring events using RecurExpansion
+                        // Use RecurExpansion for recurring events - this handles RRULE, RDATE, EXDATE automatically
                         logger.debug(`Expanding recurring event: ${event.summary}`);
 
                         const expand = new ICAL.RecurExpansion({
                             component: vevent,
-                            dtstart: event.startDate
+                            dtstart: vevent.getFirstPropertyValue('dtstart')
                         });
 
                         let next;
                         let count = 0;
-                        while ((next = expand.next()) && count < 1000 && next.toJSDate() <= futureLimit) {
+
+                        // Best practice iteration from ical.js documentation
+                        while ((next = expand.next()) && count < 1000 && next.compare(rangeEnd) < 0) {
+                            if (next.compare(rangeStart) < 0) {
+                                continue; // Skip dates before our range
+                            }
+
                             const eventInstance = createEventFromOccurrence(event, next);
                             events.push(eventInstance);
                             count++;
                         }
+
+                        logger.debug(`Created ${count} instances for recurring event: ${event.summary}`);
                     } else {
-                        // Single event
+                        // Single event or modified instance
+                        logger.debug(`Adding single/modified event: ${event.summary}, UID: ${event.uid}`);
                         events.push(createEventFromIcal(event));
                     }
                 } catch (eventError) {
@@ -184,6 +199,46 @@ export function createCalendarService(dependencies = {}) {
         if (url) event.url = url;
     }
 
+    function processEventsForViews(events, calendar) {
+        if (!events || events.length === 0) {
+            return { publicEvents: [], authenticatedEvents: events };
+        }
+
+        const authenticatedEvents = events;
+        let publicEvents;
+
+        // If calendar is hidden, no public events at all
+        if (calendar.hidden) {
+            publicEvents = [];
+        } else if (calendar.details) {
+            // If details should be hidden for public view, strip ALL sensitive information
+            publicEvents = events.map(event => ({
+                uid: event.uid,
+                title: '', // Hide title completely
+                description: '', // Hide description completely
+                location: '', // Hide location completely
+                start: event.start,
+                end: event.end,
+                allDay: event.allDay,
+                // Remove all personal/sensitive details
+                organizer: null,
+                attendees: null,
+                status: event.status,
+                transparency: event.transparency,
+                sequence: event.sequence,
+                dtStamp: event.dtStamp,
+                created: event.created,
+                lastModified: event.lastModified,
+                url: null // Hide URL as well
+            }));
+        } else {
+            // Show everything for public view
+            publicEvents = events;
+        }
+
+        return { publicEvents, authenticatedEvents };
+    }
+
     async function fetchAndProcessCalendar(calendarId, url) {
         try {
             logger.info(`Fetching calendar data for ID ${calendarId} from ${url}`);
@@ -193,21 +248,37 @@ export function createCalendarService(dependencies = {}) {
 
             logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
 
+            // Get calendar settings to determine processing
+            const calendar = await models.calendar.getById(calendarId);
+            if (!calendar) {
+                throw new Error(`Calendar ${calendarId} not found`);
+            }
+
+            // Pre-process events for public and authenticated views
+            const { publicEvents, authenticatedEvents } = processEventsForViews(events, calendar);
+
+            logger.info(`Processed ${publicEvents.length} public events and ${authenticatedEvents.length} authenticated events`);
+
+            // Always clear existing events and completely rebuild from scratch to avoid stale data
             await models.calendar.update(calendarId, {
                 data: rawData,
-                events: JSON.stringify(events)
+                events: JSON.stringify(events),
+                events_public: JSON.stringify(publicEvents),
+                events_authenticated: JSON.stringify(authenticatedEvents)
             });
 
             logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
 
-            return { rawData, events };
+            return { rawData, events, publicEvents, authenticatedEvents };
         } catch (error) {
             logger.error(`Failed to fetch calendar ${calendarId}:`, error);
 
             try {
                 await models.calendar.update(calendarId, {
                     data: null,
-                    events: JSON.stringify([])
+                    events: JSON.stringify([]),
+                    events_public: JSON.stringify([]),
+                    events_authenticated: JSON.stringify([])
                 });
             } catch (updateError) {
                 logger.error(`Failed to update calendar ${calendarId} with error state:`, updateError);

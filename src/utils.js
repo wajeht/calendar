@@ -138,15 +138,14 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Validate and parse a numeric ID from request parameters
-         * @param {string} idStr - The ID string from req.params
-         * @returns {number} Parsed ID
-         * @throws {Error} If ID is invalid
+         * Parse and check if an ID string is a valid positive integer
+         * @param {string} idStr - The ID string to parse
+         * @returns {number|null} Parsed ID or null if invalid
          */
-        validateId(idStr) {
+        parseId(idStr) {
             const id = parseInt(idStr);
             if (isNaN(id) || id <= 0) {
-                throw new Error('Invalid ID');
+                return null;
             }
             return id;
         },
@@ -162,7 +161,42 @@ export function createUtils(dependencies = {}) {
             return /^#[0-9A-Fa-f]{6}$/.test(color);
         },
 
+        /**
+         * Validate session token and check if it's still valid
+         * @param {string} token - Session token to validate
+         * @returns {boolean} - True if token is valid and not expired
+         */
+        validateSessionToken(token) {
+            if (!token || typeof token !== 'string') {
+                return false;
+            }
 
+            try {
+                const [timestamp] = token.split('.');
+                const tokenTime = parseInt(timestamp);
+
+                if (isNaN(tokenTime)) {
+                    return false;
+                }
+
+                const now = Date.now();
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+
+                return (now - tokenTime) < twentyFourHours;
+            } catch (error) {
+                return false;
+            }
+        },
+
+        /**
+         * Check if request is authenticated via session token
+         * @param {Object} req - Express request object
+         * @returns {boolean} - True if request is authenticated
+         */
+        isAuthenticated(req) {
+            const token = req.cookies?.session_token || null;
+            return this.validateSessionToken(token);
+        },
 
     };
 }
