@@ -21,7 +21,7 @@ export function createAuthRouter(dependencies = {}) {
         const { password } = req.body;
 
         if (!password) {
-            throw new ValidationError('Password is required', 'password');
+            throw new ValidationError({ password: 'Password is required' });
         }
 
         const failedAttempts = parseInt(req.cookies.failed_attempts || '0');
@@ -30,7 +30,7 @@ export function createAuthRouter(dependencies = {}) {
         if (lockedUntil && Date.now() < lockedUntil) {
             const timeLeft = Math.ceil((lockedUntil - Date.now()) / 1000 / 60);
             logger.warn(`Login attempt on locked session. ${timeLeft} minutes remaining`);
-            throw new ValidationError(`Account locked. Try again in ${timeLeft} minutes`, 'password');
+            throw new ValidationError({ password: `Account locked. Try again in ${timeLeft} minutes` });
         }
 
         if (password !== config.auth.password) {
@@ -46,7 +46,7 @@ export function createAuthRouter(dependencies = {}) {
                     path: '/'
                 });
                 logger.warn(`Account locked after 5 failed attempts`);
-                throw new ValidationError('Too many failed attempts. Account locked for 15 minutes', 'password');
+                throw new ValidationError({ password: 'Too many failed attempts. Account locked for 15 minutes' });
             }
 
             res.cookie('failed_attempts', newFailedAttempts.toString(), {
@@ -58,7 +58,7 @@ export function createAuthRouter(dependencies = {}) {
             });
 
             logger.warn(`Failed login attempt ${newFailedAttempts}/5`);
-            throw new ValidationError('Invalid password', 'password');
+            throw new ValidationError({ password: 'Invalid password' });
         }
 
         res.clearCookie('failed_attempts', { path: '/' });

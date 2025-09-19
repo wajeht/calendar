@@ -117,7 +117,7 @@ export function createCalendar(dependencies = {}) {
          */
         async getById(id) {
             if (!id || typeof id !== 'number') {
-                throw new ValidationError('Valid calendar ID is required');
+                throw new ValidationError({ id: 'Valid calendar ID is required' });
             }
 
             try {
@@ -135,7 +135,7 @@ export function createCalendar(dependencies = {}) {
          */
         async getByUrl(url) {
             if (!url || typeof url !== 'string') {
-                throw new ValidationError('Valid calendar URL is required');
+                throw new ValidationError({ url: 'Valid calendar URL is required' });
             }
 
             try {
@@ -169,7 +169,7 @@ export function createCalendar(dependencies = {}) {
                 return await db('calendars').where('id', id).first();
             } catch (error) {
                 if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-                    throw new ValidationError('Calendar with this URL already exists');
+                    throw new ValidationError({ url: 'Calendar with this URL already exists' });
                 }
                 throw new DatabaseError('Failed to create calendar', error);
             }
@@ -183,11 +183,11 @@ export function createCalendar(dependencies = {}) {
          */
         async update(id, data) {
             if (!id || typeof id !== 'number') {
-                throw new ValidationError('Valid calendar ID is required');
+                throw new ValidationError({ id: 'Valid calendar ID is required' });
             }
 
             if (!data || typeof data !== 'object') {
-                throw new ValidationError('Update data must be an object');
+                throw new ValidationError({ data: 'Update data must be an object' });
             }
 
             // Only validate provided fields (partial validation)
@@ -201,15 +201,15 @@ export function createCalendar(dependencies = {}) {
             }
 
             if (Object.keys(updateData).length === 0) {
-                throw new ValidationError('At least one field must be provided for update');
+                throw new ValidationError({ general: 'At least one field must be provided for update' });
             }
 
             if (updateData.hidden !== undefined && typeof updateData.hidden !== 'boolean') {
-                throw new ValidationError('Hidden must be a boolean value', 'hidden');
+                throw new ValidationError({ hidden: 'Hidden must be a boolean value' });
             }
 
             if (updateData.details !== undefined && typeof updateData.details !== 'boolean') {
-                throw new ValidationError('Details must be a boolean value', 'details');
+                throw new ValidationError({ details: 'Details must be a boolean value' });
             }
 
             try {
@@ -224,7 +224,7 @@ export function createCalendar(dependencies = {}) {
                 return await db('calendars').where('id', id).first();
             } catch (error) {
                 if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-                    throw new ValidationError('Calendar with this URL already exists');
+                    throw new ValidationError({ url: 'Calendar with this URL already exists' });
                 }
                 throw new DatabaseError(`Failed to update calendar ${id}`, error);
             }
@@ -237,7 +237,7 @@ export function createCalendar(dependencies = {}) {
          */
         async delete(id) {
             if (!id || typeof id !== 'number') {
-                throw new ValidationError('Valid calendar ID is required');
+                throw new ValidationError({ id: 'Valid calendar ID is required' });
             }
 
             try {

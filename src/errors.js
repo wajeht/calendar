@@ -1,30 +1,10 @@
 export class ValidationError extends Error {
-    constructor(messageOrErrors, field = null) {
-        // Handle both single field error and multiple errors object
-        if (typeof messageOrErrors === 'string') {
-            // Single field error: new ValidationError('Name required', 'name')
-            super(messageOrErrors);
-            this.field = field;
-            this.errors = field ? { [field]: messageOrErrors } : {};
-        } else {
-            // Multiple errors: new ValidationError({ name: 'Name required', url: 'Invalid URL' })
-            const errors = messageOrErrors || {};
-            const errorMessages = Object.values(errors);
-            super(errorMessages.length > 0 ? errorMessages[0] : 'Validation failed');
-            this.field = null;
-            this.errors = errors;
-        }
-
+    constructor(errors = {}) {
+        const errorMessages = Object.values(errors);
+        super(errorMessages.length > 0 ? errorMessages[0] : 'Validation failed');
         this.name = 'ValidationError';
         this.statusCode = 400;
-    }
-
-    addError(field, message) {
-        this.errors[field] = message;
-    }
-
-    hasErrors() {
-        return Object.keys(this.errors).length > 0;
+        this.errors = errors;
     }
 }
 

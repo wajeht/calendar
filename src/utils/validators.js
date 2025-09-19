@@ -15,7 +15,7 @@ export function createValidators(dependencies = {}) {
         validateId(idStr) {
             const id = utils.parseId(idStr);
             if (id === null) {
-                throw new ValidationError('Invalid ID');
+                throw new ValidationError({ id: 'Invalid ID' });
             }
             return id;
         },
@@ -27,7 +27,7 @@ export function createValidators(dependencies = {}) {
          */
         validateBody(body) {
             if (!body || typeof body !== 'object' || Array.isArray(body)) {
-                throw new ValidationError('Request body must be a valid JSON object');
+                throw new ValidationError({ body: 'Request body must be a valid JSON object' });
             }
             return body;
         },
@@ -39,7 +39,7 @@ export function createValidators(dependencies = {}) {
          */
         validateColor(color, field = 'color') {
             if (color && !utils.validateHexColor(color)) {
-                throw new ValidationError('Color must be a valid hex color (e.g., #447dfc)', field);
+                throw new ValidationError({ [field]: 'Color must be a valid hex color (e.g., #447dfc)' });
             }
         },
 
@@ -51,10 +51,10 @@ export function createValidators(dependencies = {}) {
          */
         validateCalendarName(name, field = 'name', required = true) {
             if (required && utils.isEmpty(name)) {
-                throw new ValidationError('Calendar name is required', field);
+                throw new ValidationError({ [field]: 'Calendar name is required' });
             }
             if (name !== undefined && (typeof name !== 'string' || utils.isEmpty(name))) {
-                throw new ValidationError('Calendar name must be a non-empty string', field);
+                throw new ValidationError({ [field]: 'Calendar name must be a non-empty string' });
             }
         },
 
@@ -66,10 +66,10 @@ export function createValidators(dependencies = {}) {
          */
         validateCalendarUrl(url, field = 'url', required = true) {
             if (required && utils.isEmpty(url)) {
-                throw new ValidationError('Calendar URL is required', field);
+                throw new ValidationError({ [field]: 'Calendar URL is required' });
             }
             if (url !== undefined && !utils.validateCalendarUrl(url)) {
-                throw new ValidationError('Invalid calendar URL format', field);
+                throw new ValidationError({ [field]: 'Invalid calendar URL format' });
             }
         },
 
@@ -80,7 +80,7 @@ export function createValidators(dependencies = {}) {
          */
         validateBoolean(value, field) {
             if (value !== undefined && typeof value !== 'boolean') {
-                throw new ValidationError(`${field} must be a boolean value`, field);
+                throw new ValidationError({ [field]: `${field} must be a boolean value` });
             }
         },
 
@@ -104,13 +104,13 @@ export function createValidators(dependencies = {}) {
          * @throws {ValidationError} When validation fails
          */
         validateCalendarCreateBatch(data) {
-            const validationErrors = new ValidationError({});
+            const errors = {};
 
             try {
                 this.validateBody(data);
             } catch (error) {
-                validationErrors.addError('body', error.message);
-                throw validationErrors;
+                errors.body = error.message;
+                throw new ValidationError(errors);
             }
 
             const { name, url, color } = data;
@@ -118,23 +118,23 @@ export function createValidators(dependencies = {}) {
             try {
                 this.validateCalendarName(name, 'name', true);
             } catch (error) {
-                validationErrors.addError('name', error.message);
+                errors.name = error.message;
             }
 
             try {
                 this.validateCalendarUrl(url, 'url', true);
             } catch (error) {
-                validationErrors.addError('url', error.message);
+                errors.url = error.message;
             }
 
             try {
                 this.validateColor(color, 'color');
             } catch (error) {
-                validationErrors.addError('color', error.message);
+                errors.color = error.message;
             }
 
-            if (validationErrors.hasErrors()) {
-                throw validationErrors;
+            if (Object.keys(errors).length > 0) {
+                throw new ValidationError(errors);
             }
         },
 

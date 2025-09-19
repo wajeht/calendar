@@ -44,13 +44,13 @@ export function createCalendarRouter(dependencies = {}) {
         const sanitizedName = utils.sanitizeString(name);
 
         if (utils.isEmpty(sanitizedName)) {
-            throw new ValidationError('Calendar name cannot be empty after sanitization', 'name');
+            throw new ValidationError({ name: 'Calendar name cannot be empty after sanitization' });
         }
 
         const existingCalendar = await models.calendar.getByUrl(url);
 
         if (existingCalendar) {
-            throw new ValidationError('Calendar with this URL already exists', 'url');
+            throw new ValidationError({ url: 'Calendar with this URL already exists' });
         }
 
         const calendarData = {
@@ -97,7 +97,7 @@ export function createCalendarRouter(dependencies = {}) {
         if (updateData.name !== undefined) {
             updateData.name = utils.sanitizeString(updateData.name);
             if (utils.isEmpty(updateData.name)) {
-                throw new ValidationError('Name cannot be empty after sanitization', 'name');
+                throw new ValidationError({ name: 'Name cannot be empty after sanitization' });
             }
         }
 
