@@ -31,12 +31,10 @@ class ConfirmModal {
         this.currentResolve = null;
         this.isOpen = false;
 
-        // Close on overlay click
         this.overlay.addEventListener('click', () => {
             this.resolve(false);
         });
 
-        // Close on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.isOpen) {
                 this.resolve(false);
@@ -89,7 +87,6 @@ class ConfirmModal {
         resolve(result);
     }
 
-    // Convenience methods
     confirm(message, title = 'Confirm Action') {
         return this.show({
             title,

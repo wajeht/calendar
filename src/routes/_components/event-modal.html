@@ -22,14 +22,12 @@ class EventModal {
     }
 
     setupEventListeners() {
-        // Escape key to close
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && this.isOpen) {
                 this.close();
             }
         });
 
-        // Overlay click to close
         this.overlay.addEventListener('click', () => {
             this.close();
         });
