@@ -26,7 +26,7 @@
     "type": "git",
     "url": "git+https://github.com/wajeht/calendar.git"
   },
-  "keywords": [],
+  "keywords": ["google", "ical", "calendar", "fullcalendar"],
   "author": "wajeht",
   "license": "MIT",
   "bugs": {
