@@ -128,7 +128,6 @@ function updateDebugMode() {
     }
 }
 
-// Watch debug mode changes
 watch(debugMode, updateDebugMode);
 </script>
 
@@ -194,16 +193,10 @@ watch(debugMode, updateDebugMode);
                             <Input v-model="newCalendar.color" type="color" />
                         </FormGroup>
                         <FormGroup>
-                            <Checkbox
-                                v-model="newCalendar.hidden"
-                                label="Hide calendar"
-                            />
+                            <Checkbox v-model="newCalendar.hidden" label="Hide calendar" />
                         </FormGroup>
                         <FormGroup>
-                            <Checkbox
-                                v-model="newCalendar.details"
-                                label="Hide event details"
-                            />
+                            <Checkbox v-model="newCalendar.details" label="Hide event details" />
                         </FormGroup>
                     </div>
                     <div class="flex gap-2 mt-4">
@@ -228,11 +221,11 @@ watch(debugMode, updateDebugMode);
                         <div>
                             <h4 class="font-medium text-gray-900">{{ calendar.name }}</h4>
                             <p class="text-sm text-gray-500">{{ calendar.url }}</p>
-                            <div class="flex flex-wrap gap-1 mt-1">
-                                <span v-if="calendar.hidden" class="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                            <div class="flex flex-wrap gap-3 mt-1">
+                                <span v-if="calendar.hidden" class="text-xs text-red-500">
                                     Calendar Hidden
                                 </span>
-                                <span v-if="calendar.details" class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                                <span v-if="calendar.details" class="text-xs text-gray-500">
                                     Details Hidden
                                 </span>
                             </div>
@@ -264,10 +257,7 @@ watch(debugMode, updateDebugMode);
                             <Input v-model="editingCalendar.color" type="color" />
                         </FormGroup>
                         <FormGroup>
-                            <Checkbox
-                                v-model="editingCalendar.hidden"
-                                label="Hide calendar"
-                            />
+                            <Checkbox v-model="editingCalendar.hidden" label="Hide calendar" />
                         </FormGroup>
                         <FormGroup>
                             <Checkbox

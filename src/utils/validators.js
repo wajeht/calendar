@@ -91,10 +91,7 @@ export function createValidators(dependencies = {}) {
          * @param {string} field - Field name
          */
         validateBoolean(value, field) {
-            if (value !== undefined &&
-                typeof value !== "boolean" &&
-                value !== 0 &&
-                value !== 1) {
+            if (value !== undefined && typeof value !== "boolean" && value !== 0 && value !== 1) {
                 throw new ValidationError({
                     [field]: `${field} must be a boolean value or 0/1`,
                 });

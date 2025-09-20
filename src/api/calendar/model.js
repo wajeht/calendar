@@ -261,19 +261,23 @@ export function createCalendar(dependencies = {}) {
                 });
             }
 
-            if (updateData.hidden !== undefined &&
+            if (
+                updateData.hidden !== undefined &&
                 typeof updateData.hidden !== "boolean" &&
                 updateData.hidden !== 0 &&
-                updateData.hidden !== 1) {
+                updateData.hidden !== 1
+            ) {
                 throw new ValidationError({
                     hidden: "Hidden must be a boolean value or 0/1",
                 });
             }
 
-            if (updateData.details !== undefined &&
+            if (
+                updateData.details !== undefined &&
                 typeof updateData.details !== "boolean" &&
                 updateData.details !== 0 &&
-                updateData.details !== 1) {
+                updateData.details !== 1
+            ) {
                 throw new ValidationError({
                     details: "Details must be a boolean value or 0/1",
                 });

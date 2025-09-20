@@ -20,18 +20,15 @@ const toast = useToast();
 const { isAuthenticated, verifySession } = useAuth();
 const { calendars, getCalendars } = useCalendar();
 
-// Reactive state
 const calendarRef = ref();
 const eventSources = ref([]);
 
-// Modal states
 const showPasswordModal = ref(false);
 const showSettingsModal = ref(false);
 const showEventModal = ref(false);
 const selectedEvent = ref(null);
 const selectedEventCalendar = ref(null);
 
-// Confirm dialog
 const confirmDialog = reactive({
     show: false,
     title: "",
@@ -42,7 +39,6 @@ const confirmDialog = reactive({
     reject: null,
 });
 
-// View mappings for URL params
 const viewMappings = {
     month: "dayGridMonth",
     week: "timeGridWeek",
@@ -50,7 +46,6 @@ const viewMappings = {
     list: "listMonth",
 };
 
-// FullCalendar options
 const calendarOptions = ref({
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, iCalendarPlugin],
     initialView: getInitialView(),
@@ -83,23 +78,20 @@ const calendarOptions = ref({
     eventClick: handleEventClick,
     loading: handleLoading,
     eventSourceFailure: handleEventSourceFailure,
-    datesSet: handleDatesSet,
+    datesSet: updateURL(),
 });
 
-// Get initial view from URL params
 function getInitialView() {
     const urlParams = new URLSearchParams(window.location.search);
     const viewParam = urlParams.get("view");
     return viewMappings[viewParam] || "timeGridWeek";
 }
 
-// Get initial date from URL params
 function getInitialDate() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get("date") || undefined;
 }
 
-// Event handlers
 function handleSettingsClick() {
     if (isAuthenticated.value) {
         showSettingsModal.value = true;
@@ -138,18 +130,9 @@ function handleEventSourceFailure(error) {
     toast.error("Failed to load calendar events");
 }
 
-function handleDatesSet() {
-    updateURL();
-}
-
 function handleAuthenticated() {
     showPasswordModal.value = false;
     loadCalendars();
-}
-
-// API functions
-async function checkAuthStatus() {
-    await verifySession();
 }
 
 async function loadCalendars() {
@@ -160,7 +143,6 @@ async function loadCalendars() {
         return;
     }
 
-    // Update FullCalendar event sources
     const calendar = calendarRef.value.getApi();
     calendar.removeAllEventSources();
     eventSources.value = [];
@@ -208,26 +190,6 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
-// Confirm helper
-function confirm(message, title = "Confirm", type = "default", confirmText = "Confirm") {
-    return new Promise((resolve) => {
-        confirmDialog.show = true;
-        confirmDialog.title = title;
-        confirmDialog.message = message;
-        confirmDialog.type = type;
-        confirmDialog.confirmText = confirmText;
-        confirmDialog.resolve = () => {
-            confirmDialog.show = false;
-            resolve(true);
-        };
-        confirmDialog.reject = () => {
-            confirmDialog.show = false;
-            resolve(false);
-        };
-    });
-}
-
-// Keyboard handler
 function handleKeydown(e) {
     if (e.key === "Escape") {
         if (showEventModal.value) closeEventModal();
@@ -237,10 +199,9 @@ function handleKeydown(e) {
     }
 }
 
-// Initialize
 onMounted(async () => {
     document.addEventListener("keydown", handleKeydown);
-    await checkAuthStatus();
+    await verifySession();
     await loadCalendars();
     toast.info("Calendar loaded successfully");
 });
@@ -250,14 +211,12 @@ onMounted(async () => {
     <div class="h-screen w-screen">
         <FullCalendar ref="calendarRef" :options="calendarOptions" />
 
-        <!-- Password Modal -->
         <PasswordModal
             v-if="showPasswordModal"
             @close="showPasswordModal = false"
             @authenticated="handleAuthenticated"
         />
 
-        <!-- Settings Modal -->
         <SettingsModal
             v-if="showSettingsModal"
             @close="showSettingsModal = false"
@@ -265,7 +224,6 @@ onMounted(async () => {
             @calendar-updated="loadCalendars"
         />
 
-        <!-- Event Modal -->
         <EventModal
             v-if="showEventModal"
             :event="selectedEvent"
@@ -273,7 +231,6 @@ onMounted(async () => {
             @close="closeEventModal"
         />
 
-        <!-- Confirm Modal -->
         <ConfirmModal
             v-if="confirmDialog.show"
             :title="confirmDialog.title"
