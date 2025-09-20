@@ -19,20 +19,39 @@ const newCalendar = reactive({
     details: false,
 });
 
+const errors = reactive({
+    name: "",
+    url: "",
+    color: "",
+});
+
 function resetForm() {
     newCalendar.name = "";
     newCalendar.url = "";
     newCalendar.color = "#3b82f6";
     newCalendar.hidden = false;
     newCalendar.details = false;
+    errors.name = "";
+    errors.url = "";
+    errors.color = "";
 }
 
 async function handleSubmit() {
+    errors.name = "";
+    errors.url = "";
+    errors.color = "";
+
     const result = await addCalendarAPI(newCalendar);
     if (result.success) {
         emit("calendar-added");
         emit("close");
         resetForm();
+    } else if (result.errors) {
+        Object.keys(result.errors).forEach((field) => {
+            if (errors.hasOwnProperty(field)) {
+                errors[field] = result.errors[field];
+            }
+        });
     }
 }
 
@@ -46,7 +65,7 @@ function handleClose() {
     <Modal title="Add New Calendar" @close="handleClose">
         <form @submit.prevent="handleSubmit">
             <div class="space-y-4">
-                <FormGroup label="Name" required>
+                <FormGroup label="Name" required :error="errors.name">
                     <Input
                         v-model="newCalendar.name"
                         type="text"
@@ -54,7 +73,7 @@ function handleClose() {
                         required
                     />
                 </FormGroup>
-                <FormGroup label="URL" required>
+                <FormGroup label="URL" required :error="errors.url">
                     <Input
                         v-model="newCalendar.url"
                         type="url"
@@ -62,7 +81,7 @@ function handleClose() {
                         required
                     />
                 </FormGroup>
-                <FormGroup label="Color">
+                <FormGroup label="Color" :error="errors.color">
                     <Input v-model="newCalendar.color" type="color" />
                 </FormGroup>
                 <div class="flex gap-6">

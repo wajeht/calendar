@@ -26,7 +26,12 @@ const editForm = reactive({
     details: false,
 });
 
-// Initialize form with calendar data
+const errors = reactive({
+    name: "",
+    url: "",
+    color: "",
+});
+
 watch(
     () => props.calendar,
     (calendar) => {
@@ -36,16 +41,29 @@ watch(
             editForm.color = calendar.color || "#3b82f6";
             editForm.hidden = Boolean(calendar.hidden);
             editForm.details = Boolean(calendar.details);
+            errors.name = "";
+            errors.url = "";
+            errors.color = "";
         }
     },
     { immediate: true },
 );
 
 async function handleSubmit() {
+    errors.name = "";
+    errors.url = "";
+    errors.color = "";
+
     const result = await updateCalendarAPI(props.calendar.id, editForm);
     if (result.success) {
         emit("calendar-updated");
         emit("close");
+    } else if (result.errors) {
+        Object.keys(result.errors).forEach((field) => {
+            if (errors.hasOwnProperty(field)) {
+                errors[field] = result.errors[field];
+            }
+        });
     }
 }
 
@@ -58,13 +76,13 @@ function handleClose() {
     <Modal title="Edit Calendar" @close="handleClose">
         <form @submit.prevent="handleSubmit">
             <div class="space-y-4">
-                <FormGroup label="Name" required>
+                <FormGroup label="Name" required :error="errors.name">
                     <Input v-model="editForm.name" type="text" required />
                 </FormGroup>
-                <FormGroup label="URL" required>
+                <FormGroup label="URL" required :error="errors.url">
                     <Input v-model="editForm.url" type="url" required />
                 </FormGroup>
-                <FormGroup label="Color">
+                <FormGroup label="Color" :error="errors.color">
                     <Input v-model="editForm.color" type="color" />
                 </FormGroup>
                 <div class="flex gap-6">

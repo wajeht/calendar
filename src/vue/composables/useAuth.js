@@ -23,14 +23,14 @@ export function useAuth() {
                 toast.success("Logged in successfully");
                 return { success: true };
             } else {
-                const errorData = await response.json();
-                toast.error(errorData.error || "Invalid password");
-                return { success: false, error: errorData.error };
+                const result = await response.json().catch(() => ({ error: "Invalid password" }));
+                toast.error(result.error || "Invalid password");
+                return result;
             }
         } catch (error) {
             const errorMessage = "Authentication error: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         } finally {
             isLoading.value = false;
         }
@@ -56,14 +56,14 @@ export function useAuth() {
 
                 return { success: true };
             } else {
-                const errorText = await response.text().catch(() => "Failed to logout");
-                toast.error(errorText);
-                return { success: false, error: errorText };
+                const result = await response.json().catch(() => ({ error: "Failed to logout" }));
+                toast.error(result.error || "Failed to logout");
+                return result;
             }
         } catch (error) {
             const errorMessage = "Error during logout: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         } finally {
             isLoading.value = false;
         }

@@ -51,14 +51,17 @@ export function useCalendar() {
                 await getCalendars();
                 return { success: true };
             } else {
-                const error = await response.text();
-                toast.error("Failed to add calendar: " + error);
-                return { success: false, error };
+                const result = await response.json().catch(async () => {
+                    const text = await response.text();
+                    return { error: text };
+                });
+                toast.error("Failed to add calendar: " + (result.error || "Unknown error"));
+                return result;
             }
         } catch (error) {
             const errorMessage = "Error adding calendar: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         } finally {
             isLoading.value = false;
         }
@@ -85,14 +88,17 @@ export function useCalendar() {
                 await getCalendars();
                 return { success: true };
             } else {
-                const error = await response.text();
-                toast.error("Failed to update calendar: " + error);
-                return { success: false, error };
+                const result = await response.json().catch(async () => {
+                    const text = await response.text();
+                    return { error: text };
+                });
+                toast.error("Failed to update calendar: " + (result.error || "Unknown error"));
+                return result;
             }
         } catch (error) {
             const errorMessage = "Error updating calendar: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         } finally {
             isLoading.value = false;
         }
@@ -111,14 +117,17 @@ export function useCalendar() {
                 await getCalendars();
                 return { success: true };
             } else {
-                const error = await response.text();
-                toast.error("Failed to delete calendar: " + error);
-                return { success: false, error };
+                const result = await response.json().catch(async () => {
+                    const text = await response.text();
+                    return { error: text };
+                });
+                toast.error("Failed to delete calendar: " + (result.error || "Unknown error"));
+                return result;
             }
         } catch (error) {
             const errorMessage = "Error deleting calendar: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         } finally {
             isLoading.value = false;
         }
@@ -139,14 +148,17 @@ export function useCalendar() {
                 await getCalendars();
                 return { success: true };
             } else {
-                const error = await response.text();
-                toast.error("Failed to import settings: " + error);
-                return { success: false, error };
+                const result = await response.json().catch(async () => {
+                    const text = await response.text();
+                    return { error: text };
+                });
+                toast.error("Failed to import settings: " + (result.error || "Unknown error"));
+                return result;
             }
         } catch (error) {
             const errorMessage = "Error importing settings: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         } finally {
             isLoading.value = false;
         }
@@ -184,7 +196,7 @@ export function useCalendar() {
         } catch (error) {
             const errorMessage = "Error exporting settings: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage };
+            return { success: false, error: errorMessage, errors: {} };
         }
     }
 
