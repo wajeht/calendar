@@ -5,9 +5,9 @@ import { useAuth } from "../../../composables/useAuth.js";
 import { useCalendar } from "../../../composables/useCalendar.js";
 import Modal from "../../../components/Modal.vue";
 import Button from "../../../components/Button.vue";
-import AddCalendarModal from "./AddCalendarModal.vue";
-import EditCalendarModal from "./EditCalendarModal.vue";
-import DeleteCalendarModal from "./DeleteCalendarModal.vue";
+import AddCalendarModal from "./ModalAddCalendar.vue";
+import EditCalendarModal from "./ModalEditCalendar.vue";
+import DeleteCalendarModal from "./ModalDeleteCalendar.vue";
 
 const props = defineProps({
     calendars: {

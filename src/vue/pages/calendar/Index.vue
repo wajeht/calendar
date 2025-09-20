@@ -9,10 +9,10 @@ import iCalendarPlugin from "@fullcalendar/icalendar";
 
 import Toast from "../../components/Toast.vue";
 
-import PasswordModal from "./partials/PasswordModal.vue";
-import SettingsModal from "./partials/SettingsModal.vue";
-import EventModal from "./partials/EventModal.vue";
-import ConfirmModal from "./partials/ConfirmModal.vue";
+import PasswordModal from "./partials/ModalPassword.vue";
+import SettingsModal from "./partials/ModalSettings.vue";
+import EventModal from "./partials/ModalEvent.vue";
+import ConfirmModal from "./partials/ModalConfirm.vue";
 
 import { useToast } from "../../composables/useToast";
 import { useAuth } from "../../composables/useAuth.js";
