@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from "vue";
 import Modal from "../../../components/modal/Modal.vue";
 import Button from "../../../components/ui/Button.vue";
 
@@ -17,8 +18,23 @@ const emit = defineEmits(["close"]);
 
 function formatEventDate(date) {
     if (!date) return "";
-    return new Date(date).toLocaleString();
+    return new Date(date).toLocaleString(undefined, {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 }
+
+const formattedStartDate = computed(() => {
+    return props.event?.start ? formatEventDate(props.event.start) : "";
+});
+
+const formattedEndDate = computed(() => {
+    return props.event?.end ? formatEventDate(props.event.end) : "";
+});
 </script>
 
 <template>
@@ -30,11 +46,11 @@ function formatEventDate(date) {
                     <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
                         >Start:</span
                     >
-                    <span>{{ formatEventDate(props.event.start) }}</span>
+                    <span>{{ formattedStartDate }}</span>
                 </div>
                 <div class="mb-2">
                     <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]">End:</span>
-                    <span>{{ formatEventDate(props.event.end) }}</span>
+                    <span>{{ formattedEndDate }}</span>
                 </div>
                 <div
                     v-if="props.event.extendedProps && props.event.extendedProps.description"

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, onUnmounted, reactive, useTemplateRef } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -20,7 +20,7 @@ const toast = useToast();
 const { isAuthenticated, verifySession } = useAuth();
 const { calendars, getCalendars } = useCalendar();
 
-const calendarRef = ref();
+const calendarRef = useTemplateRef("calendarRef");
 const eventSources = ref([]);
 
 const showPasswordModal = ref(false);
@@ -206,6 +206,10 @@ onMounted(async () => {
     await verifySession();
     await loadCalendars();
     toast.info("Calendar loaded successfully");
+});
+
+onUnmounted(() => {
+    document.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, watch, useTemplateRef } from "vue";
 import { useToast } from "../../../composables/useToast";
 import { useAuth } from "../../../composables/useAuth.js";
 import { useCalendar } from "../../../composables/useCalendar.js";
@@ -28,6 +28,7 @@ const showDeleteModal = ref(false);
 const editingCalendar = ref(null);
 const deletingCalendar = ref(null);
 const debugMode = ref(localStorage.getItem("calendar-debug") === "true");
+const importInput = useTemplateRef("importInput");
 
 function editCalendar(calendar) {
     editingCalendar.value = calendar;
@@ -65,22 +66,37 @@ async function importCalendars(event) {
     if (!file) return;
 
     try {
+        if (!file.name.endsWith(".json")) {
+            throw new Error("Please select a JSON file");
+        }
+
+        if (file.size > 1024 * 1024) {
+            throw new Error("File size too large. Please select a file under 1MB");
+        }
+
         const text = await file.text();
         const settings = JSON.parse(text);
 
         if (!settings.calendars || !Array.isArray(settings.calendars)) {
-            throw new Error("Invalid settings file format");
+            throw new Error("Invalid settings file format. Expected a 'calendars' array");
         }
 
         const result = await importCalendarsAPI(settings.calendars);
         if (result.success) {
             emit("calendar-updated");
+            toast.success("Settings imported successfully");
+        } else {
+            throw new Error(result.error || "Failed to import calendars");
         }
     } catch (error) {
-        toast.error("Error importing settings: " + error.message);
+        if (error instanceof SyntaxError) {
+            toast.error("Invalid JSON file format");
+        } else {
+            toast.error("Error importing settings: " + error.message);
+        }
+    } finally {
+        event.target.value = "";
     }
-
-    event.target.value = "";
 }
 
 async function logoutUser() {

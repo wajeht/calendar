@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, useTemplateRef } from "vue";
 
-const inputRef = ref(null);
+const inputRef = useTemplateRef("inputRef");
 
 const model = defineModel({
     type: [String, Number],

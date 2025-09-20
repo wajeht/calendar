@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, onMounted } from "vue";
+import { ref, nextTick, onMounted, useTemplateRef } from "vue";
 import Modal from "../../../components/modal/Modal.vue";
 import FormGroup from "../../../components/ui/FormGroup.vue";
 import Input from "../../../components/ui/Input.vue";
@@ -10,7 +10,7 @@ const emit = defineEmits(["close", "authenticated"]);
 const { login, isLoading } = useAuth();
 
 const password = ref("");
-const passwordInput = ref();
+const passwordInput = useTemplateRef("passwordInput");
 
 async function authenticate() {
     const result = await login(password.value);
