@@ -1,20 +1,3 @@
-<template>
-    <input
-        :class="[
-            'w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]',
-            inputClasses
-        ]"
-        :type="type"
-        :value="modelValue"
-        :disabled="disabled"
-        :placeholder="placeholder"
-        :required="required"
-        style="font-family: inherit;"
-        @input="$emit('update:modelValue', $event.target.value)"
-        v-bind="$attrs"
-    />
-</template>
-
 <script setup>
 import { computed } from 'vue';
 
@@ -59,3 +42,11 @@ const inputClasses = computed(() => {
     return classes.join(' ');
 });
 </script>
+
+<template>
+    <input :class="[
+        'w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]',
+        inputClasses
+    ]" :type="type" :value="modelValue" :disabled="disabled" :placeholder="placeholder" :required="required"
+        style="font-family: inherit;" @input="$emit('update:modelValue', $event.target.value)" v-bind="$attrs" />
+</template>

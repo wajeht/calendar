@@ -1,10 +1,6 @@
 <template>
     <div class="mb-4">
-        <label
-            v-if="label || $slots.label"
-            :for="inputId"
-            class="block mb-1 font-bold text-gray-800 text-[13px]"
-        >
+        <label v-if="label || $slots.label" :for="inputId" class="block mb-1 font-bold text-gray-800 text-[13px]">
             <slot name="label">
                 {{ label }}
                 <span v-if="required" class="text-red-500 ml-0.5 font-bold">*</span>
@@ -19,6 +15,7 @@
         </div>
     </div>
 </template>
+
 
 <script setup>
 defineProps({
