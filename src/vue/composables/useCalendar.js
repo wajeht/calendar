@@ -41,7 +41,8 @@ export function useCalendar() {
                     name: calendarData.name,
                     url: calendarData.url,
                     color: calendarData.color,
-                    hidden: calendarData.hidden || false
+                    hidden: calendarData.hidden || false,
+                    details: calendarData.details || false
                 }),
             });
 
@@ -74,7 +75,8 @@ export function useCalendar() {
                     name: calendarData.name,
                     url: calendarData.url,
                     color: calendarData.color,
-                    hidden: calendarData.hidden
+                    hidden: calendarData.hidden,
+                    details: calendarData.details
                 }),
             });
 

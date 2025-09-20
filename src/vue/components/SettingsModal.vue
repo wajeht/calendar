@@ -38,6 +38,7 @@ const newCalendar = reactive({
     url: "",
     color: "#3b82f6",
     hidden: false,
+    details: false,
 });
 
 function resetNewCalendar() {
@@ -45,6 +46,7 @@ function resetNewCalendar() {
     newCalendar.url = "";
     newCalendar.color = "#3b82f6";
     newCalendar.hidden = false;
+    newCalendar.details = false;
 }
 
 function cancelAdd() {
@@ -194,6 +196,12 @@ watch(debugMode, updateDebugMode);
                         <FormGroup>
                             <Checkbox
                                 v-model="newCalendar.hidden"
+                                label="Hide calendar"
+                            />
+                        </FormGroup>
+                        <FormGroup>
+                            <Checkbox
+                                v-model="newCalendar.details"
                                 label="Hide event details"
                             />
                         </FormGroup>
@@ -220,9 +228,14 @@ watch(debugMode, updateDebugMode);
                         <div>
                             <h4 class="font-medium text-gray-900">{{ calendar.name }}</h4>
                             <p class="text-sm text-gray-500">{{ calendar.url }}</p>
-                            <span v-if="calendar.hidden" class="text-xs text-yellow-600">
-                                Details hidden
-                            </span>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                <span v-if="calendar.hidden" class="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                                    Calendar Hidden
+                                </span>
+                                <span v-if="calendar.details" class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+                                    Details Hidden
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -253,6 +266,12 @@ watch(debugMode, updateDebugMode);
                         <FormGroup>
                             <Checkbox
                                 v-model="editingCalendar.hidden"
+                                label="Hide calendar"
+                            />
+                        </FormGroup>
+                        <FormGroup>
+                            <Checkbox
+                                v-model="editingCalendar.details"
                                 label="Hide event details"
                             />
                         </FormGroup>
