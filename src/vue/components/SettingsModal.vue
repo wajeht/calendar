@@ -1,12 +1,12 @@
 <template>
-    <div class="modal-overlay" @click="$emit('close')">
-        <div class="modal max-w-4xl" @click.stop>
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <button class="modal-close" @click="$emit('close')">&times;</button>
+    <div class="fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-60 z-[3000]" @click="$emit('close')">
+        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white border border-gray-300 rounded-sm shadow-lg z-[3001] max-w-4xl w-[90%] max-h-[85vh] overflow-hidden text-[13px] leading-tight" @click.stop style="font-family: 'Lucida Grande', Helvetica, Arial, Verdana, sans-serif;">
+            <div class="bg-gray-100 border-b border-gray-300 p-4 relative">
+                <h2 class="m-0 text-base font-bold text-gray-800">Settings</h2>
+                <button class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-none border-none text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800" @click="$emit('close')">&times;</button>
             </div>
 
-            <div class="modal-body">
+            <div class="p-5 max-h-[calc(85vh-140px)] overflow-y-auto">
                 <!-- Tab Navigation -->
                 <div class="border-b border-gray-200 mb-6">
                     <nav class="-mb-px flex space-x-8">
@@ -39,7 +39,7 @@
                 <div v-if="activeTab === 'calendars'">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium text-gray-900">Calendar Management</h3>
-                        <button @click="showAddForm = true" class="btn btn-primary">
+                        <button @click="showAddForm = true" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-700 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-slate-800 hover:to-slate-700 hover:border-slate-700" style="font-family: inherit;">
                             Add Calendar
                         </button>
                     </div>
@@ -49,48 +49,51 @@
                         <h4 class="text-md font-medium text-gray-900 mb-4">Add New Calendar</h4>
                         <form @submit.prevent="addCalendar">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="form-group">
-                                    <label>Calendar Name <span class="required">*</span></label>
+                                <div class="mb-4">
+                                    <label class="block mb-1 font-bold text-gray-800 text-[13px]">Calendar Name <span class="text-red-500 ml-0.5 font-bold">*</span></label>
                                     <input
                                         v-model="newCalendar.name"
                                         type="text"
-                                        class="form-control"
+                                        class="w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]"
                                         required
                                         placeholder="My Calendar"
+                                        style="font-family: inherit;"
                                     />
                                 </div>
-                                <div class="form-group">
-                                    <label>Calendar URL <span class="required">*</span></label>
+                                <div class="mb-4">
+                                    <label class="block mb-1 font-bold text-gray-800 text-[13px]">Calendar URL <span class="text-red-500 ml-0.5 font-bold">*</span></label>
                                     <input
                                         v-model="newCalendar.url"
                                         type="url"
-                                        class="form-control"
+                                        class="w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]"
                                         required
                                         placeholder="https://example.com/calendar.ics"
+                                        style="font-family: inherit;"
                                     />
                                 </div>
-                                <div class="form-group">
-                                    <label>Color</label>
+                                <div class="mb-4">
+                                    <label class="block mb-1 font-bold text-gray-800 text-[13px]">Color</label>
                                     <input
                                         v-model="newCalendar.color"
                                         type="color"
-                                        class="form-control"
+                                        class="w-full h-8 px-0.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]"
+                                        style="font-family: inherit;"
                                     />
                                 </div>
-                                <div class="form-group">
-                                    <label>
+                                <div class="mb-4">
+                                    <label class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 block">
                                         <input
                                             v-model="newCalendar.hideDetails"
                                             type="checkbox"
-                                            class="mr-2"
+                                            class="mr-2 mt-0.5"
                                         />
                                         Hide event details
                                     </label>
                                 </div>
                             </div>
                             <div class="flex gap-2 mt-4">
-                                <button type="submit" class="btn btn-primary">Add Calendar</button>
-                                <button type="button" @click="cancelAdd" class="btn">Cancel</button>
+                                <button type="submit" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-700 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-slate-800 hover:to-slate-700 hover:border-slate-700" style="font-family: inherit;">Add Calendar</button>
+                                <button type="button" @click="cancelAdd" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-gray-800 bg-gradient-to-b from-white to-gray-200 border border-gray-300 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-gray-200 hover:to-gray-300 hover:border-gray-400" style="font-family: inherit;">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -121,13 +124,15 @@
                             <div class="flex gap-2">
                                 <button
                                     @click="editCalendar(calendar)"
-                                    class="btn btn-primary text-xs px-3 py-1"
+                                    class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-700 cursor-pointer text-xs font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-slate-800 hover:to-slate-700 hover:border-slate-700"
+                                    style="font-family: inherit;"
                                 >
                                     Edit
                                 </button>
                                 <button
                                     @click="deleteCalendar(calendar)"
-                                    class="btn btn-danger text-xs px-3 py-1"
+                                    class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-red-500 to-red-700 border border-red-500 cursor-pointer text-xs font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-red-700 hover:to-red-500 hover:border-red-700"
+                                    style="font-family: inherit;"
                                 >
                                     Delete
                                 </button>
@@ -140,48 +145,51 @@
                         <h4 class="text-md font-medium text-gray-900 mb-4">Edit Calendar</h4>
                         <form @submit.prevent="updateCalendar">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="form-group">
-                                    <label>Calendar Name <span class="required">*</span></label>
+                                <div class="mb-4">
+                                    <label class="block mb-1 font-bold text-gray-800 text-[13px]">Calendar Name <span class="text-red-500 ml-0.5 font-bold">*</span></label>
                                     <input
                                         v-model="editingCalendar.name"
                                         type="text"
-                                        class="form-control"
+                                        class="w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]"
                                         required
+                                        style="font-family: inherit;"
                                     />
                                 </div>
-                                <div class="form-group">
-                                    <label>Calendar URL <span class="required">*</span></label>
+                                <div class="mb-4">
+                                    <label class="block mb-1 font-bold text-gray-800 text-[13px]">Calendar URL <span class="text-red-500 ml-0.5 font-bold">*</span></label>
                                     <input
                                         v-model="editingCalendar.url"
                                         type="url"
-                                        class="form-control"
+                                        class="w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]"
                                         required
+                                        style="font-family: inherit;"
                                     />
                                 </div>
-                                <div class="form-group">
-                                    <label>Color</label>
+                                <div class="mb-4">
+                                    <label class="block mb-1 font-bold text-gray-800 text-[13px]">Color</label>
                                     <input
                                         v-model="editingCalendar.color"
                                         type="color"
-                                        class="form-control"
+                                        class="w-full h-8 px-0.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]"
+                                        style="font-family: inherit;"
                                     />
                                 </div>
-                                <div class="form-group">
-                                    <label>
+                                <div class="mb-4">
+                                    <label class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 block">
                                         <input
                                             v-model="editingCalendar.hideDetails"
                                             type="checkbox"
-                                            class="mr-2"
+                                            class="mr-2 mt-0.5"
                                         />
                                         Hide event details
                                     </label>
                                 </div>
                             </div>
                             <div class="flex gap-2 mt-4">
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-700 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-slate-800 hover:to-slate-700 hover:border-slate-700" style="font-family: inherit;">
                                     Update Calendar
                                 </button>
-                                <button type="button" @click="cancelEdit" class="btn">
+                                <button type="button" @click="cancelEdit" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-gray-800 bg-gradient-to-b from-white to-gray-200 border border-gray-300 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-gray-200 hover:to-gray-300 hover:border-gray-400" style="font-family: inherit;">
                                     Cancel
                                 </button>
                             </div>
@@ -192,7 +200,7 @@
                     <div class="mt-8 pt-6 border-t border-gray-200">
                         <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
                         <div class="flex gap-4">
-                            <button @click="exportCalendars" class="btn btn-primary">
+                            <button @click="exportCalendars" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-700 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-slate-800 hover:to-slate-700 hover:border-slate-700" style="font-family: inherit;">
                                 Export Settings
                             </button>
                             <div class="relative">
@@ -203,7 +211,7 @@
                                     @change="importCalendars"
                                     class="absolute inset-0 opacity-0 cursor-pointer"
                                 />
-                                <button class="btn">Import Settings</button>
+                                <button class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-gray-800 bg-gradient-to-b from-white to-gray-200 border border-gray-300 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-gray-200 hover:to-gray-300 hover:border-gray-400" style="font-family: inherit;">Import Settings</button>
                             </div>
                         </div>
                     </div>
@@ -237,13 +245,13 @@
                     </div>
 
                     <div class="pt-6 border-t border-gray-200">
-                        <button @click="logout" class="btn btn-danger">Logout</button>
+                        <button @click="logout" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-white bg-gradient-to-b from-red-500 to-red-700 border border-red-500 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-red-700 hover:to-red-500 hover:border-red-700" style="font-family: inherit;">Logout</button>
                     </div>
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <button @click="$emit('close')" class="btn">Close</button>
+            <div class="bg-gray-100 border-t border-gray-300 p-4 text-right">
+                <button @click="$emit('close')" class="relative inline-block px-3 py-1 ml-0 mr-1 leading-snug text-gray-800 bg-gradient-to-b from-white to-gray-200 border border-gray-300 cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm hover:from-gray-200 hover:to-gray-300 hover:border-gray-400" style="font-family: inherit;">Close</button>
             </div>
         </div>
     </div>
