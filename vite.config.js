@@ -42,6 +42,7 @@ const viteConfig = {
         reportCompressedSize: true,
         chunkSizeWarningLimit: 1600,
         emptyOutDir: false,
+        target: 'esnext',
         rollupOptions: {
             output: {
                 entryFileNames: `assets/[name].js`,
@@ -53,7 +54,7 @@ const viteConfig = {
 }
 
 if (config.app.env === 'development') {
-    delete viteConfig.build.rollupOptions;
+    viteConfig.build.rollupOptions = {}
 }
 
 export default defineConfig(viteConfig);

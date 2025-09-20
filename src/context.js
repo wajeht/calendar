@@ -81,5 +81,5 @@ export function createContext(customConfig = {}) {
         services,
     };
 
-    return process.env.NODE_ENV === "test" ? context : Object.freeze(context);
+    return config.app.env === "test" ? context : Object.freeze(context);
 }
