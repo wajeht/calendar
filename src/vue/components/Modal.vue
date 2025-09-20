@@ -31,7 +31,7 @@ function handleDialogClick(event) {
 }
 
 function closeModal() {
-    if (isClosing.value) return; // Prevent double closing
+    if (isClosing.value) return;
     isClosing.value = true;
     setTimeout(() => {
         dialogRef.value?.close();
