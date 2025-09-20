@@ -21,21 +21,21 @@ const props = defineProps({
     },
 });
 
-defineEmits(["confirm", "cancel"]);
+const emit = defineEmits(["confirm", "cancel"]);
 </script>
 
 <template>
-    <Modal :title="props.title" high-z-index @close="$emit('cancel')">
+    <Modal :title="props.title" high-z-index @close="emit('cancel')">
         <p class="m-0 leading-relaxed">{{ props.message }}</p>
 
         <template #footer>
             <Button
                 :variant="props.type === 'delete' ? 'danger' : 'primary'"
-                @click="$emit('confirm')"
+                @click="emit('confirm')"
             >
                 {{ props.confirmText }}
             </Button>
-            <Button @click="$emit('cancel')">Cancel</Button>
+            <Button @click="emit('cancel')">Cancel</Button>
         </template>
     </Modal>
 </template>

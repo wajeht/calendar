@@ -26,7 +26,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Modal title="Authentication Required" @close="$emit('close')">
+    <Modal title="Authentication Required" @close="emit('close')">
         <FormGroup label="Password" required input-id="password">
             <Input
                 id="password"
@@ -43,7 +43,7 @@ onMounted(async () => {
             <Button variant="primary" @click="authenticate" :disabled="isLoading">
                 {{ isLoading ? "Logging in..." : "Login" }}
             </Button>
-            <Button @click="$emit('close')" :disabled="isLoading">Cancel</Button>
+            <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
         </template>
     </Modal>
 </template>

@@ -13,7 +13,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(["close"]);
+const emit = defineEmits(["close"]);
 
 function formatEventDate(date) {
     if (!date) return "";
@@ -22,7 +22,7 @@ function formatEventDate(date) {
 </script>
 
 <template>
-    <Modal title="Event Details" @close="$emit('close')">
+    <Modal title="Event Details" @close="emit('close')">
         <div v-if="props.event">
             <h3 class="text-inherit font-inherit mb-4">{{ props.event.title }}</h3>
             <div class="mb-4 leading-relaxed text-[13px]">
@@ -55,7 +55,7 @@ function formatEventDate(date) {
         </div>
 
         <template #footer>
-            <Button @click="$emit('close')">Close</Button>
+            <Button @click="emit('close')">Close</Button>
         </template>
     </Modal>
 </template>

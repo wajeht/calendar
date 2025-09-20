@@ -20,7 +20,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(["close"]);
+const emit = defineEmits(["close"]);
 
 const sizeClasses = computed(() => {
     switch (props.size) {
@@ -37,7 +37,7 @@ const sizeClasses = computed(() => {
         :class="['fixed top-0 left-0 right-0 bottom-0', props.highZIndex ? 'z-[4000]' : 'z-[3000]']"
         class="animate-fadeIn"
         style="background-color: rgba(0, 0, 0, 0.4)"
-        @click="$emit('close')"
+        @click="emit('close')"
     >
         <div
             :class="[
@@ -48,7 +48,7 @@ const sizeClasses = computed(() => {
             ]"
             @click.stop
         >
-            <ModalHeader v-if="props.title || $slots.header" @close="$emit('close')">
+            <ModalHeader v-if="props.title || $slots.header" @close="emit('close')">
                 <slot name="header">{{ props.title }}</slot>
             </ModalHeader>
 

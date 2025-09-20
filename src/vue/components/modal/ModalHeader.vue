@@ -1,5 +1,5 @@
 <script setup>
-defineEmits(["close"]);
+const emit = defineEmits(["close"]);
 </script>
 
 <template>
@@ -9,7 +9,7 @@ defineEmits(["close"]);
         </h2>
         <button
             class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-none border-none text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800"
-            @click="$emit('close')"
+            @click="emit('close')"
         >
             &times;
         </button>
