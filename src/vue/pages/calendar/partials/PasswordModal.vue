@@ -1,9 +1,9 @@
 <script setup>
 import { ref, nextTick, onMounted, useTemplateRef } from "vue";
-import Modal from "../../../components/modal/Modal.vue";
-import FormGroup from "../../../components/ui/FormGroup.vue";
-import Input from "../../../components/ui/Input.vue";
-import Button from "../../../components/ui/Button.vue";
+import Modal from "../../../components/Modal.vue";
+import FormGroup from "../../../components/FormGroup.vue";
+import Input from "../../../components/Input.vue";
+import Button from "../../../components/Button.vue";
 import { useAuth } from "../../../composables/useAuth.js";
 
 const emit = defineEmits(["close", "authenticated"]);

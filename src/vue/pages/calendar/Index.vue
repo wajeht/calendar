@@ -1,6 +1,6 @@
 <script setup>
 import Calendar from "./partials/Calendar.vue";
-import Toast from "../../components/ui/Toast.vue";
+import Toast from "../../components/Toast.vue";
 </script>
 
 <template>

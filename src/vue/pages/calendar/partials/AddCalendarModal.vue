@@ -1,11 +1,11 @@
 <script setup>
 import { reactive } from "vue";
 import { useCalendar } from "../../../composables/useCalendar.js";
-import Modal from "../../../components/modal/Modal.vue";
-import Button from "../../../components/ui/Button.vue";
-import FormGroup from "../../../components/ui/FormGroup.vue";
-import Input from "../../../components/ui/Input.vue";
-import Checkbox from "../../../components/ui/Checkbox.vue";
+import Modal from "../../../components/Modal.vue";
+import Button from "../../../components/Button.vue";
+import FormGroup from "../../../components/FormGroup.vue";
+import Input from "../../../components/Input.vue";
+import Checkbox from "../../../components/Checkbox.vue";
 
 const emit = defineEmits(["close", "calendar-added"]);
 
