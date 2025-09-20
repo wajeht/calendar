@@ -48,7 +48,7 @@ const sizeClasses = computed(() => {
         case "large":
             return "max-w-4xl w-[90%] max-h-[85vh]";
         default:
-            return "max-w-[700px] w-[90%] max-h-[85vh]";
+            return "max-w-[450px] w-[90%] max-h-[85vh]";
     }
 });
 </script>
