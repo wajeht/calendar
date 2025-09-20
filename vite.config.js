@@ -4,9 +4,11 @@ import { config } from './src/config.js'
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
+import tailwindcss from '@tailwindcss/vite'
 
 const viteConfig = {
-    plugins: [vue(), vueDevTools()],
+    plugins: [vue(), vueDevTools(), tailwindcss(),
+    ],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src/vue", import.meta.url)),
