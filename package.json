@@ -11,10 +11,10 @@
     "scripts": {
         "start": "node ./src/server.js",
         "dev": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"npm run dev:vue\" \"npm run dev:server\"",
-        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"vite build --watch --mode development\" \"npm run dev:server\"",
+        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"rm ./public/assets/* && vite build --watch --mode development\" \"npm run dev:server\"",
         "dev:server": "nodemon ./src/server.js",
         "dev:vue": "vite",
-        "build": "vite build",
+        "build": "rm ./public/assets/* && vite build",
         "preview": "vite preview",
         "db:prepare:prod": "npm run db:migrate:latest",
         "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
