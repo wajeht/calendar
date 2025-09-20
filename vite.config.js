@@ -53,7 +53,13 @@ const viteConfig = {
 }
 
 if (config.app.env === 'development') {
-    viteConfig.build.rollupOptions = {}
+    viteConfig.build.rollupOptions = {
+        output: {
+            entryFileNames: `assets/[name].js`,
+            chunkFileNames: `assets/[name].js`,
+            assetFileNames: `assets/[name].[ext]`,
+        }
+    }
 }
 
 export default defineConfig(viteConfig);
