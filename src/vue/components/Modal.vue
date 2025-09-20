@@ -39,7 +39,6 @@ function closeModal() {
     }, 150);
 }
 
-
 onMounted(() => {
     dialogRef.value?.showModal();
 });
@@ -69,7 +68,10 @@ const sizeClasses = computed(() => {
         @click="handleDialogClick"
     >
         <!-- Modal Header -->
-        <div v-if="props.title || $slots.header" class="bg-gray-100 border-b border-gray-300 p-4 relative">
+        <div
+            v-if="props.title || $slots.header"
+            class="bg-gray-100 border-b border-gray-300 p-4 relative"
+        >
             <h2 class="m-0 text-base font-bold text-gray-800">
                 <slot name="header">{{ props.title }}</slot>
             </h2>
