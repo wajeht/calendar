@@ -1,13 +1,12 @@
 <script setup>
-import CalendarView from "../components/CalendarView.vue";
-import ToastContainer from "../components/ToastContainer.vue";
+import Calendar from "../components/Calendar.vue";
+import Toast from "../components/Toast.vue";
 </script>
 
 <template>
-    <div id="app">
-        <CalendarView />
-        <ToastContainer />
-    </div>
+    <main>
+        <Calendar />
+        <Toast />
+    </main>
 </template>
 
-<style scoped></style>

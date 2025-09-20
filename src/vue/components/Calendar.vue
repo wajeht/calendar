@@ -1,43 +1,3 @@
-<template>
-    <div class="calendar-container">
-        <FullCalendar ref="calendarRef" :options="calendarOptions" />
-
-        <!-- Password Modal -->
-        <PasswordModal
-            v-if="showPasswordModal"
-            @close="showPasswordModal = false"
-            @authenticated="handleAuthenticated"
-        />
-
-        <!-- Settings Modal -->
-        <SettingsModal
-            v-if="showSettingsModal"
-            @close="showSettingsModal = false"
-            :calendars="calendars"
-            @calendar-updated="loadCalendars"
-        />
-
-        <!-- Event Modal -->
-        <EventModal
-            v-if="showEventModal"
-            :event="selectedEvent"
-            :calendar="selectedEventCalendar"
-            @close="closeEventModal"
-        />
-
-        <!-- Confirm Modal -->
-        <ConfirmModal
-            v-if="confirmDialog.show"
-            :title="confirmDialog.title"
-            :message="confirmDialog.message"
-            :type="confirmDialog.type"
-            :confirm-text="confirmDialog.confirmText"
-            @confirm="confirmDialog.resolve"
-            @cancel="confirmDialog.reject"
-        />
-    </div>
-</template>
-
 <script setup>
 import { ref, onMounted, reactive } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
@@ -311,9 +271,26 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
-.calendar-container {
-    height: 100vh;
-    width: 100vw;
-}
-</style>
+<template>
+    <div class="h-screen w-screen">
+        <FullCalendar ref="calendarRef" :options="calendarOptions" />
+
+        <!-- Password Modal -->
+        <PasswordModal v-if="showPasswordModal" @close="showPasswordModal = false"
+            @authenticated="handleAuthenticated" />
+
+        <!-- Settings Modal -->
+        <SettingsModal v-if="showSettingsModal" @close="showSettingsModal = false" :calendars="calendars"
+            @calendar-updated="loadCalendars" />
+
+        <!-- Event Modal -->
+        <EventModal v-if="showEventModal" :event="selectedEvent" :calendar="selectedEventCalendar"
+            @close="closeEventModal" />
+
+        <!-- Confirm Modal -->
+        <ConfirmModal v-if="confirmDialog.show" :title="confirmDialog.title" :message="confirmDialog.message"
+            :type="confirmDialog.type" :confirm-text="confirmDialog.confirmText" @confirm="confirmDialog.resolve"
+            @cancel="confirmDialog.reject" />
+    </div>
+</template>
+
