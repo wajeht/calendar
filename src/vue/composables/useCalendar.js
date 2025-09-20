@@ -37,7 +37,12 @@ export function useCalendar() {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(calendarData),
+                body: JSON.stringify({
+                    name: calendarData.name,
+                    url: calendarData.url,
+                    color: calendarData.color,
+                    hidden: calendarData.hidden || false
+                }),
             });
 
             if (response.ok) {
@@ -65,7 +70,12 @@ export function useCalendar() {
                 method: "PUT",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(calendarData),
+                body: JSON.stringify({
+                    name: calendarData.name,
+                    url: calendarData.url,
+                    color: calendarData.color,
+                    hidden: calendarData.hidden
+                }),
             });
 
             if (response.ok) {

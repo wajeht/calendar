@@ -37,14 +37,14 @@ const newCalendar = reactive({
     name: "",
     url: "",
     color: "#3b82f6",
-    hideDetails: false,
+    hidden: false,
 });
 
 function resetNewCalendar() {
     newCalendar.name = "";
     newCalendar.url = "";
     newCalendar.color = "#3b82f6";
-    newCalendar.hideDetails = false;
+    newCalendar.hidden = false;
 }
 
 function cancelAdd() {
@@ -193,7 +193,7 @@ watch(debugMode, updateDebugMode);
                         </FormGroup>
                         <FormGroup>
                             <Checkbox
-                                v-model="newCalendar.hideDetails"
+                                v-model="newCalendar.hidden"
                                 label="Hide event details"
                             />
                         </FormGroup>
@@ -220,7 +220,7 @@ watch(debugMode, updateDebugMode);
                         <div>
                             <h4 class="font-medium text-gray-900">{{ calendar.name }}</h4>
                             <p class="text-sm text-gray-500">{{ calendar.url }}</p>
-                            <span v-if="calendar.hideDetails" class="text-xs text-yellow-600">
+                            <span v-if="calendar.hidden" class="text-xs text-yellow-600">
                                 Details hidden
                             </span>
                         </div>
@@ -252,7 +252,7 @@ watch(debugMode, updateDebugMode);
                         </FormGroup>
                         <FormGroup>
                             <Checkbox
-                                v-model="editingCalendar.hideDetails"
+                                v-model="editingCalendar.hidden"
                                 label="Hide event details"
                             />
                         </FormGroup>
