@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from "node:url";
 
-import { config } from './src/config.js'
+import { config } from "./src/config.js";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
@@ -13,32 +13,32 @@ const viteConfig = {
         },
     },
     root: "./src/vue",
-    publicDir: './public',
+    publicDir: "./public",
     server: {
         port: 3000,
         host: true,
         strictPort: true,
-        allowedHosts: ['localhost'],
+        allowedHosts: ["localhost"],
         proxy: {
-            '/api': {
-                target: 'http://localhost',
+            "/api": {
+                target: "http://localhost",
                 changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/api/, '/api'),
+                rewrite: (path) => path.replace(/^\/api/, "/api"),
             },
-            '/healthz': {
-                target: 'http://localhost',
+            "/healthz": {
+                target: "http://localhost",
                 changeOrigin: true,
                 rewrite: (path) => path,
             },
-            '/favicon.ico': {
-                target: 'http://localhost',
+            "/favicon.ico": {
+                target: "http://localhost",
                 changeOrigin: true,
                 rewrite: (path) => path,
             },
         },
     },
     build: {
-        outDir: '../../public',
+        outDir: "../../public",
         reportCompressedSize: true,
         chunkSizeWarningLimit: 1600,
         emptyOutDir: false,
@@ -50,16 +50,16 @@ const viteConfig = {
             },
         },
     },
-}
+};
 
-if (config.app.env === 'development') {
+if (config.app.env === "development") {
     viteConfig.build.rollupOptions = {
         output: {
             entryFileNames: `assets/[name].js`,
             chunkFileNames: `assets/[name].js`,
             assetFileNames: `assets/[name].[ext]`,
-        }
-    }
+        },
+    };
 }
 
 export default defineConfig(viteConfig);

@@ -9,3 +9,4 @@ build/
 coverage/
 *.min.js
 *.min.css
+/public/assets

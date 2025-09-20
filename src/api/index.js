@@ -10,9 +10,9 @@ export function createGeneralRouter(dependencies = {}) {
 
     router.get("/", (_req, res) => {
         return res
-            .setHeader('Content-Type', 'text/html')
+            .setHeader("Content-Type", "text/html")
             .status(200)
-            .sendFile(utils.cwd() + '/public/index.html');
+            .sendFile(utils.cwd() + "/public/index.html");
     });
 
     return router;
@@ -35,9 +35,9 @@ export function notFoundHandler(dependencies = {}) {
         }
 
         return res
-            .setHeader('Content-Type', 'text/html')
+            .setHeader("Content-Type", "text/html")
             .status(200)
-            .sendFile(utils.cwd() + '/public/index.html');
+            .sendFile(utils.cwd() + "/public/index.html");
     };
 }
 
