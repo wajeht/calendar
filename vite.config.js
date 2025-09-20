@@ -42,7 +42,6 @@ const viteConfig = {
         reportCompressedSize: true,
         chunkSizeWarningLimit: 1600,
         emptyOutDir: false,
-        target: 'esnext',
         rollupOptions: {
             output: {
                 entryFileNames: `assets/[name].js`,
