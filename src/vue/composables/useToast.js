@@ -1,10 +1,10 @@
-import { defineStore } from "pinia";
 import { ref } from "vue";
 
-export const useToast = defineStore("toast", () => {
-    const toasts = ref([]);
-    let toastId = 0;
+// Global state - shared across all components
+const toasts = ref([]);
+let toastId = 0;
 
+export function useToast() {
     function showToast(message, type = "info", title = null, duration = 5000) {
         const id = ++toastId;
         const toast = {
@@ -83,4 +83,4 @@ export const useToast = defineStore("toast", () => {
         info,
         clear,
     };
-});
+}

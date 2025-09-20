@@ -69,7 +69,6 @@
         "@vitejs/plugin-vue": "^6.0.1",
         "concurrently": "^9.1.0",
         "nodemon": "^3.1.10",
-        "pinia": "^3.0.3",
         "prettier": "3.6.2",
         "supertest": "^7.1.4",
         "vite": "npm:rolldown-vite@latest",

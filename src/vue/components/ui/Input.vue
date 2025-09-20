@@ -1,11 +1,14 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
+
+const inputRef = ref(null);
+
+const model = defineModel({
+    type: [String, Number],
+    default: "",
+});
 
 const props = defineProps({
-    modelValue: {
-        type: [String, Number],
-        default: "",
-    },
     type: {
         type: String,
         default: "text",
@@ -24,7 +27,16 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["update:modelValue"]);
+// Expose methods for parent components
+function focus() {
+    inputRef.value?.focus();
+}
+
+function blur() {
+    inputRef.value?.blur();
+}
+
+defineExpose({ focus, blur });
 
 const inputClasses = computed(() => {
     const classes = [];
@@ -45,17 +57,17 @@ const inputClasses = computed(() => {
 
 <template>
     <input
+        ref="inputRef"
         :class="[
             'w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]',
             inputClasses,
         ]"
         :type="type"
-        :value="modelValue"
+        v-model="model"
         :disabled="disabled"
         :placeholder="placeholder"
         :required="required"
         style="font-family: inherit"
-        @input="$emit('update:modelValue', $event.target.value)"
         v-bind="$attrs"
     />
 </template>

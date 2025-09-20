@@ -12,15 +12,17 @@ import SettingsModal from "./SettingsModal.vue";
 import EventModal from "./EventModal.vue";
 import ConfirmModal from "./ConfirmModal.vue";
 
-import { useToast } from "../toast";
+import { useToast } from "../composables/useToast";
+import { useAuth } from "../composables/useAuth.js";
+import { useCalendar } from "../composables/useCalendar.js";
 
 const toast = useToast();
+const { isAuthenticated, verifySession } = useAuth();
+const { calendars, getCalendars } = useCalendar();
 
 // Reactive state
 const calendarRef = ref();
-const calendars = ref([]);
 const eventSources = ref([]);
-const isAuthenticated = ref(false);
 
 // Modal states
 const showPasswordModal = ref(false);
@@ -141,73 +143,46 @@ function handleDatesSet() {
 }
 
 function handleAuthenticated() {
-    isAuthenticated.value = true;
     showPasswordModal.value = false;
     loadCalendars();
-    toast.success("Logged in successfully");
 }
 
 // API functions
 async function checkAuthStatus() {
-    try {
-        const response = await fetch("/api/auth/verify", {
-            method: "GET",
-            credentials: "include",
-        });
-
-        isAuthenticated.value = response.ok;
-    } catch (error) {
-        isAuthenticated.value = false;
-        console.error("Auth check failed:", error);
-    }
+    await verifySession();
 }
 
 async function loadCalendars() {
-    try {
-        const response = await fetch("/api/calendars", {
-            credentials: "include",
+    const result = await getCalendars();
+
+    if (!result.success || !result.data || result.data.length === 0) {
+        console.debug("No calendars to load");
+        return;
+    }
+
+    // Update FullCalendar event sources
+    const calendar = calendarRef.value.getApi();
+    calendar.removeAllEventSources();
+    eventSources.value = [];
+
+    for (const cal of result.data) {
+        if (!cal || !cal.id) continue;
+
+        const events = cal.events || [];
+
+        const source = {
+            id: cal.id,
+            events: events,
+            color: cal.color,
+        };
+
+        calendar.addEventSource(source);
+
+        eventSources.value.push({
+            id: cal.id,
+            name: cal.name,
+            color: cal.color,
         });
-
-        if (!response.ok) {
-            console.error("Failed to fetch calendars:", response.status);
-            return;
-        }
-
-        const calendarData = await response.json();
-        calendars.value = calendarData;
-
-        if (!calendarData || calendarData.length === 0) {
-            console.debug("No calendars to load");
-            return;
-        }
-
-        // Update FullCalendar event sources
-        const calendar = calendarRef.value.getApi();
-        calendar.removeAllEventSources();
-        eventSources.value = [];
-
-        for (const cal of calendarData) {
-            if (!cal || !cal.id) continue;
-
-            const events = cal.events || [];
-
-            const source = {
-                id: cal.id,
-                events: events,
-                color: cal.color,
-            };
-
-            calendar.addEventSource(source);
-
-            eventSources.value.push({
-                id: cal.id,
-                name: cal.name,
-                color: cal.color,
-            });
-        }
-    } catch (error) {
-        console.error("Error loading calendars:", error);
-        toast.error("Failed to load calendars");
     }
 }
 

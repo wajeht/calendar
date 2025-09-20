@@ -1,7 +1,7 @@
 <script setup>
-import { useToast } from "../toast";
+import { useToast } from "../composables/useToast";
 
-const toastStore = useToast();
+const { toasts, removeToast } = useToast();
 
 function getIcon(type) {
     const icons = {
@@ -17,7 +17,7 @@ function getIcon(type) {
 <template>
     <div class="fixed top-5 right-5 z-[9999] pointer-events-none">
         <div
-            v-for="toast in toastStore.toasts"
+            v-for="toast in toasts"
             :key="toast.id"
             :class="[
                 'bg-white border border-gray-300 rounded shadow-lg p-3 mb-3 min-w-[300px] max-w-[450px] pointer-events-auto relative font-inherit transition-all duration-300 ease-in-out',
@@ -49,7 +49,7 @@ function getIcon(type) {
             </div>
             <button
                 class="absolute top-1.5 right-2 bg-none border-none text-base text-gray-500 cursor-pointer p-1 w-6 h-6 flex items-center justify-center leading-none rounded hover:text-gray-600 hover:bg-gray-100"
-                @click="toastStore.removeToast(toast.id)"
+                @click="removeToast(toast.id)"
             >
                 &times;
             </button>

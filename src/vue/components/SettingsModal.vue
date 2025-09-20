@@ -1,6 +1,8 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
-import { useToast } from "../toast";
+import { useToast } from "../composables/useToast";
+import { useAuth } from "../composables/useAuth.js";
+import { useCalendar } from "../composables/useCalendar.js";
 import Modal from "./ui/modal/Modal.vue";
 import FormGroup from "./ui/FormGroup.vue";
 import Input from "./ui/Input.vue";
@@ -16,6 +18,15 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "calendar-updated"]);
 const toast = useToast();
+const { logout } = useAuth();
+const {
+    addCalendar: addCalendarAPI,
+    updateCalendar: updateCalendarAPI,
+    deleteCalendar: deleteCalendarAPI,
+    importCalendars: importCalendarsAPI,
+    exportCalendars: exportCalendarsAPI,
+    isLoading
+} = useCalendar();
 
 const activeTab = ref("calendars");
 const showAddForm = ref(false);
@@ -50,46 +61,18 @@ function cancelEdit() {
 }
 
 async function addCalendar() {
-    try {
-        const response = await fetch("/api/calendars", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newCalendar),
-        });
-
-        if (response.ok) {
-            toast.success("Calendar added successfully");
-            emit("calendar-updated");
-            cancelAdd();
-        } else {
-            const error = await response.text();
-            toast.error("Failed to add calendar: " + error);
-        }
-    } catch (error) {
-        toast.error("Error adding calendar: " + error.message);
+    const result = await addCalendarAPI(newCalendar);
+    if (result.success) {
+        emit("calendar-updated");
+        cancelAdd();
     }
 }
 
 async function updateCalendar() {
-    try {
-        const response = await fetch(`/api/calendars/${editingCalendar.value.id}`, {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(editingCalendar.value),
-        });
-
-        if (response.ok) {
-            toast.success("Calendar updated successfully");
-            emit("calendar-updated");
-            cancelEdit();
-        } else {
-            const error = await response.text();
-            toast.error("Failed to update calendar: " + error);
-        }
-    } catch (error) {
-        toast.error("Error updating calendar: " + error.message);
+    const result = await updateCalendarAPI(editingCalendar.value.id, editingCalendar.value);
+    if (result.success) {
+        emit("calendar-updated");
+        cancelEdit();
     }
 }
 
@@ -98,42 +81,14 @@ async function deleteCalendar(calendar) {
         return;
     }
 
-    try {
-        const response = await fetch(`/api/calendars/${calendar.id}`, {
-            method: "DELETE",
-            credentials: "include",
-        });
-
-        if (response.ok) {
-            toast.success("Calendar deleted successfully");
-            emit("calendar-updated");
-        } else {
-            const error = await response.text();
-            toast.error("Failed to delete calendar: " + error);
-        }
-    } catch (error) {
-        toast.error("Error deleting calendar: " + error.message);
+    const result = await deleteCalendarAPI(calendar.id);
+    if (result.success) {
+        emit("calendar-updated");
     }
 }
 
 function exportCalendars() {
-    const settings = {
-        calendars: props.calendars,
-        exported: new Date().toISOString(),
-    };
-
-    const blob = new Blob([JSON.stringify(settings, null, 2)], {
-        type: "application/json",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `calendar-settings-${new Date().toISOString().split("T")[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast.success("Settings exported successfully");
+    exportCalendarsAPI();
 }
 
 async function importCalendars(event) {
@@ -148,19 +103,9 @@ async function importCalendars(event) {
             throw new Error("Invalid settings file format");
         }
 
-        const response = await fetch("/api/calendars/import", {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ calendars: settings.calendars }),
-        });
-
-        if (response.ok) {
-            toast.success("Settings imported successfully");
+        const result = await importCalendarsAPI(settings.calendars);
+        if (result.success) {
             emit("calendar-updated");
-        } else {
-            const error = await response.text();
-            toast.error("Failed to import settings: " + error);
         }
     } catch (error) {
         toast.error("Error importing settings: " + error.message);
@@ -169,22 +114,8 @@ async function importCalendars(event) {
     event.target.value = "";
 }
 
-async function logout() {
-    try {
-        const response = await fetch("/api/auth/logout", {
-            method: "POST",
-            credentials: "include",
-        });
-
-        if (response.ok) {
-            toast.success("Logged out successfully");
-            window.location.reload();
-        } else {
-            toast.error("Failed to logout");
-        }
-    } catch (error) {
-        toast.error("Error during logout: " + error.message);
-    }
+async function logoutUser() {
+    await logout();
 }
 
 function updateDebugMode() {
@@ -374,7 +305,7 @@ watch(debugMode, updateDebugMode);
             </div>
 
             <div class="pt-6 border-t border-gray-200">
-                <Button @click="logout" variant="danger">Logout</Button>
+                <Button @click="logoutUser" variant="danger">Logout</Button>
             </div>
         </div>
 

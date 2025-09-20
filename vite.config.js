@@ -21,17 +21,17 @@ const viteConfig = {
         allowedHosts: ["localhost"],
         proxy: {
             "/api": {
-                target: "http://localhost",
+                target: "http://localhost:80",
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, "/api"),
             },
             "/healthz": {
-                target: "http://localhost",
+                target: "http://localhost:80",
                 changeOrigin: true,
                 rewrite: (path) => path,
             },
             "/favicon.ico": {
-                target: "http://localhost",
+                target: "http://localhost:80",
                 changeOrigin: true,
                 rewrite: (path) => path,
             },

@@ -1,35 +1,21 @@
 <script setup>
 import { ref, nextTick, onMounted } from "vue";
-import { useToast } from "../toast";
 import Modal from "./ui/modal/Modal.vue";
 import FormGroup from "./ui/FormGroup.vue";
 import Input from "./ui/Input.vue";
 import Button from "./ui/Button.vue";
+import { useAuth } from "../composables/useAuth.js";
 
 const emit = defineEmits(["close", "authenticated"]);
-const toast = useToast();
+const { login, isLoading } = useAuth();
 
 const password = ref("");
 const passwordInput = ref();
 
 async function authenticate() {
-    try {
-        const response = await fetch("/api/auth/login", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ password: password.value }),
-        });
-
-        if (response.ok) {
-            emit("authenticated");
-        } else {
-            toast.error("Invalid password");
-        }
-    } catch (error) {
-        toast.error("Authentication error: " + error.message);
+    const result = await login(password.value);
+    if (result.success) {
+        emit("authenticated");
     }
 }
 
@@ -54,8 +40,10 @@ onMounted(async () => {
         </FormGroup>
 
         <template #footer>
-            <Button variant="primary" @click="authenticate">Login</Button>
-            <Button @click="$emit('close')">Cancel</Button>
+            <Button variant="primary" @click="authenticate" :disabled="isLoading">
+                {{ isLoading ? 'Logging in...' : 'Login' }}
+            </Button>
+            <Button @click="$emit('close')" :disabled="isLoading">Cancel</Button>
         </template>
     </Modal>
 </template>
