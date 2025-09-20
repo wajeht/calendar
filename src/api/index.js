@@ -4,7 +4,7 @@ import { createCronRouter } from "./cron/index.js";
 import { createCalendarRouter } from "./calendar/index.js";
 
 export function createGeneralRouter(dependencies = {}) {
-    const { utils } = dependencies;
+    const { utils, db } = dependencies;
 
     const router = express.Router();
 
@@ -13,6 +13,27 @@ export function createGeneralRouter(dependencies = {}) {
             .setHeader("Content-Type", "text/html")
             .status(200)
             .sendFile(utils.cwd() + "/public/index.html");
+    });
+
+    router.get("/healthz", async (_req, res) => {
+        try {
+            const dbHealth = await db.healthCheck();
+            const health = {
+                status: dbHealth.healthy ? "healthy" : "unhealthy",
+                timestamp: new Date().toISOString(),
+                uptime: process.uptime(),
+                database: dbHealth,
+            };
+
+            const statusCode = dbHealth.healthy ? 200 : 503;
+            res.status(statusCode).json(health);
+        } catch (error) {
+            res.status(503).json({
+                status: "unhealthy",
+                timestamp: new Date().toISOString(),
+                error: error.message,
+            });
+        }
     });
 
     return router;
@@ -141,7 +162,7 @@ export function errorHandler(dependencies = {}) {
 }
 
 export function createRouter(dependencies = {}) {
-    const { models, services, middleware, utils, logger, config, errors, validators } =
+    const { models, services, middleware, utils, logger, config, errors, validators, db } =
         dependencies;
 
     if (!models) throw new Error("Models required for router");
@@ -190,7 +211,7 @@ export function createRouter(dependencies = {}) {
         }),
     );
 
-    router.use("/", createGeneralRouter({ utils }));
+    router.use("/", createGeneralRouter({ utils, db }));
 
     router.use(notFoundHandler({ logger, utils }));
 

@@ -127,41 +127,20 @@ export async function createApp(customConfig = {}) {
                     }
                 },
             }),
+        )
+        .use(
+            createRouter({
+                db: ctx.db,
+                models: ctx.models,
+                services: ctx.services,
+                middleware: ctx.middleware,
+                utils: ctx.utils,
+                logger: ctx.logger,
+                config: ctx.config,
+                errors: ctx.errors,
+                validators: ctx.validators,
+            }),
         );
-
-    app.get("/healthz", async (_req, res) => {
-        try {
-            const dbHealth = await ctx.db.healthCheck();
-            const health = {
-                status: dbHealth.healthy ? "healthy" : "unhealthy",
-                timestamp: new Date().toISOString(),
-                uptime: process.uptime(),
-                database: dbHealth,
-            };
-
-            const statusCode = dbHealth.healthy ? 200 : 503;
-            res.status(statusCode).json(health);
-        } catch (error) {
-            res.status(503).json({
-                status: "unhealthy",
-                timestamp: new Date().toISOString(),
-                error: error.message,
-            });
-        }
-    });
-
-    app.use(
-        createRouter({
-            models: ctx.models,
-            services: ctx.services,
-            middleware: ctx.middleware,
-            utils: ctx.utils,
-            logger: ctx.logger,
-            config: ctx.config,
-            errors: ctx.errors,
-            validators: ctx.validators,
-        }),
-    );
 
     return { app, ctx };
 }
