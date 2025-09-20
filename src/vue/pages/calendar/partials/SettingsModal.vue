@@ -1,10 +1,10 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
-import { useToast } from "../composables/useToast";
-import { useAuth } from "../composables/useAuth.js";
-import { useCalendar } from "../composables/useCalendar.js";
-import Modal from "./ui/modal/Modal.vue";
-import Button from "./ui/Button.vue";
+import { useToast } from "../../../composables/useToast";
+import { useAuth } from "../../../composables/useAuth.js";
+import { useCalendar } from "../../../composables/useCalendar.js";
+import Modal from "../../../components/modal/Modal.vue";
+import Button from "../../../components/ui/Button.vue";
 import AddCalendarModal from "./AddCalendarModal.vue";
 import EditCalendarModal from "./EditCalendarModal.vue";
 import DeleteCalendarModal from "./DeleteCalendarModal.vue";

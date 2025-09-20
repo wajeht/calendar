@@ -12,9 +12,9 @@ import SettingsModal from "./SettingsModal.vue";
 import EventModal from "./EventModal.vue";
 import ConfirmModal from "./ConfirmModal.vue";
 
-import { useToast } from "../composables/useToast";
-import { useAuth } from "../composables/useAuth.js";
-import { useCalendar } from "../composables/useCalendar.js";
+import { useToast } from "../../../composables/useToast";
+import { useAuth } from "../../../composables/useAuth.js";
+import { useCalendar } from "../../../composables/useCalendar.js";
 
 const toast = useToast();
 const { isAuthenticated, verifySession } = useAuth();

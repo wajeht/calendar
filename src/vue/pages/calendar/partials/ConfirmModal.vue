@@ -1,6 +1,6 @@
 <script setup>
-import Modal from "./ui/modal/Modal.vue";
-import Button from "./ui/Button.vue";
+import Modal from "../../../components/modal/Modal.vue";
+import Button from "../../../components/ui/Button.vue";
 
 defineProps({
     title: {

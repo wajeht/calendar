@@ -1,11 +1,11 @@
 <script setup>
 import { reactive, watch } from "vue";
-import { useCalendar } from "../composables/useCalendar.js";
-import Modal from "./ui/modal/Modal.vue";
-import FormGroup from "./ui/FormGroup.vue";
-import Input from "./ui/Input.vue";
-import Button from "./ui/Button.vue";
-import Checkbox from "./ui/Checkbox.vue";
+import { useCalendar } from "../../../composables/useCalendar.js";
+import Modal from "../../../components/modal/Modal.vue";
+import FormGroup from "../../../components/ui/FormGroup.vue";
+import Input from "../../../components/ui/Input.vue";
+import Button from "../../../components/ui/Button.vue";
+import Checkbox from "../../../components/ui/Checkbox.vue";
 
 const props = defineProps({
     calendar: {

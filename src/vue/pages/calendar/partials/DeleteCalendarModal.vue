@@ -1,7 +1,7 @@
 <script setup>
-import { useCalendar } from "../composables/useCalendar.js";
-import Modal from "./ui/modal/Modal.vue";
-import Button from "./ui/Button.vue";
+import { useCalendar } from "../../../composables/useCalendar.js";
+import Modal from "../../../components/modal/Modal.vue";
+import Button from "../../../components/ui/Button.vue";
 
 const props = defineProps({
     calendar: {

@@ -4,7 +4,7 @@ const routes = [
     {
         path: "/",
         name: "Calendar",
-        component: () => import("./pages/Calendar.vue"),
+        component: () => import("./pages/calendar/Index.vue"),
         meta: { title: "Calendar" },
     },
     {
