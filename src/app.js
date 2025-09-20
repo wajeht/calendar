@@ -129,7 +129,7 @@ export async function createApp(customConfig = {}) {
             }),
         );
 
-    app.get("/health", async (_req, res) => {
+    app.get("/healthz", async (_req, res) => {
         try {
             const dbHealth = await ctx.db.healthCheck();
             const health = {
