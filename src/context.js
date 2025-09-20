@@ -12,10 +12,10 @@ import { createCronService } from "./cron.js";
 import { createUtils } from "./utils/utils.js";
 import { createLogger } from "./utils/logger.js";
 import { createValidators } from "./utils/validators.js";
-import { createCalendar } from "./routes/api/calendar/model.js";
-import { createSettings } from "./routes/api/settings/model.js";
-import { createAuthMiddleware } from "./routes/api/auth/middleware.js";
-import { createCalendarService } from "./routes/api/calendar/service.js";
+import { createCalendar } from "./api/calendar/model.js";
+import { createSettings } from "./api/settings/model.js";
+import { createAuthMiddleware } from "./api/auth/middleware.js";
+import { createCalendarService } from "./api/calendar/service.js";
 
 export function createContext(customConfig = {}) {
     if (customConfig && typeof customConfig !== "object") {

@@ -1,4 +1,3 @@
-import ejs from "ejs";
 import cors from "cors";
 import helmet from "helmet";
 import express from "express";
@@ -6,7 +5,7 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import { createContext } from "./context.js";
 import { rateLimit } from "express-rate-limit";
-import { createRouter } from "./routes/routes.js";
+import { createRouter } from "./api/index.js";
 
 export async function createApp(customConfig = {}) {
     const ctx = createContext(customConfig);
@@ -58,12 +57,9 @@ export async function createApp(customConfig = {}) {
             rateLimit({
                 ...ctx.config.rateLimit,
                 handler: async (req, res) => {
-                    if (ctx.utils.isApiRequest(req)) {
-                        return res.json({
-                            message: "Too many requests, please try again later.",
-                        });
-                    }
-                    return res.status(429).render("general/rate-limit.html");
+                    return res.status(429).json({
+                        message: "Too many requests, please try again later.",
+                    });
                 },
                 skip: (_req, _res) => ctx.config.app.env !== "production",
             }),
@@ -131,49 +127,7 @@ export async function createApp(customConfig = {}) {
                     }
                 },
             }),
-        )
-        .engine("html", ejs.renderFile)
-        .set("view engine", "html")
-        .set("view cache", ctx.config.app.env === "production")
-        .set("views", "./src/routes")
-        .use((req, res, next) => {
-            const isProd = ctx.config.app?.env === "production";
-            const randomNumber = Math.random();
-
-            res.locals.state = {
-                copyRightYear: new Date().getFullYear(),
-                env: ctx.config.app?.env || "development",
-                version: {
-                    style: isProd ? "0.0.1" : randomNumber,
-                    script: isProd ? "0.0.1" : randomNumber,
-                },
-            };
-
-            next();
-        })
-        .use((_req, res, next) => {
-            const originalRender = res.render;
-            res.render = function (view, viewOptions = {}, callback) {
-                const layout =
-                    viewOptions.layout === false
-                        ? false
-                        : viewOptions.layout || "_layouts/public.html";
-                const options = { ...viewOptions };
-
-                if (!layout) return originalRender.call(this, view, options, callback);
-
-                originalRender.call(this, view, options, (err, html) => {
-                    if (err) return callback ? callback(err) : next(err);
-                    originalRender.call(
-                        this,
-                        layout,
-                        { ...options, body: html, layout: undefined },
-                        callback,
-                    );
-                });
-            };
-            next();
-        });
+        );
 
     app.get("/health", async (_req, res) => {
         try {
@@ -197,7 +151,6 @@ export async function createApp(customConfig = {}) {
     });
 
     app.use(
-        "/",
         createRouter({
             models: ctx.models,
             services: ctx.services,

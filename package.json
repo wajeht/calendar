@@ -3,13 +3,18 @@
     "version": "0.0.1",
     "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
     "main": "server.js",
+    "private": "true",
     "type": "module",
     "directories": {
         "doc": "docs"
     },
     "scripts": {
         "start": "node ./src/server.js",
-        "dev": "nodemon ./src/server.js",
+        "dev": "concurrently \"npm run dev:server\" \"npm run dev:vue\"",
+        "dev:server": "nodemon ./src/server.js",
+        "dev:vue": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
         "db:prepare:prod": "npm run db:migrate:latest",
         "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
         "db:migrate:make": "knex migrate:make --knexfile=./src/db/knexfile.js",
@@ -44,18 +49,34 @@
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
         "dotenv": "^17.2.2",
-        "ejs": "^3.1.10",
         "express": "^5.1.0",
         "express-rate-limit": "^8.1.0",
         "helmet": "^8.1.0",
-        "ical.js": "^2.2.1",
+        "ical.js": "^1.4.0",
         "knex": "^3.1.0",
         "node-cron": "^4.2.1"
     },
     "devDependencies": {
+        "@fullcalendar/core": "^6.1.10",
+        "@fullcalendar/daygrid": "^6.1.10",
+        "@fullcalendar/icalendar": "^6.1.10",
+        "@fullcalendar/interaction": "^6.1.10",
+        "@fullcalendar/list": "^6.1.10",
+        "@fullcalendar/timegrid": "^6.1.10",
+        "@fullcalendar/vue3": "^6.1.10",
+        "autoprefixer": "^10.4.16",
+        "concurrently": "^9.1.0",
         "nodemon": "^3.1.10",
-        "prettier": "^3.6.2",
+        "postcss": "^8.4.32",
         "supertest": "^7.1.4",
-        "vitest": "^3.2.4"
+        "tailwindcss": "^3.4.0",
+        "vitest": "^3.2.4",
+        "pinia": "^3.0.3",
+        "vue": "^3.5.18",
+        "vue-router": "^4.5.1",
+        "@vitejs/plugin-vue": "^6.0.1",
+        "prettier": "3.6.2",
+        "vite": "npm:rolldown-vite@latest",
+        "vite-plugin-vue-devtools": "^8.0.0"
     }
 }
