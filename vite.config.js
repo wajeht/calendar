@@ -3,10 +3,10 @@ import { fileURLToPath, URL } from "node:url";
 import { config } from './src/config.js'
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
+import tailwindcss from "@tailwindcss/vite";
 
 const viteConfig = {
-    plugins: [vue(),
-    ],
+    plugins: [vue(), tailwindcss()],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src/vue", import.meta.url)),
