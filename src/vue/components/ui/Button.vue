@@ -61,7 +61,7 @@ const buttonClasses = computed(() => {
             'relative inline-block px-3 py-1 ml-0 mr-1 leading-snug cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm transition-all duration-200',
             buttonClasses,
         ]"
-        :disabled="disabled"
+        :disabled="props.disabled"
         style="font-family: inherit"
         v-bind="$attrs"
     >

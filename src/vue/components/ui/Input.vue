@@ -27,7 +27,6 @@ const props = defineProps({
     },
 });
 
-// Expose methods for parent components
 function focus() {
     inputRef.value?.focus();
 }
@@ -41,12 +40,10 @@ defineExpose({ focus, blur });
 const inputClasses = computed(() => {
     const classes = [];
 
-    // Special styling for color inputs
     if (props.type === "color") {
         classes.push("h-8 px-0.5");
     }
 
-    // Disabled state
     if (props.disabled) {
         classes.push("bg-gray-100 cursor-not-allowed");
     }
@@ -62,11 +59,11 @@ const inputClasses = computed(() => {
             'w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]',
             inputClasses,
         ]"
-        :type="type"
+        :type="props.type"
         v-model="model"
-        :disabled="disabled"
-        :placeholder="placeholder"
-        :required="required"
+        :disabled="props.disabled"
+        :placeholder="props.placeholder"
+        :required="props.required"
         style="font-family: inherit"
         v-bind="$attrs"
     />

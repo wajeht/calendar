@@ -30,7 +30,7 @@ function handleClose() {
 <template>
     <Modal title="Delete Confirmation" @close="handleClose">
         <p class="text-gray-700">
-            Are you sure you want to delete "<strong>{{ calendar.name }}</strong
+            Are you sure you want to delete "<strong>{{ props.calendar.name }}</strong
             >"? This action cannot be undone.
         </p>
 

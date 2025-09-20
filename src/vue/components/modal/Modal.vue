@@ -34,7 +34,7 @@ const sizeClasses = computed(() => {
 
 <template>
     <div
-        :class="['fixed top-0 left-0 right-0 bottom-0', highZIndex ? 'z-[4000]' : 'z-[3000]']"
+        :class="['fixed top-0 left-0 right-0 bottom-0', props.highZIndex ? 'z-[4000]' : 'z-[3000]']"
         class="animate-fadeIn"
         style="background-color: rgba(0, 0, 0, 0.4)"
         @click="$emit('close')"
@@ -42,16 +42,14 @@ const sizeClasses = computed(() => {
         <div
             :class="[
                 'fixed top-1/2 left-1/2 bg-white border border-gray-300 rounded-sm shadow-lg overflow-hidden text-[13px] leading-tight',
-                highZIndex ? 'z-[4001]' : 'z-[3001]',
-                animated
-                    ? 'animate-scaleIn transform -translate-x-1/2 -translate-y-1/2'
-                    : 'transform -translate-x-1/2 -translate-y-1/2',
+                props.highZIndex ? 'z-[4001]' : 'z-[3001]',
+                'animate-scaleIn transform -translate-x-1/2 -translate-y-1/2',
                 sizeClasses,
             ]"
             @click.stop
         >
-            <ModalHeader v-if="title || $slots.header" @close="$emit('close')">
-                <slot name="header">{{ title }}</slot>
+            <ModalHeader v-if="props.title || $slots.header" @close="$emit('close')">
+                <slot name="header">{{ props.title }}</slot>
             </ModalHeader>
 
             <ModalBody>

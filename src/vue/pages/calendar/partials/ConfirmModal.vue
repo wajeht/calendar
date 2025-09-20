@@ -2,7 +2,7 @@
 import Modal from "../../../components/modal/Modal.vue";
 import Button from "../../../components/ui/Button.vue";
 
-defineProps({
+const props = defineProps({
     title: {
         type: String,
         default: "Confirm",
@@ -25,12 +25,15 @@ defineEmits(["confirm", "cancel"]);
 </script>
 
 <template>
-    <Modal :title="title" high-z-index @close="$emit('cancel')">
-        <p class="m-0 leading-relaxed">{{ message }}</p>
+    <Modal :title="props.title" high-z-index @close="$emit('cancel')">
+        <p class="m-0 leading-relaxed">{{ props.message }}</p>
 
         <template #footer>
-            <Button :variant="type === 'delete' ? 'danger' : 'primary'" @click="$emit('confirm')">
-                {{ confirmText }}
+            <Button
+                :variant="props.type === 'delete' ? 'danger' : 'primary'"
+                @click="$emit('confirm')"
+            >
+                {{ props.confirmText }}
             </Button>
             <Button @click="$emit('cancel')">Cancel</Button>
         </template>

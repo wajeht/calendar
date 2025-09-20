@@ -4,7 +4,7 @@ const model = defineModel({
     default: false,
 });
 
-defineProps({
+const props = defineProps({
     label: {
         type: String,
         default: "",
@@ -21,10 +21,10 @@ defineProps({
         <input
             type="checkbox"
             v-model="model"
-            :disabled="disabled"
+            :disabled="props.disabled"
             class="mr-2 mt-0.5"
             v-bind="$attrs"
         />
-        <slot>{{ label }}</slot>
+        <slot>{{ props.label }}</slot>
     </label>
 </template>
