@@ -2,25 +2,31 @@
 defineProps({
     modelValue: {
         type: Boolean,
-        default: false
+        default: false,
     },
     label: {
         type: String,
-        default: ''
+        default: "",
     },
     disabled: {
         type: Boolean,
-        default: false
-    }
+        default: false,
+    },
 });
 
-defineEmits(['update:modelValue']);
+defineEmits(["update:modelValue"]);
 </script>
 
 <template>
     <label class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 block">
-        <input type="checkbox" :checked="modelValue" :disabled="disabled" class="mr-2 mt-0.5"
-            @change="$emit('update:modelValue', $event.target.checked)" v-bind="$attrs" />
+        <input
+            type="checkbox"
+            :checked="modelValue"
+            :disabled="disabled"
+            class="mr-2 mt-0.5"
+            @change="$emit('update:modelValue', $event.target.checked)"
+            v-bind="$attrs"
+        />
         <slot>{{ label }}</slot>
     </label>
 </template>

@@ -276,20 +276,37 @@ onMounted(async () => {
         <FullCalendar ref="calendarRef" :options="calendarOptions" />
 
         <!-- Password Modal -->
-        <PasswordModal v-if="showPasswordModal" @close="showPasswordModal = false"
-            @authenticated="handleAuthenticated" />
+        <PasswordModal
+            v-if="showPasswordModal"
+            @close="showPasswordModal = false"
+            @authenticated="handleAuthenticated"
+        />
 
         <!-- Settings Modal -->
-        <SettingsModal v-if="showSettingsModal" @close="showSettingsModal = false" :calendars="calendars"
-            @calendar-updated="loadCalendars" />
+        <SettingsModal
+            v-if="showSettingsModal"
+            @close="showSettingsModal = false"
+            :calendars="calendars"
+            @calendar-updated="loadCalendars"
+        />
 
         <!-- Event Modal -->
-        <EventModal v-if="showEventModal" :event="selectedEvent" :calendar="selectedEventCalendar"
-            @close="closeEventModal" />
+        <EventModal
+            v-if="showEventModal"
+            :event="selectedEvent"
+            :calendar="selectedEventCalendar"
+            @close="closeEventModal"
+        />
 
         <!-- Confirm Modal -->
-        <ConfirmModal v-if="confirmDialog.show" :title="confirmDialog.title" :message="confirmDialog.message"
-            :type="confirmDialog.type" :confirm-text="confirmDialog.confirmText" @confirm="confirmDialog.resolve"
-            @cancel="confirmDialog.reject" />
+        <ConfirmModal
+            v-if="confirmDialog.show"
+            :title="confirmDialog.title"
+            :message="confirmDialog.message"
+            :type="confirmDialog.type"
+            :confirm-text="confirmDialog.confirmText"
+            @confirm="confirmDialog.resolve"
+            @cancel="confirmDialog.reject"
+        />
     </div>
 </template>

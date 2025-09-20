@@ -42,8 +42,15 @@ onMounted(async () => {
 <template>
     <Modal title="Authentication Required" @close="$emit('close')">
         <FormGroup label="Password" required input-id="password">
-            <Input id="password" v-model="password" type="password" placeholder="Enter password" required
-                ref="passwordInput" @keyup.enter="authenticate" />
+            <Input
+                id="password"
+                v-model="password"
+                type="password"
+                placeholder="Enter password"
+                required
+                ref="passwordInput"
+                @keyup.enter="authenticate"
+            />
         </FormGroup>
 
         <template #footer>

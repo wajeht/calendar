@@ -27,7 +27,9 @@ function formatEventDate(date) {
             <h3 class="text-inherit font-inherit mb-4">{{ event.title }}</h3>
             <div class="mb-4 leading-relaxed text-[13px]">
                 <div class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]">Start:</span>
+                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                        >Start:</span
+                    >
                     <span>{{ formatEventDate(event.start) }}</span>
                 </div>
                 <div class="mb-2">
@@ -35,11 +37,15 @@ function formatEventDate(date) {
                     <span>{{ formatEventDate(event.end) }}</span>
                 </div>
                 <div v-if="event.extendedProps && event.extendedProps.description" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]">Description:</span>
+                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                        >Description:</span
+                    >
                     <span>{{ event.extendedProps.description }}</span>
                 </div>
                 <div v-if="calendar" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]">Calendar:</span>
+                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                        >Calendar:</span
+                    >
                     <span :style="{ color: calendar.color }">{{ calendar.name }}</span>
                 </div>
             </div>

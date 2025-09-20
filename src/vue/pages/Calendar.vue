@@ -9,4 +9,3 @@ import Toast from "../components/Toast.vue";
         <Toast />
     </main>
 </template>
-
