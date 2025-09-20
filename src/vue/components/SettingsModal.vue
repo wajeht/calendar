@@ -25,7 +25,7 @@ const {
     deleteCalendar: deleteCalendarAPI,
     importCalendars: importCalendarsAPI,
     exportCalendars: exportCalendarsAPI,
-    isLoading
+    isLoading,
 } = useCalendar();
 
 const activeTab = ref("calendars");

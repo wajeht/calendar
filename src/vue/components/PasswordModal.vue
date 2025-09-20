@@ -41,7 +41,7 @@ onMounted(async () => {
 
         <template #footer>
             <Button variant="primary" @click="authenticate" :disabled="isLoading">
-                {{ isLoading ? 'Logging in...' : 'Login' }}
+                {{ isLoading ? "Logging in..." : "Login" }}
             </Button>
             <Button @click="$emit('close')" :disabled="isLoading">Cancel</Button>
         </template>

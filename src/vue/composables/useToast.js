@@ -1,11 +1,20 @@
-import { ref } from "vue";
+import { ref, onUnmounted } from "vue";
 
-// Global state - shared across all components
 const toasts = ref([]);
+const timeouts = new Map();
 let toastId = 0;
 
 export function useToast() {
+    onUnmounted(() => {
+        timeouts.forEach((timeoutId) => {
+            clearTimeout(timeoutId);
+        });
+        timeouts.clear();
+    });
+
     function showToast(message, type = "info", title = null, duration = 5000) {
+        if (!message) return null;
+
         const id = ++toastId;
         const toast = {
             id,
@@ -17,34 +26,51 @@ export function useToast() {
 
         toasts.value.push(toast);
 
-        // Trigger animation on next tick
-        setTimeout(() => {
+        const showTimeoutId = setTimeout(() => {
             const toastItem = toasts.value.find((t) => t.id === id);
             if (toastItem) {
                 toastItem.show = true;
             }
+            timeouts.delete(`show-${id}`);
         }, 10);
+        timeouts.set(`show-${id}`, showTimeoutId);
 
-        // Auto remove
         if (duration > 0) {
-            setTimeout(() => {
+            const removeTimeoutId = setTimeout(() => {
                 removeToast(id);
+                timeouts.delete(`remove-${id}`);
             }, duration);
+            timeouts.set(`remove-${id}`, removeTimeoutId);
         }
 
         return id;
     }
 
     function removeToast(id) {
+        const showKey = `show-${id}`;
+        const removeKey = `remove-${id}`;
+
+        if (timeouts.has(showKey)) {
+            clearTimeout(timeouts.get(showKey));
+            timeouts.delete(showKey);
+        }
+        if (timeouts.has(removeKey)) {
+            clearTimeout(timeouts.get(removeKey));
+            timeouts.delete(removeKey);
+        }
+
         const toastIndex = toasts.value.findIndex((t) => t.id === id);
         if (toastIndex > -1) {
             toasts.value[toastIndex].show = false;
-            setTimeout(() => {
+
+            const hideTimeoutId = setTimeout(() => {
                 const index = toasts.value.findIndex((t) => t.id === id);
                 if (index > -1) {
                     toasts.value.splice(index, 1);
                 }
+                timeouts.delete(`hide-${id}`);
             }, 300);
+            timeouts.set(`hide-${id}`, hideTimeoutId);
         }
     }
 
@@ -65,12 +91,20 @@ export function useToast() {
     }
 
     function clear() {
+        timeouts.forEach((timeoutId) => {
+            clearTimeout(timeoutId);
+        });
+        timeouts.clear();
+
         toasts.value.forEach((toast) => {
             toast.show = false;
         });
-        setTimeout(() => {
+
+        const clearTimeoutId = setTimeout(() => {
             toasts.value = [];
+            timeouts.delete("clear-all");
         }, 300);
+        timeouts.set("clear-all", clearTimeoutId);
     }
 
     return {
