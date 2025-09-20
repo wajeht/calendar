@@ -3,14 +3,16 @@ import { createAuthRouter } from "./auth/index.js";
 import { createCronRouter } from "./cron/index.js";
 import { createCalendarRouter } from "./calendar/index.js";
 
-export function createGeneralRouter(_dependencies = {}) {
+export function createGeneralRouter(dependencies = {}) {
+    const { utils } = dependencies;
+
     const router = express.Router();
 
     router.get("/", (_req, res) => {
         return res
             .setHeader('Content-Type', 'text/html')
             .status(200)
-            .sendFile('./views/index.html');
+            .sendFile(utils.cwd() + '/public/index.html');
     });
 
     return router;
@@ -35,7 +37,7 @@ export function notFoundHandler(dependencies = {}) {
         return res
             .setHeader('Content-Type', 'text/html')
             .status(200)
-            .sendFile('./views/index.html');
+            .sendFile(utils.cwd() + '/public/index.html');
     };
 }
 
@@ -188,7 +190,7 @@ export function createRouter(dependencies = {}) {
         }),
     );
 
-    router.use("/", createGeneralRouter());
+    router.use("/", createGeneralRouter({ utils }));
 
     router.use(notFoundHandler({ logger, utils }));
 

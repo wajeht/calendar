@@ -199,6 +199,10 @@ export function createUtils(dependencies = {}) {
             }
         },
 
+        cwd() {
+            return process.cwd();
+        },
+
         /**
          * Check if request is authenticated via session token
          * @param {Object} req - Express request object

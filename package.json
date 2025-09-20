@@ -10,7 +10,8 @@
     },
     "scripts": {
         "start": "node ./src/server.js",
-        "dev": "concurrently \"npm run dev:server\" \"npm run dev:vue\"",
+        "dev": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"npm run dev:vue\" \"npm run dev:server\"",
+        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"vite build --watch --mode development\" \"npm run dev:server\"",
         "dev:server": "nodemon ./src/server.js",
         "dev:vue": "vite",
         "build": "vite build",
