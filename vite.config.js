@@ -3,10 +3,9 @@ import { fileURLToPath, URL } from "node:url";
 import { config } from './src/config.js'
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import vueDevTools from "vite-plugin-vue-devtools";
 
 const viteConfig = {
-    plugins: [vue(), vueDevTools(),
+    plugins: [vue(),
     ],
     resolve: {
         alias: {
