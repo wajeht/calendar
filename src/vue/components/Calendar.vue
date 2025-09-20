@@ -78,7 +78,7 @@ const calendarOptions = ref({
     eventClick: handleEventClick,
     loading: handleLoading,
     eventSourceFailure: handleEventSourceFailure,
-    datesSet: updateURL(),
+    datesSet: updateURL,
 });
 
 function getInitialView() {
@@ -170,6 +170,8 @@ async function loadCalendars() {
 
 function updateURL() {
     const calendar = calendarRef.value.getApi();
+    if (!calendar) return;
+
     const view = calendar.view;
     const date = calendar.getDate();
     const today = new Date().toISOString().split("T")[0];

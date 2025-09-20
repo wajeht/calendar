@@ -4,10 +4,10 @@ import { useToast } from "../composables/useToast";
 import { useAuth } from "../composables/useAuth.js";
 import { useCalendar } from "../composables/useCalendar.js";
 import Modal from "./ui/modal/Modal.vue";
-import FormGroup from "./ui/FormGroup.vue";
-import Input from "./ui/Input.vue";
 import Button from "./ui/Button.vue";
-import Checkbox from "./ui/Checkbox.vue";
+import AddCalendarModal from "./AddCalendarModal.vue";
+import EditCalendarModal from "./EditCalendarModal.vue";
+import DeleteCalendarModal from "./DeleteCalendarModal.vue";
 
 const props = defineProps({
     calendars: {
@@ -19,74 +19,41 @@ const props = defineProps({
 const emit = defineEmits(["close", "calendar-updated"]);
 const toast = useToast();
 const { logout } = useAuth();
-const {
-    addCalendar: addCalendarAPI,
-    updateCalendar: updateCalendarAPI,
-    deleteCalendar: deleteCalendarAPI,
-    importCalendars: importCalendarsAPI,
-    exportCalendars: exportCalendarsAPI,
-    isLoading,
-} = useCalendar();
+const { importCalendars: importCalendarsAPI, exportCalendars: exportCalendarsAPI } = useCalendar();
 
 const activeTab = ref("calendars");
-const showAddForm = ref(false);
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
 const editingCalendar = ref(null);
+const deletingCalendar = ref(null);
 const debugMode = ref(localStorage.getItem("calendar-debug") === "true");
 
-const newCalendar = reactive({
-    name: "",
-    url: "",
-    color: "#3b82f6",
-    hidden: false,
-    details: false,
-});
-
-function resetNewCalendar() {
-    newCalendar.name = "";
-    newCalendar.url = "";
-    newCalendar.color = "#3b82f6";
-    newCalendar.hidden = false;
-    newCalendar.details = false;
-}
-
-function cancelAdd() {
-    showAddForm.value = false;
-    resetNewCalendar();
-}
-
 function editCalendar(calendar) {
-    editingCalendar.value = { ...calendar };
+    editingCalendar.value = calendar;
+    showEditModal.value = true;
 }
 
-function cancelEdit() {
+function deleteCalendar(calendar) {
+    deletingCalendar.value = calendar;
+    showDeleteModal.value = true;
+}
+
+function handleCalendarAdded() {
+    emit("calendar-updated");
+    showAddModal.value = false;
+}
+
+function handleCalendarUpdated() {
+    emit("calendar-updated");
+    showEditModal.value = false;
     editingCalendar.value = null;
 }
 
-async function addCalendar() {
-    const result = await addCalendarAPI(newCalendar);
-    if (result.success) {
-        emit("calendar-updated");
-        cancelAdd();
-    }
-}
-
-async function updateCalendar() {
-    const result = await updateCalendarAPI(editingCalendar.value.id, editingCalendar.value);
-    if (result.success) {
-        emit("calendar-updated");
-        cancelEdit();
-    }
-}
-
-async function deleteCalendar(calendar) {
-    if (!confirm(`Are you sure you want to delete "${calendar.name}"?`)) {
-        return;
-    }
-
-    const result = await deleteCalendarAPI(calendar.id);
-    if (result.success) {
-        emit("calendar-updated");
-    }
+function handleCalendarDeleted() {
+    emit("calendar-updated");
+    showDeleteModal.value = false;
+    deletingCalendar.value = null;
 }
 
 function exportCalendars() {
@@ -134,7 +101,7 @@ watch(debugMode, updateDebugMode);
 <template>
     <Modal title="Settings" size="large" @close="$emit('close')">
         <!-- Tab Navigation -->
-        <div class="border-b border-gray-200 mb-6">
+        <div class="border-b border-gray-200 mb-4">
             <nav class="-mb-px flex space-x-8">
                 <button
                     @click="activeTab = 'calendars'"
@@ -165,45 +132,7 @@ watch(debugMode, updateDebugMode);
         <div v-if="activeTab === 'calendars'">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-medium text-gray-900">Calendar Management</h3>
-                <Button variant="primary" @click="showAddForm = true"> Add Calendar </Button>
-            </div>
-
-            <!-- Add Calendar Form -->
-            <div v-if="showAddForm" class="bg-gray-50 p-4 rounded-lg mb-6">
-                <h4 class="text-md font-medium text-gray-900 mb-4">Add New Calendar</h4>
-                <form @submit.prevent="addCalendar">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormGroup label="Calendar Name" required>
-                            <Input
-                                v-model="newCalendar.name"
-                                type="text"
-                                placeholder="My Calendar"
-                                required
-                            />
-                        </FormGroup>
-                        <FormGroup label="Calendar URL" required>
-                            <Input
-                                v-model="newCalendar.url"
-                                type="url"
-                                placeholder="https://example.com/calendar.ics"
-                                required
-                            />
-                        </FormGroup>
-                        <FormGroup label="Color">
-                            <Input v-model="newCalendar.color" type="color" />
-                        </FormGroup>
-                        <FormGroup>
-                            <Checkbox v-model="newCalendar.hidden" label="Hide calendar" />
-                        </FormGroup>
-                        <FormGroup>
-                            <Checkbox v-model="newCalendar.details" label="Hide event details" />
-                        </FormGroup>
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                        <Button type="submit" variant="primary">Add Calendar</Button>
-                        <Button type="button" @click="cancelAdd">Cancel</Button>
-                    </div>
-                </form>
+                <Button variant="primary" @click="showAddModal = true"> Add Calendar </Button>
             </div>
 
             <!-- Calendar List -->
@@ -240,37 +169,6 @@ watch(debugMode, updateDebugMode);
                         </Button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Edit Calendar Form -->
-            <div v-if="editingCalendar" class="bg-gray-50 p-4 rounded-lg mt-6">
-                <h4 class="text-md font-medium text-gray-900 mb-4">Edit Calendar</h4>
-                <form @submit.prevent="updateCalendar">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormGroup label="Calendar Name" required>
-                            <Input v-model="editingCalendar.name" type="text" required />
-                        </FormGroup>
-                        <FormGroup label="Calendar URL" required>
-                            <Input v-model="editingCalendar.url" type="url" required />
-                        </FormGroup>
-                        <FormGroup label="Color">
-                            <Input v-model="editingCalendar.color" type="color" />
-                        </FormGroup>
-                        <FormGroup>
-                            <Checkbox v-model="editingCalendar.hidden" label="Hide calendar" />
-                        </FormGroup>
-                        <FormGroup>
-                            <Checkbox
-                                v-model="editingCalendar.details"
-                                label="Hide event details"
-                            />
-                        </FormGroup>
-                    </div>
-                    <div class="flex gap-2 mt-4">
-                        <Button type="submit" variant="primary"> Update Calendar </Button>
-                        <Button type="button" @click="cancelEdit"> Cancel </Button>
-                    </div>
-                </form>
             </div>
 
             <!-- Import/Export Section -->
@@ -321,5 +219,32 @@ watch(debugMode, updateDebugMode);
         <template #footer>
             <Button @click="$emit('close')">Close</Button>
         </template>
+
+        <!-- Separate Modals -->
+        <AddCalendarModal
+            v-if="showAddModal"
+            @close="showAddModal = false"
+            @calendar-added="handleCalendarAdded"
+        />
+
+        <EditCalendarModal
+            v-if="showEditModal && editingCalendar"
+            :calendar="editingCalendar"
+            @close="
+                showEditModal = false;
+                editingCalendar = null;
+            "
+            @calendar-updated="handleCalendarUpdated"
+        />
+
+        <DeleteCalendarModal
+            v-if="showDeleteModal && deletingCalendar"
+            :calendar="deletingCalendar"
+            @close="
+                showDeleteModal = false;
+                deletingCalendar = null;
+            "
+            @calendar-deleted="handleCalendarDeleted"
+        />
     </Modal>
 </template>
