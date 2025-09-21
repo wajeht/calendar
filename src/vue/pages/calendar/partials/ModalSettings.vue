@@ -7,6 +7,7 @@ import { useSettings } from "../../../composables/useSettings.js";
 import Modal from "../../../components/Modal.vue";
 import FormGroup from "../../../components/FormGroup.vue";
 import Input from "../../../components/Input.vue";
+import Select from "../../../components/Select.vue";
 import Button from "../../../components/Button.vue";
 import Checkbox from "../../../components/Checkbox.vue";
 import AddCalendarModal from "./ModalAddCalendar.vue";
@@ -375,11 +376,10 @@ onMounted(() => {
 
                     <div v-if="cronSettings.enabled" class="ml-6 space-y-4">
                         <FormGroup label="Refresh Schedule">
-                            <select
+                            <Select
                                 v-model="cronSettings.schedule"
                                 @change="updateCronSettings"
                                 :disabled="isLoadingCron"
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                             >
                                 <option value="0 */1 * * *">Every hour</option>
                                 <option value="0 */2 * * *">Every 2 hours</option>
@@ -387,7 +387,7 @@ onMounted(() => {
                                 <option value="0 */6 * * *">Every 6 hours</option>
                                 <option value="0 */12 * * *">Every 12 hours</option>
                                 <option value="0 0 * * *">Daily</option>
-                            </select>
+                            </Select>
                         </FormGroup>
                         <p class="text-sm text-gray-500">
                             Choose how often calendars should be refreshed automatically
