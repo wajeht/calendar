@@ -20,18 +20,18 @@ const viteConfig = {
         strictPort: true,
         allowedHosts: ["localhost"],
         proxy: {
-            "/api": {
-                target: "http://localhost:80",
+            "^/api/(?!.*\\.js$).*": {
+                target: `http://localhost:${config.app.port}`,
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, "/api"),
             },
             "/healthz": {
-                target: "http://localhost:80",
+                target: `http://localhost:${config.app.port}`,
                 changeOrigin: true,
                 rewrite: (path) => path,
             },
             "/favicon.ico": {
-                target: "http://localhost:80",
+                target: `http://localhost:${config.app.port}`,
                 changeOrigin: true,
                 rewrite: (path) => path,
             },
