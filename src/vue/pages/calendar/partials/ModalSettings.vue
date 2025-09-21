@@ -3,7 +3,6 @@ import { ref, reactive, watch, useTemplateRef } from "vue";
 import { useToast } from "../../../composables/useToast";
 import { useAuth } from "../../../composables/useAuth.js";
 import { useCalendar } from "../../../composables/useCalendar.js";
-import { api } from "../../../api.js";
 import Modal from "../../../components/Modal.vue";
 import FormGroup from "../../../components/FormGroup.vue";
 import Input from "../../../components/Input.vue";
@@ -21,7 +20,7 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "calendar-updated"]);
 const toast = useToast();
-const { logout, verifySession } = useAuth();
+const { logout, verifySession, changePassword: changePasswordComposable } = useAuth();
 const { importCalendars: importCalendarsAPI, exportCalendars: exportCalendarsAPI } = useCalendar();
 
 const activeTab = ref("calendars");
@@ -127,14 +126,13 @@ async function changePassword() {
     changingPassword.value = true;
 
     try {
-        const result = await api.settings.changePassword(
+        const result = await changePasswordComposable(
             passwordForm.currentPassword,
             passwordForm.newPassword,
             passwordForm.confirmPassword,
         );
 
         if (result.success) {
-            toast.success("Password changed successfully");
             passwordForm.currentPassword = "";
             passwordForm.newPassword = "";
             passwordForm.confirmPassword = "";
@@ -146,12 +144,8 @@ async function changePassword() {
                         passwordErrors[field] = result.errors[field];
                     }
                 });
-            } else {
-                toast.error(result.message || "Failed to change password");
             }
         }
-    } catch (error) {
-        toast.error("Failed to change password");
     } finally {
         changingPassword.value = false;
     }

@@ -96,6 +96,26 @@ export function useAuth() {
         }
     }
 
+    async function changePassword(currentPassword, newPassword, confirmPassword) {
+        isLoading.value = true;
+        try {
+            const result = await api.settings.changePassword(currentPassword, newPassword, confirmPassword);
+            if (result.success) {
+                toast.success("Password changed successfully");
+            } else {
+                if (!result.errors) {
+                    toast.error(result.message || "Failed to change password");
+                }
+            }
+            return result;
+        } catch (error) {
+            toast.error("Failed to change password");
+            return { success: false, message: error.message };
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     return {
         isAuthenticated,
         isLoading,
@@ -104,5 +124,6 @@ export function useAuth() {
         verifySession,
         checkPasswordConfiguration,
         setupPassword,
+        changePassword,
     };
 }
