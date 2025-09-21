@@ -28,11 +28,6 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Clear npm cache and reinstall (fix for rolldown native deps)
-              run: |
-                  rm -rf node_modules package-lock.json
-                  npm install
-
             - name: Run tests
               run: npm test
 
