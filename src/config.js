@@ -50,7 +50,7 @@ export const config = deepFreeze({
         sessionSecret:
             process.env.SESSION_SECRET ||
             (() => {
-                if (process.env.NODE_ENV === "production") {
+                if (process.env.NODE_ENV === "production" && process.env.npm_lifecycle_event !== "build") {
                     throw new Error("SESSION_SECRET must be set in production");
                 }
                 return "development-session-secret-" + Date.now();
