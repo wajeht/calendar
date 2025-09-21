@@ -388,12 +388,14 @@ onMounted(() => {
             <div class="space-y-6">
                 <!-- Auto Refresh Section -->
                 <div class="space-y-4">
-                    <Checkbox
-                        v-model="cronSettings.enabled"
-                        label="Enable automatic calendar refresh"
-                        :disabled="isLoadingCron"
-                        @change="updateCronSettings"
-                    />
+                    <div>
+                        <Checkbox
+                            v-model="cronSettings.enabled"
+                            label="Enable automatic calendar refresh"
+                            :disabled="isLoadingCron"
+                            @change="updateCronSettings"
+                        />
+                    </div>
 
                     <div v-if="cronSettings.enabled" class="space-y-4">
                         <FormGroup label="Refresh Schedule">
@@ -498,7 +500,7 @@ onMounted(() => {
             <!-- Logout Section -->
             <div class="pt-6 border-t border-gray-200">
                 <h4 class="text-md font-medium text-gray-900 mb-4">Account Actions</h4>
-                <Button @click="logoutUser" variant="danger">Logout</Button>
+                <Button @click="logoutUser" class="w-[134px]" variant="danger">Logout</Button>
             </div>
         </div>
 
