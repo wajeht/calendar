@@ -12,6 +12,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    highZIndex: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["close", "calendar-updated"]);
@@ -73,7 +77,7 @@ function handleClose() {
 </script>
 
 <template>
-    <Modal title="Edit Calendar" @close="handleClose">
+    <Modal title="Edit Calendar" :high-z-index="props.highZIndex" @close="handleClose">
         <form @submit.prevent="handleSubmit">
             <div class="space-y-4">
                 <FormGroup label="Name" required :error="errors.name">

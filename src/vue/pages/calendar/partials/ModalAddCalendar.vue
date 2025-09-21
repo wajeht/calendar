@@ -7,6 +7,13 @@ import FormGroup from "../../../components/FormGroup.vue";
 import Input from "../../../components/Input.vue";
 import Checkbox from "../../../components/Checkbox.vue";
 
+const props = defineProps({
+    highZIndex: {
+        type: Boolean,
+        default: false,
+    },
+});
+
 const emit = defineEmits(["close", "calendar-added"]);
 
 const { addCalendar: addCalendarAPI, isLoading } = useCalendar();
@@ -62,7 +69,7 @@ function handleClose() {
 </script>
 
 <template>
-    <Modal title="Add New Calendar" @close="handleClose">
+    <Modal title="Add New Calendar" :high-z-index="props.highZIndex" @close="handleClose">
         <form @submit.prevent="handleSubmit">
             <div class="space-y-4">
                 <FormGroup label="Name" required :error="errors.name">

@@ -513,9 +513,10 @@ onMounted(() => {
             <Button @click="emit('close')">Close</Button>
         </template>
 
-        <!-- Separate Modals -->
+        <!-- Separate Modals with Higher Z-Index -->
         <AddCalendarModal
             v-if="showAddModal"
+            high-z-index
             @close="showAddModal = false"
             @calendar-added="handleCalendarAdded"
         />
@@ -523,6 +524,7 @@ onMounted(() => {
         <EditCalendarModal
             v-if="showEditModal && editingCalendar"
             :calendar="editingCalendar"
+            high-z-index
             @close="
                 showEditModal = false;
                 editingCalendar = null;
@@ -533,6 +535,7 @@ onMounted(() => {
         <DeleteCalendarModal
             v-if="showDeleteModal && deletingCalendar"
             :calendar="deletingCalendar"
+            high-z-index
             @close="
                 showDeleteModal = false;
                 deletingCalendar = null;

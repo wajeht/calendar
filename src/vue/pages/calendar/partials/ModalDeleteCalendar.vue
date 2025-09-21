@@ -8,6 +8,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    highZIndex: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["close", "calendar-deleted"]);
@@ -28,7 +32,7 @@ function handleClose() {
 </script>
 
 <template>
-    <Modal title="Delete Confirmation" @close="handleClose">
+    <Modal title="Delete Confirmation" :high-z-index="props.highZIndex" @close="handleClose">
         <p class="text-gray-700">
             Are you sure you want to delete "<strong>{{ props.calendar.name }}</strong
             >"? This action cannot be undone.
