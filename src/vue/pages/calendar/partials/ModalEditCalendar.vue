@@ -100,7 +100,7 @@ function handleClose() {
         </form>
 
         <template #footer>
-            <div class="flex gap-2">
+            <div class="flex gap-2 justify-end">
                 <Button type="submit" variant="primary" @click="handleSubmit" :disabled="isLoading">
                     Update Calendar
                 </Button>

@@ -41,7 +41,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Modal title="Setup Application Password" :closable="false">
+    <Modal title="Setup Application Password" @close="emit('close')">
         <div class="text-center mb-6">
             <h3 class="text-lg font-medium text-gray-900 mb-2">Welcome to Calendar!</h3>
             <p class="text-sm text-gray-600">
@@ -78,14 +78,16 @@ onMounted(async () => {
         </FormGroup>
 
         <template #footer>
-            <Button
-                @click="handleSetupPassword"
-                :disabled="isLoading || !password || !confirmPassword"
-                variant="primary"
-                class="w-full"
-            >
-                {{ isLoading ? "Configuring..." : "Configure Password" }}
-            </Button>
+            <div class="flex gap-2 justify-end">
+                <Button
+                    @click="handleSetupPassword"
+                    :disabled="isLoading || !password || !confirmPassword"
+                    variant="primary"
+                >
+                    {{ isLoading ? "Configuring..." : "Configure Password" }}
+                </Button>
+                <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
+            </div>
         </template>
     </Modal>
 </template>
