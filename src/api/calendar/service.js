@@ -325,12 +325,13 @@ export function createCalendarService(dependencies = {}) {
                 continue;
             }
 
-            // Check if this is a detail-hidden event (empty title AND empty description AND empty location)
-            const isDetailHidden =
-                event.title === "" && event.description === "" && event.location === "";
+            // Check if this should hide event details (based on calendar settings or empty event details)
+            const shouldHideDetails =
+                calendar.details ||
+                (event.title === "" && event.description === "" && event.location === "");
 
             const fcEvent = {
-                title: event.title || (isDetailHidden ? "" : "Untitled Event"),
+                title: event.title || (shouldHideDetails ? "" : "Untitled Event"),
                 start: event.start,
                 allDay: event.allDay || false,
                 backgroundColor: calendar.color,
@@ -338,7 +339,7 @@ export function createCalendarService(dependencies = {}) {
                 textColor: "white",
                 extendedProps: {
                     ...buildExtendedProps(event),
-                    isDetailHidden: isDetailHidden,
+                    details: shouldHideDetails,
                 },
             };
 
