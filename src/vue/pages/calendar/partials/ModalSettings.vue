@@ -359,64 +359,50 @@ onMounted(() => {
         <!-- Settings Tab -->
         <div v-if="activeTab === 'settings'" class="h-[500px] overflow-y-auto space-y-6">
             <!-- Auto Refresh Section -->
-            <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Auto Calendar Refresh</h3>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Auto Calendar Refresh</h3>
 
-                <div class="space-y-4">
-                    <Checkbox
-                        v-model="cronSettings.enabled"
-                        label="Enable automatic calendar refresh"
-                        :disabled="isLoadingCron"
-                        @change="updateCronSettings"
-                    />
-                    <p class="text-sm text-gray-500 ml-6">
-                        When enabled, calendars will be automatically refreshed according to your
-                        schedule
-                    </p>
+                    <div class="space-y-4">
+                        <Checkbox
+                            v-model="cronSettings.enabled"
+                            label="Enable automatic calendar refresh"
+                            :disabled="isLoadingCron"
+                            @change="updateCronSettings"
+                        />
 
-                    <div v-if="cronSettings.enabled" class="ml-6 space-y-4">
-                        <FormGroup label="Refresh Schedule">
-                            <Select
-                                v-model="cronSettings.schedule"
-                                @change="updateCronSettings"
-                                :disabled="isLoadingCron"
-                            >
-                                <option value="0 */1 * * *">Every hour</option>
-                                <option value="0 */2 * * *">Every 2 hours</option>
-                                <option value="0 */4 * * *">Every 4 hours</option>
-                                <option value="0 */6 * * *">Every 6 hours</option>
-                                <option value="0 */12 * * *">Every 12 hours</option>
-                                <option value="0 0 * * *">Daily</option>
-                            </Select>
-                        </FormGroup>
-                        <p class="text-sm text-gray-500">
-                            Choose how often calendars should be refreshed automatically
-                        </p>
-                    </div>
-
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h4 class="font-medium text-gray-900 mb-2">Status Information</h4>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between">
-                                <span>Status:</span>
-                                <span
-                                    :class="
-                                        cronSettings.enabled
-                                            ? 'text-green-600 font-medium'
-                                            : 'text-gray-500'
-                                    "
+                        <div v-if="cronSettings.enabled" class="space-y-4">
+                            <FormGroup label="Refresh Schedule">
+                                <Select
+                                    v-model="cronSettings.schedule"
+                                    @change="updateCronSettings"
+                                    :disabled="isLoadingCron"
                                 >
-                                    {{ cronSettings.enabled ? "ENABLED" : "DISABLED" }}
-                                </span>
-                            </div>
-                            <div v-if="cronSettings.lastRun" class="flex justify-between">
-                                <span>Last Run:</span>
-                                <span class="text-gray-600">{{
-                                    new Date(cronSettings.lastRun).toLocaleString()
-                                }}</span>
-                            </div>
+                                    <option value="0 */1 * * *">Every hour</option>
+                                    <option value="0 */2 * * *">Every 2 hours</option>
+                                    <option value="0 */4 * * *">Every 4 hours</option>
+                                    <option value="0 */6 * * *">Every 6 hours</option>
+                                    <option value="0 */12 * * *">Every 12 hours</option>
+                                    <option value="0 0 * * *">Daily</option>
+                                </Select>
+                            </FormGroup>
                         </div>
-                        <div class="mt-4">
+                    </div>
+                </div>
+
+                <!-- Status Section -->
+                <div v-if="cronSettings.enabled && cronSettings.lastRun">
+                    <FormGroup label="Last Run">
+                        <div class="text-sm py-1.5 text-gray-600">
+                            {{ new Date(cronSettings.lastRun).toLocaleString() }}
+                        </div>
+                    </FormGroup>
+                </div>
+
+                <!-- Manual Refresh Section -->
+                <div class="pt-4 border-t border-gray-200">
+                    <FormGroup label="Manual Refresh">
+                        <div class="space-y-2">
                             <Button
                                 @click="refreshAllCalendars"
                                 :disabled="isRefreshing"
@@ -424,11 +410,11 @@ onMounted(() => {
                             >
                                 {{ isRefreshing ? "Refreshing..." : "Refresh All Calendars Now" }}
                             </Button>
-                            <p class="text-sm text-gray-500 mt-2">
+                            <p class="text-sm text-gray-500">
                                 Manually trigger a refresh of all calendars
                             </p>
                         </div>
-                    </div>
+                    </FormGroup>
                 </div>
             </div>
         </div>
@@ -438,7 +424,7 @@ onMounted(() => {
             <!-- Password Change Section -->
             <div>
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
-                <div class="space-y-4 max-w-md">
+                <div class="space-y-4">
                     <FormGroup
                         label="Current Password"
                         required
