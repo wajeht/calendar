@@ -18,7 +18,8 @@ COPY src ./src
 COPY vite.config.js ./
 COPY public ./public
 
-# Build Vue app
+# Build Vue app (use development mode to skip session secret validation)
+ENV NODE_ENV=development
 RUN npm run build
 
 # Production stage
