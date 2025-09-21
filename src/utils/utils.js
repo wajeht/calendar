@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+
 export function createUtils(dependencies = {}) {
     const { logger, config } = dependencies;
 
@@ -211,6 +213,52 @@ export function createUtils(dependencies = {}) {
         isAuthenticated(req) {
             const token = req.cookies?.session_token || null;
             return this.validateSessionToken(token);
+        },
+
+        /**
+         * Hash a password using bcrypt
+         * @param {string} password - Plain text password to hash
+         * @returns {Promise<string>} - Hashed password
+         */
+        async hashPassword(password) {
+            if (!password || typeof password !== "string") {
+                throw new Error("Password must be a non-empty string");
+            }
+
+            if (bcrypt.truncates(password)) {
+                throw new Error("Password is too long (maximum 72 bytes when UTF-8 encoded)");
+            }
+
+            const saltRounds = 12;
+            try {
+                return await bcrypt.hash(password, saltRounds);
+            } catch (error) {
+                logger.error("Password hashing error:", error);
+                throw new Error("Failed to hash password");
+            }
+        },
+
+        /**
+         * Verify a password against a hash
+         * @param {string} password - Plain text password to verify
+         * @param {string} hash - Hashed password to compare against
+         * @returns {Promise<boolean>} - True if password matches hash
+         */
+        async verifyPassword(password, hash) {
+            if (!password || typeof password !== "string") {
+                return false;
+            }
+
+            if (!hash || typeof hash !== "string") {
+                return false;
+            }
+
+            try {
+                return await bcrypt.compare(password, hash);
+            } catch (error) {
+                logger.error("Password verification error:", error);
+                return false;
+            }
         },
     };
 }

@@ -96,20 +96,25 @@ export function createSettingsRouter(dependencies = {}) {
             });
         }
 
-        const storedPassword = await models.settings.get("app_password");
-        if (!storedPassword) {
+        const storedPasswordHash = await models.settings.get("app_password");
+        if (!storedPasswordHash) {
             throw new ValidationError({
                 currentPassword: "Application password not configured",
             });
         }
 
-        if (currentPassword !== storedPassword) {
+        const isCurrentPasswordValid = await utils.verifyPassword(
+            currentPassword,
+            storedPasswordHash,
+        );
+        if (!isCurrentPasswordValid) {
             throw new ValidationError({
                 currentPassword: "Current password is incorrect",
             });
         }
 
-        await models.settings.set("app_password", newPassword);
+        const hashedNewPassword = await utils.hashPassword(newPassword);
+        await models.settings.set("app_password", hashedNewPassword);
 
         logger.info("Application password changed successfully");
 
@@ -169,7 +174,8 @@ export function createSettingsRouter(dependencies = {}) {
             });
         }
 
-        await models.settings.set("app_password", password);
+        const hashedPassword = await utils.hashPassword(password);
+        await models.settings.set("app_password", hashedPassword);
 
         logger.info("Initial application password configured");
 

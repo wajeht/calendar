@@ -45,6 +45,14 @@
     },
     "homepage": "https://github.com/wajeht/calendar#readme",
     "dependencies": {
+        "@fullcalendar/core": "^6.1.10",
+        "@fullcalendar/daygrid": "^6.1.10",
+        "@fullcalendar/icalendar": "^6.1.10",
+        "@fullcalendar/interaction": "^6.1.10",
+        "@fullcalendar/list": "^6.1.10",
+        "@fullcalendar/timegrid": "^6.1.10",
+        "@fullcalendar/vue3": "^6.1.10",
+        "bcryptjs": "^3.0.2",
         "better-sqlite3": "^12.2.0",
         "compression": "^1.8.1",
         "cookie-parser": "^1.4.7",
@@ -56,13 +64,6 @@
         "ical.js": "^1.4.0",
         "knex": "^3.1.0",
         "node-cron": "^4.2.1",
-        "@fullcalendar/core": "^6.1.10",
-        "@fullcalendar/daygrid": "^6.1.10",
-        "@fullcalendar/icalendar": "^6.1.10",
-        "@fullcalendar/interaction": "^6.1.10",
-        "@fullcalendar/list": "^6.1.10",
-        "@fullcalendar/timegrid": "^6.1.10",
-        "@fullcalendar/vue3": "^6.1.10",
         "vue": "^3.5.18",
         "vue-router": "^4.5.1"
     },
@@ -77,10 +78,10 @@
         "vitest": "^3.2.4"
     },
     "optionalDependencies": {
+        "@rollup/rollup-darwin-arm64": "*",
+        "@rollup/rollup-darwin-x64": "*",
         "@rollup/rollup-linux-x64-gnu": "*",
         "@rollup/rollup-linux-x64-musl": "*",
-        "@rollup/rollup-darwin-x64": "*",
-        "@rollup/rollup-darwin-arm64": "*",
         "@rollup/rollup-win32-x64-msvc": "*"
     }
 }

@@ -36,13 +36,14 @@ export function createAuthRouter(dependencies = {}) {
             });
         }
 
-        const currentPassword = await models.settings.get("app_password");
+        const currentPasswordHash = await models.settings.get("app_password");
 
-        if (!currentPassword) {
+        if (!currentPasswordHash) {
             throw new ValidationError({ password: "Application password not configured" });
         }
 
-        if (password !== currentPassword) {
+        const isPasswordValid = await utils.verifyPassword(password, currentPasswordHash);
+        if (!isPasswordValid) {
             const newFailedAttempts = failedAttempts + 1;
 
             if (newFailedAttempts >= 5) {
