@@ -15,6 +15,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    closable: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits(["close"]);
@@ -23,11 +27,7 @@ const dialogRef = useTemplateRef("dialogRef");
 const isClosing = ref(false);
 
 function handleDialogClick(event) {
-    if (event.target === dialogRef.value) {
-        event.stopPropagation();
-        event.preventDefault();
-        closeModal();
-    }
+    event.stopPropagation();
 }
 
 function closeModal() {
@@ -40,7 +40,7 @@ function closeModal() {
 }
 
 onMounted(() => {
-    dialogRef.value?.showModal();
+    dialogRef.value?.show();
 });
 
 const sizeClasses = computed(() => {
@@ -54,6 +54,12 @@ const sizeClasses = computed(() => {
 </script>
 
 <template>
+    <div
+        v-if="!isClosing"
+        class="fixed inset-0 bg-black/40 z-[3000]"
+        @click="props.closable ? closeModal : null"
+    ></div>
+
     <dialog
         ref="dialogRef"
         closedby="none"
@@ -76,6 +82,7 @@ const sizeClasses = computed(() => {
                 <slot name="header">{{ props.title }}</slot>
             </h2>
             <button
+                v-if="props.closable"
                 class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-none border-none text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800"
                 @click="closeModal"
             >
@@ -106,9 +113,7 @@ const sizeClasses = computed(() => {
     opacity: 1;
     transition:
         opacity 0.15s ease-out,
-        transform 0.15s ease-out,
-        overlay 0.15s ease-out allow-discrete,
-        display 0.15s ease-out allow-discrete;
+        transform 0.15s ease-out;
 }
 
 .modal-closing {
@@ -117,25 +122,14 @@ const sizeClasses = computed(() => {
 }
 
 dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.4);
-    transition:
-        background-color 0.15s ease-out,
-        overlay 0.15s ease-out allow-discrete,
-        display 0.15s ease-out allow-discrete;
-}
-
-.modal-closing::backdrop {
-    background-color: transparent !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
 }
 
 @starting-style {
     dialog:open {
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.95);
-    }
-
-    dialog:open::backdrop {
-        background-color: transparent;
     }
 }
 </style>
