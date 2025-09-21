@@ -7,8 +7,6 @@ import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import iCalendarPlugin from "@fullcalendar/icalendar";
 
-import Toast from "../../components/Toast.vue";
-
 import PasswordModal from "./partials/ModalPassword.vue";
 import SettingsModal from "./partials/ModalSettings.vue";
 import EventModal from "./partials/ModalEvent.vue";
@@ -249,6 +247,5 @@ onUnmounted(() => {
             @cancel="confirmDialog.reject"
         />
 
-        <Toast />
     </main>
 </template>

@@ -56,7 +56,7 @@ export async function createApp(customConfig = {}) {
         .use(
             rateLimit({
                 ...ctx.config.rateLimit,
-                handler: async (req, res) => {
+                handler: async (_req, res) => {
                     return res.status(429).json({
                         message: "Too many requests, please try again later.",
                     });
@@ -81,7 +81,7 @@ export async function createApp(customConfig = {}) {
         })
         .use((req, res, next) => {
             const start = Date.now();
-            const correlationId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const correlationId = `req_${Date.now()}_${Math.floor(Math.random() * 1e9).toString(36)}`;
 
             req.correlationId = correlationId;
             res.setHeader("X-Correlation-ID", correlationId);
