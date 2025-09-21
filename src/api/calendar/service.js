@@ -71,13 +71,6 @@ export function createCalendarService(dependencies = {}) {
             logger.debug(`Found ${vevents.length} VEVENT components`);
 
             const events = [];
-            const now = new Date();
-            const futureLimit = new Date();
-            futureLimit.setFullYear(now.getFullYear() + 2);
-
-            // Convert to ICAL.Time for proper comparison
-            const rangeStart = ICAL.Time.fromJSDate(now, false);
-            const rangeEnd = ICAL.Time.fromJSDate(futureLimit, false);
 
             for (let i = 0; i < vevents.length; i++) {
                 const vevent = vevents[i];
@@ -99,15 +92,11 @@ export function createCalendarService(dependencies = {}) {
                         let next;
                         let count = 0;
 
-                        while (
-                            (next = expand.next()) &&
-                            count < 1000 &&
-                            next.compare(rangeEnd) < 0
-                        ) {
-                            if (next.compare(rangeStart) < 0) {
-                                continue; // Skip dates before our range
-                            }
-
+                        // Safety limit to prevent infinite recurring events:
+                        // - Daily events for ~1 year
+                        // - Weekly events for ~7 years
+                        // - Monthly events for ~30 years
+                        while ((next = expand.next()) && count < 365) {
                             const eventInstance = createEventFromOccurrence(event, next);
                             events.push(eventInstance);
                             count++;
