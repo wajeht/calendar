@@ -99,7 +99,11 @@ export function useAuth() {
     async function changePassword(currentPassword, newPassword, confirmPassword) {
         isLoading.value = true;
         try {
-            const result = await api.settings.changePassword(currentPassword, newPassword, confirmPassword);
+            const result = await api.settings.changePassword(
+                currentPassword,
+                newPassword,
+                confirmPassword,
+            );
             if (result.success) {
                 toast.success("Password changed successfully");
             } else {
