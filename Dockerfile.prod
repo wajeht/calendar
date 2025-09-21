@@ -8,6 +8,9 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
 
+# Fix Rollup native dependencies for Alpine Linux
+RUN npm rebuild
+
 # Copy source files needed for Vue build
 COPY src ./src
 COPY vite.config.js ./
