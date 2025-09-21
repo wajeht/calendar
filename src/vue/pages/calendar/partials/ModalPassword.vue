@@ -21,7 +21,9 @@ async function authenticate() {
 
     const result = await login(password.value);
     if (result.success) {
-        emit("authenticated");
+        setTimeout(() => {
+            emit("authenticated");
+        }, 100);
     } else if (result.errors) {
         Object.keys(result.errors).forEach((field) => {
             if (errors.hasOwnProperty(field)) {
