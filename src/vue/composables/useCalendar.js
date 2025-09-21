@@ -98,39 +98,36 @@ export function useCalendar() {
         }
     }
 
-    function exportCalendars() {
+    async function exportCalendars() {
+        isLoading.value = true;
         try {
-            if (!calendars.value || calendars.value.length === 0) {
-                toast.warning("No calendars to export");
-                return { success: false, message: "No calendars to export" };
+            const result = await api.calendar.export();
+            if (result.success) {
+                const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+                    type: "application/json",
+                });
+
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `calendar-settings-${new Date().toISOString().split("T")[0]}.json`;
+
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                URL.revokeObjectURL(url);
+
+                toast.success("Settings exported successfully");
+            } else {
+                toast.error("Failed to export settings: " + (result.message || "Unknown error"));
             }
-
-            const settings = {
-                calendars: calendars.value,
-                exported: new Date().toISOString(),
-            };
-
-            const blob = new Blob([JSON.stringify(settings, null, 2)], {
-                type: "application/json",
-            });
-
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `calendar-settings-${new Date().toISOString().split("T")[0]}.json`;
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            URL.revokeObjectURL(url);
-
-            toast.success("Settings exported successfully");
-            return { success: true };
+            return result;
         } catch (error) {
-            const errorMessage = "Error exporting settings: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, message: errorMessage, errors: {} };
+            toast.error("Error exporting settings: " + error.message);
+            return { success: false, message: error.message };
+        } finally {
+            isLoading.value = false;
         }
     }
 
