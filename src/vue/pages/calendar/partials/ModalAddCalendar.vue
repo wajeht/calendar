@@ -22,8 +22,8 @@ const newCalendar = reactive({
     name: "",
     url: "",
     color: "#3b82f6",
-    hidden: false,
-    details: false,
+    visible_to_public: true,
+    show_details_to_public: true,
 });
 
 const errors = reactive({
@@ -36,8 +36,8 @@ function resetForm() {
     newCalendar.name = "";
     newCalendar.url = "";
     newCalendar.color = "#3b82f6";
-    newCalendar.hidden = false;
-    newCalendar.details = false;
+    newCalendar.visible_to_public = true;
+    newCalendar.show_details_to_public = true;
     errors.name = "";
     errors.url = "";
     errors.color = "";
@@ -92,9 +92,14 @@ function handleClose() {
                     <Input v-model="newCalendar.color" type="color" />
                 </FormGroup>
                 <div class="flex gap-6">
-                    <Checkbox v-model="newCalendar.hidden" label="Hide calendar from public view" />
                     <Checkbox
-                        v-model="newCalendar.details"
+                        :model-value="!newCalendar.visible_to_public"
+                        @update:model-value="newCalendar.visible_to_public = !$event"
+                        label="Hide calendar from public view"
+                    />
+                    <Checkbox
+                        :model-value="!newCalendar.show_details_to_public"
+                        @update:model-value="newCalendar.show_details_to_public = !$event"
                         label="Hide event details for public view (show as time blocks only)"
                     />
                 </div>

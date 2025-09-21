@@ -170,7 +170,7 @@ describe("Calendar", () => {
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(!!data.data.hidden).toBe(true);
+            expect(!!data.data.visible_to_public).toBe(false);
         });
 
         it("should return 404 for non-existent calendar", async () => {

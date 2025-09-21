@@ -9,16 +9,16 @@ export function up(knex) {
             table.text("name").notNullable().defaultTo("");
             table.text("url").notNullable().unique();
             table.text("color").notNullable().defaultTo("#447dfc");
-            table.boolean("hidden").notNullable().defaultTo(false);
-            table.boolean("details").notNullable().defaultTo(false);
-            table.text("data");
-            table.text("events");
+            table.boolean("visible_to_public").notNullable().defaultTo(true);
+            table.boolean("show_details_to_public").notNullable().defaultTo(true);
+            table.text("ical_data");
+            table.text("events_processed");
             table.text("events_public");
-            table.text("events_authenticated");
+            table.text("events_private");
             table.timestamps(true, true);
 
             table.index("url");
-            table.index("hidden");
+            table.index("visible_to_public");
             table.index("created_at");
             table.index("updated_at");
         })

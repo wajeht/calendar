@@ -133,7 +133,7 @@ export function createCalendarRouter(dependencies = {}) {
         const updateData = { ...req.body };
 
         if ("visible" in updateData) {
-            updateData.hidden = !updateData.visible;
+            updateData.visible_to_public = updateData.visible;
             delete updateData.visible;
         }
 
@@ -154,7 +154,10 @@ export function createCalendarRouter(dependencies = {}) {
             throw new NotFoundError("Calendar");
         }
 
-        if (updateData.hidden !== undefined || updateData.details !== undefined) {
+        if (
+            updateData.visible_to_public !== undefined ||
+            updateData.show_details_to_public !== undefined
+        ) {
             if (process.env.NODE_ENV !== "test") {
                 setImmediate(async () => {
                     try {

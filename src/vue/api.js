@@ -78,8 +78,14 @@ export const api = {
                     name: calendarData.name,
                     url: calendarData.url,
                     color: calendarData.color,
-                    hidden: calendarData.hidden || false,
-                    details: calendarData.details || false,
+                    visible_to_public:
+                        calendarData.visible_to_public !== undefined
+                            ? calendarData.visible_to_public
+                            : true,
+                    show_details_to_public:
+                        calendarData.show_details_to_public !== undefined
+                            ? calendarData.show_details_to_public
+                            : true,
                 }),
             });
 
@@ -102,8 +108,8 @@ export const api = {
                     name: calendarData.name,
                     url: calendarData.url,
                     color: calendarData.color,
-                    hidden: calendarData.hidden,
-                    details: calendarData.details,
+                    visible_to_public: calendarData.visible_to_public,
+                    show_details_to_public: calendarData.show_details_to_public,
                 }),
             });
 

@@ -299,22 +299,22 @@ onMounted(() => {
                                     </td>
                                     <td class="px-4 py-4">
                                         <span
-                                            v-if="calendar.hidden"
+                                            v-if="!calendar.visible_to_public"
                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
                                         >
-                                            Hidden
+                                            Hidden from Public
                                         </span>
                                         <span
-                                            v-else-if="calendar.details"
+                                            v-else-if="!calendar.show_details_to_public"
                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
                                         >
-                                            Details Hidden
+                                            Details Hidden from Public
                                         </span>
                                         <span
                                             v-else
                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
                                         >
-                                            Visible
+                                            Visible to Public
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 text-right">

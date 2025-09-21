@@ -128,7 +128,7 @@ function handlePasswordConfigured() {
 function handleEventClick(info) {
     info.jsEvent.preventDefault();
 
-    if (info.event.extendedProps && info.event.extendedProps.details) {
+    if (info.event.extendedProps && !info.event.extendedProps.show_details_to_public) {
         return;
     }
 

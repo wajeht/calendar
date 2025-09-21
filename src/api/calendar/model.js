@@ -22,7 +22,7 @@ export function createCalendar(dependencies = {}) {
                 let query = db("calendars");
 
                 if (!includeHidden) {
-                    query = query.where("hidden", false);
+                    query = query.where("visible_to_public", true);
                 }
 
                 if (!includeEvents) {
@@ -31,8 +31,8 @@ export function createCalendar(dependencies = {}) {
                         "name",
                         "url",
                         "color",
-                        "hidden",
-                        "details",
+                        "visible_to_public",
+                        "show_details_to_public",
                         "created_at",
                         "updated_at",
                     );
@@ -57,10 +57,10 @@ export function createCalendar(dependencies = {}) {
                           "name",
                           "url",
                           "color",
-                          "hidden",
-                          "details",
-                          "events_authenticated",
-                          "events",
+                          "visible_to_public",
+                          "show_details_to_public",
+                          "events_private",
+                          "events_processed",
                           "created_at",
                           "updated_at",
                       ]
@@ -68,10 +68,10 @@ export function createCalendar(dependencies = {}) {
                           "id",
                           "name",
                           "color",
-                          "hidden",
-                          "details",
+                          "visible_to_public",
+                          "show_details_to_public",
                           "events_public",
-                          "events",
+                          "events_processed",
                           "created_at",
                           "updated_at",
                       ];
@@ -79,7 +79,7 @@ export function createCalendar(dependencies = {}) {
                 let query = db("calendars").select(fields);
 
                 if (!isAuthenticated) {
-                    query = query.where("hidden", false);
+                    query = query.where("visible_to_public", true);
                 }
 
                 const calendars = await query;
@@ -111,9 +111,9 @@ export function createCalendar(dependencies = {}) {
                             name: calendar.name,
                             url: calendar.url,
                             color: calendar.color,
-                            hidden: calendar.hidden,
-                            details: calendar.details,
-                            events: parseEvents(calendar.events_authenticated, calendar.events),
+                            visible_to_public: calendar.visible_to_public,
+                            show_details_to_public: calendar.show_details_to_public,
+                            events: parseEvents(calendar.events_private, calendar.events_processed),
                             created_at: calendar.created_at,
                             updated_at: calendar.updated_at,
                         };
@@ -122,9 +122,9 @@ export function createCalendar(dependencies = {}) {
                             id: calendar.id,
                             name: calendar.name,
                             color: calendar.color,
-                            hidden: calendar.hidden,
-                            details: calendar.details,
-                            events: parseEvents(calendar.events_public, calendar.events),
+                            visible_to_public: calendar.visible_to_public,
+                            show_details_to_public: calendar.show_details_to_public,
+                            events: parseEvents(calendar.events_public, calendar.events_processed),
                             created_at: calendar.created_at,
                             updated_at: calendar.updated_at,
                         };
@@ -188,10 +188,10 @@ export function createCalendar(dependencies = {}) {
                 name,
                 url,
                 color = "#447dfc",
-                hidden = false,
-                details = false,
-                data: calendarData = null,
-                events = null,
+                visible_to_public = true,
+                show_details_to_public = true,
+                ical_data: calendarData = null,
+                events_processed = null,
             } = data;
 
             try {
@@ -199,10 +199,10 @@ export function createCalendar(dependencies = {}) {
                     name,
                     url,
                     color,
-                    hidden,
-                    details,
-                    data: calendarData,
-                    events,
+                    visible_to_public,
+                    show_details_to_public,
+                    ical_data: calendarData,
+                    events_processed,
                 });
 
                 return await db("calendars").where("id", id).first();
@@ -241,12 +241,12 @@ export function createCalendar(dependencies = {}) {
                 "name",
                 "url",
                 "color",
-                "hidden",
-                "details",
-                "data",
-                "events",
+                "visible_to_public",
+                "show_details_to_public",
+                "ical_data",
+                "events_processed",
                 "events_public",
-                "events_authenticated",
+                "events_private",
             ];
 
             for (const field of allowedFields) {
@@ -262,24 +262,24 @@ export function createCalendar(dependencies = {}) {
             }
 
             if (
-                updateData.hidden !== undefined &&
-                typeof updateData.hidden !== "boolean" &&
-                updateData.hidden !== 0 &&
-                updateData.hidden !== 1
+                updateData.visible_to_public !== undefined &&
+                typeof updateData.visible_to_public !== "boolean" &&
+                updateData.visible_to_public !== 0 &&
+                updateData.visible_to_public !== 1
             ) {
                 throw new ValidationError({
-                    hidden: "Hidden must be a boolean value or 0/1",
+                    visible_to_public: "Visible to public must be a boolean value or 0/1",
                 });
             }
 
             if (
-                updateData.details !== undefined &&
-                typeof updateData.details !== "boolean" &&
-                updateData.details !== 0 &&
-                updateData.details !== 1
+                updateData.show_details_to_public !== undefined &&
+                typeof updateData.show_details_to_public !== "boolean" &&
+                updateData.show_details_to_public !== 0 &&
+                updateData.show_details_to_public !== 1
             ) {
                 throw new ValidationError({
-                    details: "Details must be a boolean value or 0/1",
+                    show_details_to_public: "Show details to public must be a boolean value or 0/1",
                 });
             }
 

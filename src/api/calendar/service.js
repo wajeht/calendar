@@ -327,7 +327,7 @@ export function createCalendarService(dependencies = {}) {
 
             // Check if this should hide event details (based on calendar settings or empty event details)
             const shouldHideDetails =
-                calendar.details ||
+                !calendar.show_details_to_public ||
                 (event.title === "" && event.description === "" && event.location === "");
 
             const fcEvent = {
@@ -339,7 +339,7 @@ export function createCalendarService(dependencies = {}) {
                 textColor: "white",
                 extendedProps: {
                     ...buildExtendedProps(event),
-                    details: shouldHideDetails,
+                    show_details_to_public: !shouldHideDetails,
                 },
             };
 
@@ -372,10 +372,10 @@ export function createCalendarService(dependencies = {}) {
         const authenticatedEvents = buildFullCalendarEvents(calendar, events);
         let publicEvents;
 
-        // If calendar is hidden, no public events at all
-        if (calendar.hidden) {
+        // If calendar is not visible to public, no public events at all
+        if (!calendar.visible_to_public) {
             publicEvents = [];
-        } else if (calendar.details) {
+        } else if (!calendar.show_details_to_public) {
             // If details should be hidden for public view, strip ALL sensitive information
             const strippedEvents = [];
             for (let i = 0; i < events.length; i++) {
@@ -430,10 +430,10 @@ export function createCalendarService(dependencies = {}) {
             );
 
             await models.calendar.update(calendarId, {
-                data: rawData,
-                events: JSON.stringify(events),
+                ical_data: rawData,
+                events_processed: JSON.stringify(events),
                 events_public: JSON.stringify(publicEvents),
-                events_authenticated: JSON.stringify(authenticatedEvents),
+                events_private: JSON.stringify(authenticatedEvents),
             });
 
             logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
@@ -444,10 +444,10 @@ export function createCalendarService(dependencies = {}) {
 
             try {
                 await models.calendar.update(calendarId, {
-                    data: null,
-                    events: JSON.stringify([]),
+                    ical_data: null,
+                    events_processed: JSON.stringify([]),
                     events_public: JSON.stringify([]),
-                    events_authenticated: JSON.stringify([]),
+                    events_private: JSON.stringify([]),
                 });
             } catch (updateError) {
                 logger.error(
@@ -513,6 +513,8 @@ export function createCalendarService(dependencies = {}) {
                 name: calendar.name,
                 url: calendar.url,
                 color: calendar.color,
+                visible_to_public: calendar.visible_to_public,
+                show_details_to_public: calendar.show_details_to_public,
             }));
 
             logger.info(`Exported ${exportData.length} calendars`);
@@ -571,8 +573,14 @@ export function createCalendarService(dependencies = {}) {
                         name: sanitizedName,
                         url: calendarData.url,
                         color: calendarData.color || utils.generateRandomColor(),
-                        hidden: false,
-                        details: false,
+                        visible_to_public:
+                            calendarData.visible_to_public !== undefined
+                                ? calendarData.visible_to_public
+                                : true,
+                        show_details_to_public:
+                            calendarData.show_details_to_public !== undefined
+                                ? calendarData.show_details_to_public
+                                : true,
                     };
 
                     await models.calendar.create(newCalendarData);
