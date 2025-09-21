@@ -15,6 +15,13 @@ export function useToast() {
     function showToast(message, type = "info", title = null, duration = 5000) {
         if (!message) return null;
 
+        const existingToast = toasts.value.find(
+            (t) => t.message === message && t.type === type && t.show,
+        );
+        if (existingToast) {
+            return existingToast.id;
+        }
+
         const id = ++toastId;
         const toast = {
             id,
@@ -32,7 +39,7 @@ export function useToast() {
                 toastItem.show = true;
             }
             timeouts.delete(`show-${id}`);
-        }, 10);
+        }, 50);
         timeouts.set(`show-${id}`, showTimeoutId);
 
         if (duration > 0) {
@@ -49,15 +56,14 @@ export function useToast() {
     function removeToast(id) {
         const showKey = `show-${id}`;
         const removeKey = `remove-${id}`;
+        const hideKey = `hide-${id}`;
 
-        if (timeouts.has(showKey)) {
-            clearTimeout(timeouts.get(showKey));
-            timeouts.delete(showKey);
-        }
-        if (timeouts.has(removeKey)) {
-            clearTimeout(timeouts.get(removeKey));
-            timeouts.delete(removeKey);
-        }
+        [showKey, removeKey, hideKey].forEach((key) => {
+            if (timeouts.has(key)) {
+                clearTimeout(timeouts.get(key));
+                timeouts.delete(key);
+            }
+        });
 
         const toastIndex = toasts.value.findIndex((t) => t.id === id);
         if (toastIndex > -1) {
@@ -68,9 +74,9 @@ export function useToast() {
                 if (index > -1) {
                     toasts.value.splice(index, 1);
                 }
-                timeouts.delete(`hide-${id}`);
+                timeouts.delete(hideKey);
             }, 300);
-            timeouts.set(`hide-${id}`, hideTimeoutId);
+            timeouts.set(hideKey, hideTimeoutId);
         }
     }
 
