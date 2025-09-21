@@ -19,12 +19,12 @@ describe("Calendar", () => {
         it("should get calendars list regardless of auth status", async () => {
             let response = await testServer.get("/api/calendars");
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body)).toBeTruthy();
+            expect(Array.isArray(response.body.data)).toBeTruthy();
 
             await testServer.logout();
             response = await testServer.get("/api/calendars");
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body)).toBeTruthy();
+            expect(Array.isArray(response.body.data)).toBeTruthy();
 
             await testServer.login();
         });
@@ -41,10 +41,10 @@ describe("Calendar", () => {
             const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(201);
-            expect(response.body.name).toBe("Test Calendar");
-            expect(response.body.url).toBe(calendarData.url);
-            expect(response.body.color).toBe("#ff0000");
-            expect(response.body.id).toBeTruthy();
+            expect(response.body.data.name).toBe("Test Calendar");
+            expect(response.body.data.url).toBe(calendarData.url);
+            expect(response.body.data.color).toBe("#ff0000");
+            expect(response.body.data.id).toBeTruthy();
         });
 
         it("should reject calendar with missing name", async () => {
@@ -157,8 +157,8 @@ describe("Calendar", () => {
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(data.name).toBe("Updated Calendar Name");
-            expect(data.id).toBe(calendarId);
+            expect(data.data.name).toBe("Updated Calendar Name");
+            expect(data.data.id).toBe(calendarId);
         });
 
         it("should update calendar visibility", async () => {
@@ -170,7 +170,7 @@ describe("Calendar", () => {
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(!!data.hidden).toBe(true);
+            expect(!!data.data.hidden).toBe(true);
         });
 
         it("should return 404 for non-existent calendar", async () => {
@@ -214,8 +214,8 @@ describe("Calendar", () => {
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(data.name).toBe("Delete Test Calendar");
-            expect(data.id).toBe(calendarId);
+            expect(data.success).toBe(true);
+            expect(data.message).toBe("Calendar deleted successfully");
 
             const getResponse = await testServer.get(`/api/calendars/${calendarId}`);
             expect(getResponse.status).toBe(404);
@@ -244,8 +244,8 @@ describe("Calendar", () => {
             const data = response.body;
 
             expect(response.status).toBe(200);
-            expect(data.successful).toBeDefined();
-            expect(data.total).toBeDefined();
+            expect(data.data.successful).toBeDefined();
+            expect(data.data.total).toBeDefined();
         });
 
         it("should require authentication", async () => {

@@ -7,6 +7,8 @@ export async function createTestServer() {
 
     await ctx.db.migrate.latest();
 
+    await ctx.models.settings.set("app_password", "test-password");
+
     const agent = request.agent(app);
     let sessionToken = null;
 
