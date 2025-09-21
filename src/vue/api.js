@@ -142,6 +142,20 @@ export const api = {
 
             return result;
         },
+
+        async export() {
+            const response = await fetch("/api/calendars/export", {
+                credentials: "include",
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
+        },
     },
 
     settings: {
