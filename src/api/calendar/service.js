@@ -5,6 +5,27 @@ export function createCalendarService(dependencies = {}) {
     if (!models) throw new Error("Models required for calendar service");
     if (!logger) throw new Error("Logger required for calendar service");
 
+    function formatDateForCalendar(icalTime) {
+        if (icalTime.isDate) {
+            return icalTime.toJSDate().toISOString().split("T")[0];
+        }
+
+        // Handle floating times (no timezone) as local time - this fixes the timezone issue
+        if (!icalTime.zone || icalTime.zone.tzid === "floating" || icalTime.zone.tzid === "UTC") {
+            const localDate = new Date(
+                icalTime.year,
+                icalTime.month - 1,
+                icalTime.day,
+                icalTime.hour,
+                icalTime.minute,
+                icalTime.second,
+            );
+            return localDate.toISOString();
+        }
+
+        return icalTime.toJSDate().toISOString();
+    }
+
     async function fetchICalData(url) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -121,16 +142,15 @@ export function createCalendarService(dependencies = {}) {
             title: icalEvent.summary || "Untitled Event",
             description: icalEvent.description || "",
             location: icalEvent.location || "",
-            start: icalEvent.startDate.toJSDate().toISOString(),
+            start: formatDateForCalendar(icalEvent.startDate),
             allDay: icalEvent.startDate.isDate,
         };
 
         if (icalEvent.endDate) {
-            event.end = icalEvent.endDate.toJSDate().toISOString();
+            event.end = formatDateForCalendar(icalEvent.endDate);
         }
 
         addEventProperties(event, icalEvent);
-
         return event;
     }
 
@@ -140,7 +160,7 @@ export function createCalendarService(dependencies = {}) {
             title: originalEvent.summary || "Untitled Event",
             description: originalEvent.description || "",
             location: originalEvent.location || "",
-            start: occurrenceDate.toJSDate().toISOString(),
+            start: formatDateForCalendar(occurrenceDate),
             allDay: occurrenceDate.isDate,
         };
 
@@ -149,12 +169,12 @@ export function createCalendarService(dependencies = {}) {
             const durationMs =
                 originalEvent.endDate.toJSDate().getTime() -
                 originalEvent.startDate.toJSDate().getTime();
-            const endDate = new Date(occurrenceDate.toJSDate().getTime() + durationMs);
-            event.end = endDate.toISOString();
+            const endOccurrence = occurrenceDate.clone();
+            endOccurrence.addDuration(ICAL.Duration.fromSeconds(durationMs / 1000));
+            event.end = formatDateForCalendar(endOccurrence);
         }
 
         addEventProperties(event, originalEvent);
-
         return event;
     }
 
@@ -261,24 +281,14 @@ export function createCalendarService(dependencies = {}) {
         };
 
         // Add timestamp fields if they exist
-        if (event.dtStamp) {
-            props.dtStamp = event.dtStamp;
-        }
-        if (event.created) {
-            props.created = event.created;
-        }
-        if (event.lastModified) {
-            props.lastModified = event.lastModified;
-        }
+        if (event.dtStamp) props.dtStamp = event.dtStamp;
+        if (event.created) props.created = event.created;
+        if (event.lastModified) props.lastModified = event.lastModified;
 
         // Add organizer information if it exists
         if (event.organizer) {
-            if (event.organizer.name) {
-                props.organizerName = event.organizer.name;
-            }
-            if (event.organizer.email) {
-                props.organizerEmail = event.organizer.email;
-            }
+            if (event.organizer.name) props.organizerName = event.organizer.name;
+            if (event.organizer.email) props.organizerEmail = event.organizer.email;
         }
 
         // Add attendee information if it exists
@@ -287,20 +297,12 @@ export function createCalendarService(dependencies = {}) {
             const attendeeEmails = [];
 
             for (const attendee of event.attendees) {
-                if (attendee.name) {
-                    attendeeNames.push(attendee.name);
-                }
-                if (attendee.email) {
-                    attendeeEmails.push(attendee.email);
-                }
+                if (attendee.name) attendeeNames.push(attendee.name);
+                if (attendee.email) attendeeEmails.push(attendee.email);
             }
 
-            if (attendeeNames.length > 0) {
-                props.attendeeNames = attendeeNames.join(", ");
-            }
-            if (attendeeEmails.length > 0) {
-                props.attendeeEmails = attendeeEmails.join(", ");
-            }
+            if (attendeeNames.length > 0) props.attendeeNames = attendeeNames.join(", ");
+            if (attendeeEmails.length > 0) props.attendeeEmails = attendeeEmails.join(", ");
             props.attendeeCount = String(event.attendees.length);
         }
 
@@ -343,13 +345,8 @@ export function createCalendarService(dependencies = {}) {
                 },
             };
 
-            if (event.end) {
-                fcEvent.end = event.end;
-            }
-
-            if (event.url) {
-                fcEvent.url = event.url;
-            }
+            if (event.end) fcEvent.end = event.end;
+            if (event.url) fcEvent.url = event.url;
 
             validEvents.push(fcEvent);
         }
