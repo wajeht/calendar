@@ -18,7 +18,7 @@ const props = defineProps({
 
 <template>
     <label
-        class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 block flex items-center"
+        class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 flex items-center"
     >
         <div class="relative flex items-center mr-2">
             <input

@@ -58,6 +58,8 @@ const passwordErrors = reactive({
 });
 
 const isRefreshing = ref(false);
+const isExporting = ref(false);
+const isImporting = ref(false);
 
 function editCalendar(calendar) {
     editingCalendar.value = calendar;
@@ -86,8 +88,13 @@ function handleCalendarDeleted() {
     deletingCalendar.value = null;
 }
 
-function exportCalendars() {
-    exportCalendarsAPI();
+async function exportCalendars() {
+    isExporting.value = true;
+    try {
+        await exportCalendarsAPI();
+    } finally {
+        isExporting.value = false;
+    }
 }
 
 function triggerImport() {
@@ -98,6 +105,7 @@ async function importCalendars(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    isImporting.value = true;
     try {
         if (!file.name.endsWith(".json")) {
             throw new Error("Please select a JSON file");
@@ -128,6 +136,7 @@ async function importCalendars(event) {
             toast.error("Error importing settings: " + error.message);
         }
     } finally {
+        isImporting.value = false;
         event.target.value = "";
     }
 }
@@ -342,9 +351,23 @@ onMounted(() => {
             <!-- Import/Export Section -->
             <div class="border-t border-gray-200 pt-4">
                 <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
-                <div class="flex gap-4">
-                    <Button @click="exportCalendars" variant="primary"> Export Settings </Button>
-                    <Button @click="triggerImport">Import Settings</Button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button
+                        @click="exportCalendars"
+                        variant="primary"
+                        :disabled="isExporting"
+                        class="w-full"
+                    >
+                        {{ isExporting ? "Exporting..." : "Export Settings" }}
+                    </Button>
+                    <Button
+                        @click="triggerImport"
+                        variant="default"
+                        :disabled="isImporting"
+                        class="w-full"
+                    >
+                        {{ isImporting ? "Importing..." : "Import Settings" }}
+                    </Button>
                     <input
                         ref="importInput"
                         type="file"
@@ -358,63 +381,50 @@ onMounted(() => {
 
         <!-- Settings Tab -->
         <div v-if="activeTab === 'settings'" class="h-[500px] overflow-y-auto space-y-6">
-            <!-- Auto Refresh Section -->
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Settings Management</h3>
+            </div>
+
             <div class="space-y-6">
-                <div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Auto Calendar Refresh</h3>
+                <!-- Auto Refresh Section -->
+                <div class="space-y-4">
+                    <Checkbox
+                        v-model="cronSettings.enabled"
+                        label="Enable automatic calendar refresh"
+                        :disabled="isLoadingCron"
+                        @change="updateCronSettings"
+                    />
 
-                    <div class="space-y-4">
-                        <Checkbox
-                            v-model="cronSettings.enabled"
-                            label="Enable automatic calendar refresh"
-                            :disabled="isLoadingCron"
-                            @change="updateCronSettings"
-                        />
+                    <div v-if="cronSettings.enabled" class="space-y-4">
+                        <FormGroup label="Refresh Schedule">
+                            <Select
+                                v-model="cronSettings.schedule"
+                                @change="updateCronSettings"
+                                :disabled="isLoadingCron"
+                            >
+                                <option value="0 */1 * * *">Every hour</option>
+                                <option value="0 */2 * * *">Every 2 hours</option>
+                                <option value="0 */4 * * *">Every 4 hours</option>
+                                <option value="0 */6 * * *">Every 6 hours</option>
+                                <option value="0 */12 * * *">Every 12 hours</option>
+                                <option value="0 0 * * *">Daily</option>
+                            </Select>
+                        </FormGroup>
 
-                        <div v-if="cronSettings.enabled" class="space-y-4">
-                            <FormGroup label="Refresh Schedule">
-                                <Select
-                                    v-model="cronSettings.schedule"
-                                    @change="updateCronSettings"
-                                    :disabled="isLoadingCron"
-                                >
-                                    <option value="0 */1 * * *">Every hour</option>
-                                    <option value="0 */2 * * *">Every 2 hours</option>
-                                    <option value="0 */4 * * *">Every 4 hours</option>
-                                    <option value="0 */6 * * *">Every 6 hours</option>
-                                    <option value="0 */12 * * *">Every 12 hours</option>
-                                    <option value="0 0 * * *">Daily</option>
-                                </Select>
-                            </FormGroup>
-                        </div>
+                        <FormGroup v-if="cronSettings.lastRun" label="Last Run">
+                            <div class="text-sm py-1.5 text-gray-600">
+                                {{ new Date(cronSettings.lastRun).toLocaleString() }}
+                            </div>
+                        </FormGroup>
                     </div>
                 </div>
 
-                <!-- Status Section -->
-                <div v-if="cronSettings.enabled && cronSettings.lastRun">
-                    <FormGroup label="Last Run">
-                        <div class="text-sm py-1.5 text-gray-600">
-                            {{ new Date(cronSettings.lastRun).toLocaleString() }}
-                        </div>
-                    </FormGroup>
-                </div>
-
                 <!-- Manual Refresh Section -->
-                <div class="pt-4 border-t border-gray-200">
-                    <FormGroup label="Manual Refresh">
-                        <div class="space-y-2">
-                            <Button
-                                @click="refreshAllCalendars"
-                                :disabled="isRefreshing"
-                                variant="primary"
-                            >
-                                {{ isRefreshing ? "Refreshing..." : "Refresh All Calendars Now" }}
-                            </Button>
-                            <p class="text-sm text-gray-500">
-                                Manually trigger a refresh of all calendars
-                            </p>
-                        </div>
-                    </FormGroup>
+                <div class="border-t border-gray-200 pt-4">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Manual Refresh</h4>
+                    <Button @click="refreshAllCalendars" :disabled="isRefreshing" variant="primary">
+                        {{ isRefreshing ? "Refreshing..." : "Refresh All Calendars Now" }}
+                    </Button>
                 </div>
             </div>
         </div>
@@ -487,11 +497,8 @@ onMounted(() => {
 
             <!-- Logout Section -->
             <div class="pt-6 border-t border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Account Actions</h3>
+                <h4 class="text-md font-medium text-gray-900 mb-4">Account Actions</h4>
                 <Button @click="logoutUser" variant="danger">Logout</Button>
-                <p class="text-sm text-gray-500 mt-2">
-                    Sign out of your account and return to the login page
-                </p>
             </div>
         </div>
 
