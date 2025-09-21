@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, onMounted, useTemplateRef } from "vue";
+import { ref, reactive, nextTick, onMounted, useTemplateRef } from "vue";
 import Modal from "../../../components/Modal.vue";
 import FormGroup from "../../../components/FormGroup.vue";
 import Input from "../../../components/Input.vue";
@@ -12,10 +12,22 @@ const { login, isLoading } = useAuth();
 const password = ref("");
 const passwordInput = useTemplateRef("passwordInput");
 
+const errors = reactive({
+    password: "",
+});
+
 async function authenticate() {
+    errors.password = "";
+
     const result = await login(password.value);
     if (result.success) {
         emit("authenticated");
+    } else if (result.errors) {
+        Object.keys(result.errors).forEach((field) => {
+            if (errors.hasOwnProperty(field)) {
+                errors[field] = result.errors[field];
+            }
+        });
     }
 }
 
@@ -27,7 +39,7 @@ onMounted(async () => {
 
 <template>
     <Modal title="Authentication Required" @close="emit('close')">
-        <FormGroup label="Password" required input-id="password">
+        <FormGroup label="Password" required input-id="password" :error="errors.password">
             <Input
                 id="password"
                 v-model="password"

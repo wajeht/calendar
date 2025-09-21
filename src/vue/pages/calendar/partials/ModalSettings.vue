@@ -3,7 +3,10 @@ import { ref, reactive, watch, useTemplateRef } from "vue";
 import { useToast } from "../../../composables/useToast";
 import { useAuth } from "../../../composables/useAuth.js";
 import { useCalendar } from "../../../composables/useCalendar.js";
+import { api } from "../../../api.js";
 import Modal from "../../../components/Modal.vue";
+import FormGroup from "../../../components/FormGroup.vue";
+import Input from "../../../components/Input.vue";
 import Button from "../../../components/Button.vue";
 import AddCalendarModal from "./ModalAddCalendar.vue";
 import EditCalendarModal from "./ModalEditCalendar.vue";
@@ -18,7 +21,7 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "calendar-updated"]);
 const toast = useToast();
-const { logout } = useAuth();
+const { logout, verifySession } = useAuth();
 const { importCalendars: importCalendarsAPI, exportCalendars: exportCalendarsAPI } = useCalendar();
 
 const activeTab = ref("calendars");
@@ -29,6 +32,19 @@ const editingCalendar = ref(null);
 const deletingCalendar = ref(null);
 const debugMode = ref(localStorage.getItem("calendar-debug") === "true");
 const importInput = useTemplateRef("importInput");
+
+const passwordForm = reactive({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+});
+const changingPassword = ref(false);
+
+const passwordErrors = reactive({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+});
 
 function editCalendar(calendar) {
     editingCalendar.value = calendar;
@@ -101,6 +117,44 @@ async function importCalendars(event) {
 
 async function logoutUser() {
     await logout();
+}
+
+async function changePassword() {
+    passwordErrors.currentPassword = "";
+    passwordErrors.newPassword = "";
+    passwordErrors.confirmPassword = "";
+
+    changingPassword.value = true;
+
+    try {
+        const result = await api.settings.changePassword(
+            passwordForm.currentPassword,
+            passwordForm.newPassword,
+            passwordForm.confirmPassword,
+        );
+
+        if (result.success) {
+            toast.success("Password changed successfully");
+            passwordForm.currentPassword = "";
+            passwordForm.newPassword = "";
+            passwordForm.confirmPassword = "";
+            await verifySession();
+        } else {
+            if (result.errors) {
+                Object.keys(result.errors).forEach((field) => {
+                    if (passwordErrors.hasOwnProperty(field)) {
+                        passwordErrors[field] = result.errors[field];
+                    }
+                });
+            } else {
+                toast.error(result.message || "Failed to change password");
+            }
+        }
+    } catch (error) {
+        toast.error("Failed to change password");
+    } finally {
+        changingPassword.value = false;
+    }
 }
 
 function updateDebugMode() {
@@ -224,6 +278,70 @@ watch(debugMode, updateDebugMode);
                             ></div>
                         </label>
                     </div>
+                </div>
+            </div>
+
+            <!-- Password Change Section -->
+            <div class="pt-6 border-t border-gray-200">
+                <h4 class="font-medium text-gray-900 mb-4">Change Password</h4>
+                <div class="space-y-4 max-w-md">
+                    <FormGroup
+                        label="Current Password"
+                        required
+                        input-id="currentPassword"
+                        :error="passwordErrors.currentPassword"
+                    >
+                        <Input
+                            id="currentPassword"
+                            v-model="passwordForm.currentPassword"
+                            type="password"
+                            placeholder="Enter current password"
+                            required
+                        />
+                    </FormGroup>
+
+                    <FormGroup
+                        label="New Password"
+                        required
+                        input-id="newPassword"
+                        :error="passwordErrors.newPassword"
+                    >
+                        <Input
+                            id="newPassword"
+                            v-model="passwordForm.newPassword"
+                            type="password"
+                            placeholder="Enter new password (min 8 characters)"
+                            required
+                        />
+                    </FormGroup>
+
+                    <FormGroup
+                        label="Confirm New Password"
+                        required
+                        input-id="confirmNewPassword"
+                        :error="passwordErrors.confirmPassword"
+                    >
+                        <Input
+                            id="confirmNewPassword"
+                            v-model="passwordForm.confirmPassword"
+                            type="password"
+                            placeholder="Confirm new password"
+                            required
+                        />
+                    </FormGroup>
+
+                    <Button
+                        @click="changePassword"
+                        :disabled="
+                            changingPassword ||
+                            !passwordForm.currentPassword ||
+                            !passwordForm.newPassword ||
+                            !passwordForm.confirmPassword
+                        "
+                        variant="primary"
+                    >
+                        {{ changingPassword ? "Changing..." : "Change Password" }}
+                    </Button>
                 </div>
             </div>
 

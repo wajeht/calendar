@@ -11,13 +11,14 @@ import PasswordModal from "./partials/ModalPassword.vue";
 import SettingsModal from "./partials/ModalSettings.vue";
 import EventModal from "./partials/ModalEvent.vue";
 import ConfirmModal from "./partials/ModalConfirm.vue";
+import SetupPasswordModal from "./partials/ModalSetupPassword.vue";
 
 import { useToast } from "../../composables/useToast";
 import { useAuth } from "../../composables/useAuth.js";
 import { useCalendar } from "../../composables/useCalendar.js";
 
 const toast = useToast();
-const { isAuthenticated, verifySession } = useAuth();
+const { isAuthenticated, verifySession, checkPasswordConfiguration } = useAuth();
 const { calendars, getCalendars } = useCalendar();
 
 const calendarRef = useTemplateRef("calendarRef");
@@ -26,8 +27,10 @@ const eventSources = ref([]);
 const showPasswordModal = ref(false);
 const showSettingsModal = ref(false);
 const showEventModal = ref(false);
+const showSetupPasswordModal = ref(false);
 const selectedEvent = ref(null);
 const selectedEventCalendar = ref(null);
+const isPasswordConfigured = ref(null); // null = checking, true = configured, false = not configured
 
 const confirmDialog = reactive({
     show: false,
@@ -92,12 +95,34 @@ function getInitialDate() {
     return urlParams.get("date") || undefined;
 }
 
-function handleSettingsClick() {
-    if (isAuthenticated.value) {
-        showSettingsModal.value = true;
+async function handleSettingsClick() {
+    if (isPasswordConfigured.value === false) {
+        showSetupPasswordModal.value = true;
     } else {
-        showPasswordModal.value = true;
+        await verifySession();
+
+        if (isAuthenticated.value) {
+            showSettingsModal.value = true;
+        } else {
+            showPasswordModal.value = true;
+        }
     }
+}
+
+async function handlePasswordConfigurationCheck() {
+    const result = await checkPasswordConfiguration();
+    if (result.success) {
+        isPasswordConfigured.value = result.configured;
+    } else {
+        console.error("Failed to check password configuration:", result.message);
+        isPasswordConfigured.value = true;
+    }
+}
+
+function handlePasswordConfigured() {
+    showSetupPasswordModal.value = false;
+    isPasswordConfigured.value = true;
+    showPasswordModal.value = true;
 }
 
 function handleEventClick(info) {
@@ -203,9 +228,10 @@ function handleKeydown(e) {
 
 onMounted(async () => {
     document.addEventListener("keydown", handleKeydown);
-    await verifySession();
+    await handlePasswordConfigurationCheck();
+
+    // Load public calendar data
     await loadCalendars();
-    toast.info("Calendar loaded successfully");
 });
 
 onUnmounted(() => {
@@ -247,6 +273,11 @@ onUnmounted(() => {
             @cancel="confirmDialog.reject"
         />
 
+        <SetupPasswordModal
+            v-if="showSetupPasswordModal"
+            @close="showSetupPasswordModal = false"
+            @password-configured="handlePasswordConfigured"
+        />
     </main>
 </template>
 
