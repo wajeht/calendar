@@ -8,8 +8,10 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci --no-audit --no-fund
 
-# Fix Rollup native dependencies for Alpine Linux
-RUN npm rebuild
+# Fix Rollup native dependencies for Alpine Linux (npm bug #4828)
+RUN rm -rf node_modules/.bin && \
+    npm install --no-package-lock --no-save @rollup/rollup-linux-x64-musl || true && \
+    npm rebuild
 
 # Copy source files needed for Vue build
 COPY src ./src
