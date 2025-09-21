@@ -43,7 +43,7 @@ const viteConfig = {
         chunkSizeWarningLimit: 1600,
         emptyOutDir: false,
         rollupOptions: {
-            output: config.app.env === "development" ? {
+            output: process.env.NODE_ENV === "development" ? {
                 entryFileNames: `assets/[name].js`,
                 chunkFileNames: `assets/[name].js`,
                 assetFileNames: `assets/[name].[ext]`,
