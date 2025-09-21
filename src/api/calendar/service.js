@@ -10,17 +10,17 @@ export function createCalendarService(dependencies = {}) {
             return icalTime.toJSDate().toISOString().split("T")[0];
         }
 
-        // Handle floating times (no timezone) as local time - this fixes the timezone issue
-        if (!icalTime.zone || icalTime.zone.tzid === "floating" || icalTime.zone.tzid === "UTC") {
-            const localDate = new Date(
-                icalTime.year,
-                icalTime.month - 1,
-                icalTime.day,
-                icalTime.hour,
-                icalTime.minute,
-                icalTime.second,
-            );
-            return localDate.toISOString();
+        // For floating times (no timezone), format as ISO string without timezone conversion
+        // This preserves the original time values and lets the frontend handle timezone display
+        if (!icalTime.zone || icalTime.zone.tzid === "floating") {
+            const year = icalTime.year;
+            const month = String(icalTime.month).padStart(2, '0');
+            const day = String(icalTime.day).padStart(2, '0');
+            const hour = String(icalTime.hour).padStart(2, '0');
+            const minute = String(icalTime.minute).padStart(2, '0');
+            const second = String(icalTime.second).padStart(2, '0');
+
+            return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
         }
 
         return icalTime.toJSDate().toISOString();
