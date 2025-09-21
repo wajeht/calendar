@@ -8,6 +8,37 @@ const isLoading = ref(false);
 export function useAuth() {
     const toast = useToast();
 
+    async function checkPasswordConfiguration() {
+        isLoading.value = true;
+        try {
+            const result = await api.settings.isPasswordConfigured();
+            return result;
+        } catch (error) {
+            toast.error("Error checking password configuration: " + error.message);
+            return { success: false, message: error.message };
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    async function setupPassword(password, confirmPassword) {
+        isLoading.value = true;
+        try {
+            const result = await api.settings.setupPassword(password, confirmPassword);
+            if (result.success) {
+                toast.success("Password configured successfully! You can now log in.");
+            } else {
+                toast.error(result.message || "Failed to configure password");
+            }
+            return result;
+        } catch (error) {
+            toast.error("Failed to configure password: " + error.message);
+            return { success: false, message: error.message };
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
     async function login(password) {
         isLoading.value = true;
         try {
@@ -50,9 +81,14 @@ export function useAuth() {
 
     async function verifySession() {
         try {
-            const isValid = await api.auth.verify();
-            isAuthenticated.value = isValid;
-            return isValid;
+            const result = await api.auth.verify();
+            if (result.success) {
+                isAuthenticated.value = true;
+                return true;
+            } else {
+                isAuthenticated.value = false;
+                return false;
+            }
         } catch (error) {
             isAuthenticated.value = false;
             console.error("Auth check failed:", error);
@@ -66,5 +102,7 @@ export function useAuth() {
         login,
         logout,
         verifySession,
+        checkPasswordConfiguration,
+        setupPassword,
     };
 }
