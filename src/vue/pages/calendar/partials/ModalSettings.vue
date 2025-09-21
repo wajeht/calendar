@@ -101,7 +101,7 @@ async function importCalendars(event) {
             emit("calendar-updated");
             toast.success("Settings imported successfully");
         } else {
-            throw new Error(result.error || "Failed to import calendars");
+            throw new Error(result.message || "Failed to import calendars");
         }
     } catch (error) {
         if (error instanceof SyntaxError) {

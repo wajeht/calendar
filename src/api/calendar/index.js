@@ -170,7 +170,7 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info(`Calendar deleted: ${calendar.name}`);
 
-        res.json(calendar);
+        res.json({ success: true, message: "Calendar deleted successfully" });
     });
 
     router.post("/refresh", requireAuth, async (_req, res) => {
