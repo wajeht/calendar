@@ -1,4 +1,23 @@
-FROM node:22-alpine
+FROM node:22-alpine AS builder
+
+RUN apk add --no-cache curl
+
+WORKDIR /usr/src/app
+
+# Copy package files and install all dependencies (including devDependencies for build)
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+
+# Copy source files needed for Vue build
+COPY src ./src
+COPY vite.config.js ./
+COPY public ./public
+
+# Build Vue app
+RUN npm run build
+
+# Production stage
+FROM node:22-alpine AS production
 
 RUN apk add --no-cache curl && \
     addgroup -g 1001 -S nodejs && \
@@ -6,12 +25,14 @@ RUN apk add --no-cache curl && \
 
 WORKDIR /usr/src/app
 
+# Copy package files and install only production dependencies
 COPY package*.json ./
 RUN npm ci --only=production --no-audit --no-fund && \
     npm cache clean --force
 
+# Copy source files and built assets from builder stage
 COPY --chown=nodejs:nodejs src ./src
-COPY --chown=nodejs:nodejs public ./public
+COPY --from=builder --chown=nodejs:nodejs /usr/src/app/public ./public
 
 USER nodejs
 
