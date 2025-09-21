@@ -19,7 +19,12 @@ export function createSettingsRouter(dependencies = {}) {
 
     router.get("/cron", requireAuth, async (_req, res) => {
         const status = services.cron.getStatus();
-        res.json(status);
+        res.json({
+            success: true,
+            message: "Cron settings retrieved successfully",
+            errors: null,
+            data: status,
+        });
     });
 
     router.put("/cron", requireAuth, async (req, res) => {
@@ -53,7 +58,12 @@ export function createSettingsRouter(dependencies = {}) {
 
         logger.info(`Cron settings updated: enabled=${enabled}, schedule=${schedule}`);
 
-        res.json(result);
+        res.json({
+            success: true,
+            message: "Cron settings updated successfully",
+            errors: null,
+            data: result,
+        });
     });
 
     router.put("/password", requireAuth, async (req, res) => {
@@ -106,6 +116,8 @@ export function createSettingsRouter(dependencies = {}) {
         res.json({
             success: true,
             message: "Password changed successfully",
+            errors: null,
+            data: null,
         });
     });
 
@@ -113,7 +125,11 @@ export function createSettingsRouter(dependencies = {}) {
         const existingPassword = await models.settings.get("app_password");
         res.json({
             success: true,
-            configured: !!existingPassword,
+            message: "Password configuration status retrieved successfully",
+            errors: null,
+            data: {
+                configured: !!existingPassword,
+            },
         });
     });
 
@@ -160,6 +176,8 @@ export function createSettingsRouter(dependencies = {}) {
         res.json({
             success: true,
             message: "Password configured successfully",
+            errors: null,
+            data: null,
         });
     });
 

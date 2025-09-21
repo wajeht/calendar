@@ -13,7 +13,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -28,7 +29,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -43,7 +45,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -59,7 +62,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -82,7 +86,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -105,7 +110,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -120,7 +126,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -137,7 +144,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -151,7 +159,24 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
+            }));
+
+            return result;
+        },
+
+        async refresh() {
+            const response = await fetch("/api/calendars/refresh", {
+                method: "POST",
+                credentials: "include",
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -167,7 +192,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -184,7 +210,8 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
             }));
 
             return result;
@@ -205,7 +232,41 @@ export const api = {
             const result = await response.json().catch(() => ({
                 success: false,
                 message: "Failed to parse response",
-                errors: {},
+                errors: null,
+                data: null,
+            }));
+
+            return result;
+        },
+
+        async getCronSettings() {
+            const response = await fetch("/api/settings/cron", {
+                credentials: "include",
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: null,
+                data: null,
+            }));
+
+            return result;
+        },
+
+        async updateCronSettings(enabled, schedule) {
+            const response = await fetch("/api/settings/cron", {
+                method: "PUT",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enabled, schedule }),
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: null,
+                data: null,
             }));
 
             return result;

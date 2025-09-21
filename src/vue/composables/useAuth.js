@@ -15,7 +15,7 @@ export function useAuth() {
             return result;
         } catch (error) {
             toast.error("Error checking password configuration: " + error.message);
-            return { success: false, message: error.message };
+            return { success: false, message: error.message, errors: null, data: null };
         } finally {
             isLoading.value = false;
         }
@@ -26,14 +26,16 @@ export function useAuth() {
         try {
             const result = await api.settings.setupPassword(password, confirmPassword);
             if (result.success) {
-                toast.success("Password configured successfully! You can now log in.");
+                toast.success(
+                    result.message || "Password configured successfully! You can now log in.",
+                );
             } else {
                 toast.error(result.message || "Failed to configure password");
             }
             return result;
         } catch (error) {
             toast.error("Failed to configure password: " + error.message);
-            return { success: false, message: error.message };
+            return { success: false, message: error.message, errors: null, data: null };
         } finally {
             isLoading.value = false;
         }
@@ -45,14 +47,14 @@ export function useAuth() {
             const result = await api.auth.login(password);
             if (result.success) {
                 isAuthenticated.value = true;
-                toast.success("Logged in successfully");
+                toast.success(result.message || "Logged in successfully");
             } else {
                 toast.error(result.message || "Invalid password");
             }
             return result;
         } catch (error) {
             toast.error("Authentication error: " + error.message);
-            return { success: false, message: error.message };
+            return { success: false, message: error.message, errors: null, data: null };
         } finally {
             isLoading.value = false;
         }
@@ -65,7 +67,7 @@ export function useAuth() {
             const result = await api.auth.logout();
             if (result.success) {
                 isAuthenticated.value = false;
-                toast.success("Logged out successfully");
+                toast.success(result.message || "Logged out successfully");
                 if (reload) window.location.reload();
             } else {
                 toast.error(result.message || "Failed to logout");
@@ -73,7 +75,7 @@ export function useAuth() {
             return result;
         } catch (error) {
             toast.error("Logout error: " + error.message);
-            return { success: false, message: error.message };
+            return { success: false, message: error.message, errors: null, data: null };
         } finally {
             isLoading.value = false;
         }
@@ -105,7 +107,7 @@ export function useAuth() {
                 confirmPassword,
             );
             if (result.success) {
-                toast.success("Password changed successfully");
+                toast.success(result.message || "Password changed successfully");
             } else {
                 if (!result.errors) {
                     toast.error(result.message || "Failed to change password");
@@ -114,7 +116,7 @@ export function useAuth() {
             return result;
         } catch (error) {
             toast.error("Failed to change password");
-            return { success: false, message: error.message };
+            return { success: false, message: error.message, errors: null, data: null };
         } finally {
             isLoading.value = false;
         }

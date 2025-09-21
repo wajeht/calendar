@@ -46,60 +46,62 @@ onMounted(() => {
 const sizeClasses = computed(() => {
     switch (props.size) {
         case "large":
-            return "max-w-4xl w-[90%] max-h-[85vh]";
+            return "max-w-2xl w-[90%] max-h-[85vh]";
         default:
-            return "max-w-[450px] w-[90%] max-h-[85vh]";
+            return "max-w-md w-[90%] max-h-[85vh]";
     }
 });
 </script>
 
 <template>
-    <div
-        v-if="!isClosing"
-        class="fixed inset-0 bg-black/40 z-[3000]"
-        @click="props.closable ? closeModal : null"
-    ></div>
-
-    <dialog
-        ref="dialogRef"
-        closedby="none"
-        :class="[
-            'modal-dialog',
-            'bg-white border border-gray-300 rounded-sm shadow-lg overflow-hidden',
-            'text-[13px] leading-tight',
-            props.highZIndex ? 'z-[4001]' : 'z-[3001]',
-            isClosing ? 'modal-closing' : '',
-            sizeClasses,
-        ]"
-        @click="handleDialogClick"
-    >
-        <!-- Modal Header -->
+    <Teleport to="body">
         <div
-            v-if="props.title || $slots.header"
-            class="bg-gray-100 border-b border-gray-300 p-4 relative"
+            v-if="!isClosing"
+            :class="['fixed inset-0 bg-black/40', props.highZIndex ? 'z-[3999]' : 'z-[2999]']"
+            @click="props.closable ? closeModal : null"
+        ></div>
+
+        <dialog
+            ref="dialogRef"
+            closedby="none"
+            :class="[
+                'modal-dialog',
+                'bg-white border border-gray-300 rounded-sm shadow-lg overflow-hidden',
+                'text-[13px] leading-tight',
+                props.highZIndex ? 'z-[4001]' : 'z-[3001]',
+                isClosing ? 'modal-closing' : '',
+                sizeClasses,
+            ]"
+            @click="handleDialogClick"
         >
-            <h2 class="m-0 text-base font-bold text-gray-800">
-                <slot name="header">{{ props.title }}</slot>
-            </h2>
-            <button
-                v-if="props.closable"
-                class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-none border-none text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800"
-                @click="closeModal"
+            <!-- Modal Header -->
+            <div
+                v-if="props.title || $slots.header"
+                class="bg-gray-100 border-b border-gray-300 p-4 relative"
             >
-                &times;
-            </button>
-        </div>
+                <h2 class="m-0 text-base font-bold text-gray-800">
+                    <slot name="header">{{ props.title }}</slot>
+                </h2>
+                <button
+                    v-if="props.closable"
+                    class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-none border-none text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800"
+                    @click="closeModal"
+                >
+                    &times;
+                </button>
+            </div>
 
-        <!-- Modal Body -->
-        <div class="p-4 max-h-[calc(85vh-140px)] overflow-y-auto">
-            <slot />
-        </div>
+            <!-- Modal Body -->
+            <div class="p-4 max-h-[calc(85vh-140px)] overflow-y-auto">
+                <slot />
+            </div>
 
-        <!-- Modal Footer -->
-        <div v-if="$slots.footer" class="bg-gray-100 border-t border-gray-300 p-4 text-right">
-            <slot name="footer" />
-        </div>
-    </dialog>
+            <!-- Modal Footer -->
+            <div v-if="$slots.footer" class="bg-gray-100 border-t border-gray-300 p-4 text-right">
+                <slot name="footer" />
+            </div>
+        </dialog>
+    </Teleport>
 </template>
 
 <style scoped>

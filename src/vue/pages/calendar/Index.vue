@@ -112,7 +112,7 @@ async function handleSettingsClick() {
 async function handlePasswordConfigurationCheck() {
     const result = await checkPasswordConfiguration();
     if (result.success) {
-        isPasswordConfigured.value = result.configured;
+        isPasswordConfigured.value = result.data.configured;
     } else {
         console.error("Failed to check password configuration:", result.message);
         isPasswordConfigured.value = true;

@@ -21,7 +21,12 @@ export function createCalendarRouter(dependencies = {}) {
 
         const calendars = await models.calendar.getAllForAccess(isAuthenticated);
 
-        res.json(calendars);
+        res.json({
+            success: true,
+            message: "Calendars retrieved successfully",
+            errors: null,
+            data: calendars,
+        });
     });
 
     router.get("/export", requireAuth, async (req, res) => {
@@ -29,6 +34,8 @@ export function createCalendarRouter(dependencies = {}) {
 
         res.json({
             success: true,
+            message: "Calendars exported successfully",
+            errors: null,
             data: exportData,
         });
     });
@@ -42,6 +49,8 @@ export function createCalendarRouter(dependencies = {}) {
 
         res.json({
             success: true,
+            message: "Calendars imported successfully",
+            errors: null,
             data: results,
         });
     });
@@ -55,7 +64,12 @@ export function createCalendarRouter(dependencies = {}) {
             throw new NotFoundError("Calendar");
         }
 
-        res.json({ success: true, data: calendar });
+        res.json({
+            success: true,
+            message: "Calendar retrieved successfully",
+            errors: null,
+            data: calendar,
+        });
     });
 
     router.post("/", requireAuth, async (req, res) => {
@@ -99,7 +113,12 @@ export function createCalendarRouter(dependencies = {}) {
             });
         }
 
-        res.status(201).json(calendar);
+        res.status(201).json({
+            success: true,
+            message: "Calendar created successfully",
+            errors: null,
+            data: calendar,
+        });
     });
 
     router.put("/:id", requireAuth, async (req, res) => {
@@ -156,7 +175,12 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info(`Calendar updated: ${updatedCalendar.name}`);
 
-        res.json(updatedCalendar);
+        res.json({
+            success: true,
+            message: "Calendar updated successfully",
+            errors: null,
+            data: updatedCalendar,
+        });
     });
 
     router.delete("/:id", requireAuth, async (req, res) => {
@@ -170,7 +194,12 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info(`Calendar deleted: ${calendar.name}`);
 
-        res.json({ success: true, message: "Calendar deleted successfully" });
+        res.json({
+            success: true,
+            message: "Calendar deleted successfully",
+            errors: null,
+            data: null,
+        });
     });
 
     router.post("/refresh", requireAuth, async (_req, res) => {
@@ -180,7 +209,12 @@ export function createCalendarRouter(dependencies = {}) {
 
         await services.cron.updateLastRun();
 
-        res.json(result);
+        res.json({
+            success: true,
+            message: "Calendars refreshed successfully",
+            errors: null,
+            data: result,
+        });
     });
 
     return router;

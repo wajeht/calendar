@@ -92,6 +92,8 @@ export function createAuthRouter(dependencies = {}) {
         res.json({
             success: true,
             message: "Authentication successful",
+            errors: null,
+            data: null,
         });
     });
 
@@ -105,13 +107,20 @@ export function createAuthRouter(dependencies = {}) {
         });
 
         logger.info("User logged out");
-        res.json({ success: true, message: "Logged out successfully" });
+        res.json({
+            success: true,
+            message: "Logged out successfully",
+            errors: null,
+            data: null,
+        });
     });
 
     router.get("/verify", requireAuth, (_req, res) => {
         res.json({
             success: true,
             message: "Session is valid",
+            errors: null,
+            data: null,
         });
     });
 

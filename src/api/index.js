@@ -52,6 +52,8 @@ export function notFoundHandler(dependencies = {}) {
             return res.status(404).json({
                 success: false,
                 message: "Route not found",
+                errors: null,
+                data: null,
             });
         }
 
@@ -84,6 +86,7 @@ export function errorHandler(dependencies = {}) {
                 success: false,
                 message: err.message,
                 errors: err.errors,
+                data: null,
             };
 
             if (utils.isApiRequest(req)) {
@@ -95,15 +98,30 @@ export function errorHandler(dependencies = {}) {
         if (err instanceof AuthenticationError) {
             logger.warn(`401 - Authentication failed: ${req.method} ${req.originalUrl}`);
             if (utils.isApiRequest(req)) {
-                return res.status(401).json({ success: false, message: err.message });
+                return res.status(401).json({
+                    success: false,
+                    message: err.message,
+                    errors: null,
+                    data: null,
+                });
             }
-            return res.status(401).json({ success: false, message: err.message });
+            return res.status(401).json({
+                success: false,
+                message: err.message,
+                errors: null,
+                data: null,
+            });
         }
 
         if (err instanceof NotFoundError) {
             logger.warn(`404 - ${err.message}: ${req.method} ${req.originalUrl}`);
             if (utils.isApiRequest(req)) {
-                return res.status(404).json({ success: false, message: err.message });
+                return res.status(404).json({
+                    success: false,
+                    message: err.message,
+                    errors: null,
+                    data: null,
+                });
             }
             return res.status(404).render("general/error.html", {
                 title: "404 - Not Found",
@@ -118,7 +136,8 @@ export function errorHandler(dependencies = {}) {
                 return res.status(502).json({
                     success: false,
                     message: err.message,
-                    context: config.app.env === "development" ? err.context : undefined,
+                    errors: null,
+                    data: config.app.env === "development" ? { context: err.context } : null,
                 });
             }
             return res.status(502).render("general/error.html", {
@@ -133,7 +152,12 @@ export function errorHandler(dependencies = {}) {
             const message =
                 config.app.env === "development" ? err.message : "Database error occurred";
             if (utils.isApiRequest(req)) {
-                return res.status(500).json({ success: false, message: message });
+                return res.status(500).json({
+                    success: false,
+                    message: message,
+                    errors: null,
+                    data: null,
+                });
             }
             return res.status(500).render("general/error.html", {
                 title: "500 - Database Error",
@@ -150,6 +174,8 @@ export function errorHandler(dependencies = {}) {
             return res.status(statusCode).json({
                 success: false,
                 message: config.app.env === "development" ? message : "Internal server error",
+                errors: null,
+                data: null,
             });
         }
 
