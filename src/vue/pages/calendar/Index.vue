@@ -249,3 +249,11 @@ onUnmounted(() => {
 
     </main>
 </template>
+
+<style>
+.fc .fc-toolbar.fc-header-toolbar {
+    padding-left: 10px;
+    padding-top: 10px;
+    padding-right: 10px;
+}
+</style>
