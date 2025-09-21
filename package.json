@@ -23,6 +23,7 @@
         "db:migrate:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
         "db:seed:make": "knex seed:make --knexfile=./src/db/knexfile.js",
         "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
+        "db:reset:password": "sqlite3 src/db/sqlite/db.sqlite \"DELETE FROM settings WHERE key = 'app_password';\"",
         "rmds": "find . -name '.DS_Store' -delete",
         "format": "prettier --write .",
         "test": "vitest run",
