@@ -12,7 +12,7 @@ export async function createTestServer() {
 
     async function login(password = null) {
         const response = await agent.post("/api/auth").send({
-            password: password || process.env.APP_PASSWORD || "password",
+            password: password || "test-password",
         });
 
         if (response.status !== 200) {
