@@ -47,14 +47,6 @@ export const config = deepFreeze({
     },
 
     auth: {
-        password:
-            process.env.APP_PASSWORD ||
-            (() => {
-                if (process.env.NODE_ENV === "production") {
-                    throw new Error("APP_PASSWORD must be set in production");
-                }
-                return "development-password";
-            })(),
         sessionSecret:
             process.env.SESSION_SECRET ||
             (() => {

@@ -1,7 +1,7 @@
 import express from "express";
 
 export function createAuthRouter(dependencies = {}) {
-    const { middleware, utils, logger, config, errors, validators } = dependencies;
+    const { middleware, utils, logger, config, errors, validators, models } = dependencies;
 
     if (!middleware) throw new Error("Middleware required for auth router");
     if (!utils) throw new Error("Utils required for auth router");
@@ -9,6 +9,7 @@ export function createAuthRouter(dependencies = {}) {
     if (!config) throw new Error("Config required for auth router");
     if (!errors) throw new Error("Errors required for auth router");
     if (!validators) throw new Error("Validators required for auth router");
+    if (!models) throw new Error("Models required for auth router");
 
     const { ValidationError } = errors;
 
@@ -35,7 +36,13 @@ export function createAuthRouter(dependencies = {}) {
             });
         }
 
-        if (password !== config.auth.password) {
+        const currentPassword = await models.settings.get("app_password");
+
+        if (!currentPassword) {
+            throw new ValidationError({ password: "Application password not configured" });
+        }
+
+        if (password !== currentPassword) {
             const newFailedAttempts = failedAttempts + 1;
 
             if (newFailedAttempts >= 5) {

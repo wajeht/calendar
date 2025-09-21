@@ -17,7 +17,7 @@ describe("Auth", () => {
     describe("POST /api/auth", () => {
         it("should login successfully with correct password", async () => {
             const response = await testServer.post("/api/auth", {
-                password: process.env.APP_PASSWORD || "password",
+                password: "test-password",
             });
 
             expect(response.status).toBe(200);
