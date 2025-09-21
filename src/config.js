@@ -47,14 +47,18 @@ export const config = deepFreeze({
     },
 
     auth: {
-        sessionSecret:
-            process.env.SESSION_SECRET ||
-            (() => {
-                if (process.env.NODE_ENV === "production" && process.env.npm_lifecycle_event !== "build") {
+        sessionSecret: (() => {
+            if (process.env.npm_lifecycle_event === "build") {
+                return "build-time-placeholder";
+            }
+            if (!process.env.SESSION_SECRET) {
+                if (process.env.NODE_ENV === "production") {
                     throw new Error("SESSION_SECRET must be set in production");
                 }
                 return "development-session-secret-" + Date.now();
-            })(),
+            }
+            return process.env.SESSION_SECRET;
+        })(),
         cookieDomain: process.env.COOKIE_DOMAIN || undefined,
     },
 
