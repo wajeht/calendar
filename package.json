@@ -75,5 +75,12 @@
         "supertest": "^7.1.4",
         "vite": "^7.1.6",
         "vitest": "^3.2.4"
+    },
+    "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "*",
+        "@rollup/rollup-linux-x64-musl": "*",
+        "@rollup/rollup-darwin-x64": "*",
+        "@rollup/rollup-darwin-arm64": "*",
+        "@rollup/rollup-win32-x64-msvc": "*"
     }
 }
