@@ -1,36 +1,27 @@
 import { ref } from "vue";
 import { useToast } from "./useToast";
+import { api } from "../api.js";
+
+const isAuthenticated = ref(false);
+const isLoading = ref(false);
 
 export function useAuth() {
     const toast = useToast();
-    const isAuthenticated = ref(false);
-    const isLoading = ref(false);
 
     async function login(password) {
         isLoading.value = true;
         try {
-            const response = await fetch("/api/auth", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ password }),
-            });
-
-            if (response.ok) {
+            const result = await api.auth.login(password);
+            if (result.success) {
                 isAuthenticated.value = true;
                 toast.success("Logged in successfully");
-                return { success: true };
             } else {
-                const result = await response.json().catch(() => ({ error: "Invalid password" }));
-                toast.error(result.error || "Invalid password");
-                return result;
+                toast.error(result.message || "Invalid password");
             }
+            return result;
         } catch (error) {
-            const errorMessage = "Authentication error: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            toast.error("Authentication error: " + error.message);
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -39,31 +30,19 @@ export function useAuth() {
     async function logout(options = {}) {
         const { reload = true } = options;
         isLoading.value = true;
-
         try {
-            const response = await fetch("/api/auth/logout", {
-                method: "POST",
-                credentials: "include",
-            });
-
-            if (response.ok) {
+            const result = await api.auth.logout();
+            if (result.success) {
                 isAuthenticated.value = false;
                 toast.success("Logged out successfully");
-
-                if (reload) {
-                    window.location.reload();
-                }
-
-                return { success: true };
+                if (reload) window.location.reload();
             } else {
-                const result = await response.json().catch(() => ({ error: "Failed to logout" }));
-                toast.error(result.error || "Failed to logout");
-                return result;
+                toast.error(result.message || "Failed to logout");
             }
+            return result;
         } catch (error) {
-            const errorMessage = "Error during logout: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            toast.error("Logout error: " + error.message);
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -71,13 +50,9 @@ export function useAuth() {
 
     async function verifySession() {
         try {
-            const response = await fetch("/api/auth/verify", {
-                method: "GET",
-                credentials: "include",
-            });
-
-            isAuthenticated.value = response.ok;
-            return response.ok;
+            const isValid = await api.auth.verify();
+            isAuthenticated.value = isValid;
+            return isValid;
         } catch (error) {
             isAuthenticated.value = false;
             console.error("Auth check failed:", error);

@@ -55,7 +55,7 @@ describe("Calendar", () => {
             const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toBeTruthy();
+            expect(response.body.message).toBeTruthy();
         });
 
         it("should reject calendar with invalid URL", async () => {
@@ -67,7 +67,7 @@ describe("Calendar", () => {
             const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toBeTruthy();
+            expect(response.body.message).toBeTruthy();
         });
 
         it("should reject duplicate calendar URL", async () => {
@@ -79,8 +79,8 @@ describe("Calendar", () => {
             const response = await testServer.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toBeTruthy();
-            expect(response.body.error.includes("already exists")).toBeTruthy();
+            expect(response.body.message).toBeTruthy();
+            expect(response.body.message.includes("already exists")).toBeTruthy();
         });
 
         it("should require authentication", async () => {

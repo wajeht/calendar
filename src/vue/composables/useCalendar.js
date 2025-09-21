@@ -1,30 +1,22 @@
 import { ref } from "vue";
 import { useToast } from "./useToast";
+import { api } from "../api.js";
+
+const calendars = ref([]);
+const isLoading = ref(false);
 
 export function useCalendar() {
     const toast = useToast();
-    const calendars = ref([]);
-    const isLoading = ref(false);
 
     async function getCalendars() {
         isLoading.value = true;
         try {
-            const response = await fetch("/api/calendars", {
-                credentials: "include",
-            });
-
-            if (!response.ok) {
-                console.error("Failed to fetch calendars:", response.status);
-                return { success: false, data: [] };
-            }
-
-            const calendarData = await response.json();
-            calendars.value = calendarData;
-            return { success: true, data: calendarData };
+            const data = await api.calendar.get();
+            calendars.value = data;
+            return { success: true, data };
         } catch (error) {
-            console.error("Error loading calendars:", error);
             toast.error("Failed to load calendars");
-            return { success: false, error: error.message };
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -33,35 +25,17 @@ export function useCalendar() {
     async function addCalendar(calendarData) {
         isLoading.value = true;
         try {
-            const response = await fetch("/api/calendars", {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: calendarData.name,
-                    url: calendarData.url,
-                    color: calendarData.color,
-                    hidden: calendarData.hidden || false,
-                    details: calendarData.details || false,
-                }),
-            });
-
-            if (response.ok) {
+            const result = await api.calendar.create(calendarData);
+            if (result.success) {
                 toast.success("Calendar added successfully");
                 await getCalendars();
-                return { success: true };
             } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { error: text };
-                });
-                toast.error("Failed to add calendar: " + (result.error || "Unknown error"));
-                return result;
+                toast.error("Failed to add calendar: " + (result.message || "Unknown error"));
             }
+            return result;
         } catch (error) {
-            const errorMessage = "Error adding calendar: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            toast.error("Error adding calendar: " + error.message);
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -70,35 +44,17 @@ export function useCalendar() {
     async function updateCalendar(calendarId, calendarData) {
         isLoading.value = true;
         try {
-            const response = await fetch(`/api/calendars/${calendarId}`, {
-                method: "PUT",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: calendarData.name,
-                    url: calendarData.url,
-                    color: calendarData.color,
-                    hidden: calendarData.hidden,
-                    details: calendarData.details,
-                }),
-            });
-
-            if (response.ok) {
+            const result = await api.calendar.update(calendarId, calendarData);
+            if (result.success) {
                 toast.success("Calendar updated successfully");
                 await getCalendars();
-                return { success: true };
             } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { error: text };
-                });
-                toast.error("Failed to update calendar: " + (result.error || "Unknown error"));
-                return result;
+                toast.error("Failed to update calendar: " + (result.message || "Unknown error"));
             }
+            return result;
         } catch (error) {
-            const errorMessage = "Error updating calendar: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            toast.error("Error updating calendar: " + error.message);
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -107,27 +63,17 @@ export function useCalendar() {
     async function deleteCalendar(calendarId) {
         isLoading.value = true;
         try {
-            const response = await fetch(`/api/calendars/${calendarId}`, {
-                method: "DELETE",
-                credentials: "include",
-            });
-
-            if (response.ok) {
+            const result = await api.calendar.delete(calendarId);
+            if (result.success) {
                 toast.success("Calendar deleted successfully");
                 await getCalendars();
-                return { success: true };
             } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { error: text };
-                });
-                toast.error("Failed to delete calendar: " + (result.error || "Unknown error"));
-                return result;
+                toast.error("Failed to delete calendar: " + (result.message || "Unknown error"));
             }
+            return result;
         } catch (error) {
-            const errorMessage = "Error deleting calendar: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            toast.error("Error deleting calendar: " + error.message);
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -136,29 +82,17 @@ export function useCalendar() {
     async function importCalendars(calendarsList) {
         isLoading.value = true;
         try {
-            const response = await fetch("/api/calendars/import", {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ calendars: calendarsList }),
-            });
-
-            if (response.ok) {
+            const result = await api.calendar.import(calendarsList);
+            if (result.success) {
                 toast.success("Settings imported successfully");
                 await getCalendars();
-                return { success: true };
             } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { error: text };
-                });
-                toast.error("Failed to import settings: " + (result.error || "Unknown error"));
-                return result;
+                toast.error("Failed to import settings: " + (result.message || "Unknown error"));
             }
+            return result;
         } catch (error) {
-            const errorMessage = "Error importing settings: " + error.message;
-            toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            toast.error("Error importing settings: " + error.message);
+            return { success: false, message: error.message };
         } finally {
             isLoading.value = false;
         }
@@ -168,7 +102,7 @@ export function useCalendar() {
         try {
             if (!calendars.value || calendars.value.length === 0) {
                 toast.warning("No calendars to export");
-                return { success: false, error: "No calendars to export" };
+                return { success: false, message: "No calendars to export" };
             }
 
             const settings = {
@@ -196,7 +130,7 @@ export function useCalendar() {
         } catch (error) {
             const errorMessage = "Error exporting settings: " + error.message;
             toast.error(errorMessage);
-            return { success: false, error: errorMessage, errors: {} };
+            return { success: false, message: errorMessage, errors: {} };
         }
     }
 

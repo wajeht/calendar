@@ -480,7 +480,7 @@ export function createCalendarService(dependencies = {}) {
                     results[i] = {
                         success: false,
                         calendarId: calendar.id,
-                        error: error.message,
+                        message: error.message,
                     };
                 }
             }
@@ -544,7 +544,7 @@ export function createCalendarService(dependencies = {}) {
                     if (!calendarData.name || !calendarData.url) {
                         results.errors.push({
                             calendar: calendarData,
-                            error: "Name and URL are required",
+                            message: "Name and URL are required",
                         });
                         continue;
                     }
@@ -561,7 +561,7 @@ export function createCalendarService(dependencies = {}) {
                     if (utils.isEmpty(sanitizedName)) {
                         results.errors.push({
                             calendar: calendarData,
-                            error: "Calendar name cannot be empty after sanitization",
+                            message: "Calendar name cannot be empty after sanitization",
                         });
                         continue;
                     }
@@ -579,7 +579,7 @@ export function createCalendarService(dependencies = {}) {
                 } catch (error) {
                     results.errors.push({
                         calendar: calendarData,
-                        error: error.message,
+                        message: error.message,
                     });
                 }
             }

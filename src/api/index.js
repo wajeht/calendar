@@ -51,7 +51,7 @@ export function notFoundHandler(dependencies = {}) {
         if (utils.isApiRequest(req)) {
             return res.status(404).json({
                 success: false,
-                error: "Route not found",
+                message: "Route not found",
             });
         }
 
@@ -82,7 +82,7 @@ export function errorHandler(dependencies = {}) {
         if (err instanceof ValidationError) {
             const response = {
                 success: false,
-                error: err.message,
+                message: err.message,
                 errors: err.errors,
             };
 
@@ -95,15 +95,15 @@ export function errorHandler(dependencies = {}) {
         if (err instanceof AuthenticationError) {
             logger.warn(`401 - Authentication failed: ${req.method} ${req.originalUrl}`);
             if (utils.isApiRequest(req)) {
-                return res.status(401).json({ success: false, error: err.message });
+                return res.status(401).json({ success: false, message: err.message });
             }
-            return res.status(401).json({ success: false, error: err.message });
+            return res.status(401).json({ success: false, message: err.message });
         }
 
         if (err instanceof NotFoundError) {
             logger.warn(`404 - ${err.message}: ${req.method} ${req.originalUrl}`);
             if (utils.isApiRequest(req)) {
-                return res.status(404).json({ success: false, error: err.message });
+                return res.status(404).json({ success: false, message: err.message });
             }
             return res.status(404).render("general/error.html", {
                 title: "404 - Not Found",
@@ -117,7 +117,7 @@ export function errorHandler(dependencies = {}) {
             if (utils.isApiRequest(req)) {
                 return res.status(502).json({
                     success: false,
-                    error: err.message,
+                    message: err.message,
                     context: config.app.env === "development" ? err.context : undefined,
                 });
             }
@@ -133,7 +133,7 @@ export function errorHandler(dependencies = {}) {
             const message =
                 config.app.env === "development" ? err.message : "Database error occurred";
             if (utils.isApiRequest(req)) {
-                return res.status(500).json({ success: false, error: message });
+                return res.status(500).json({ success: false, message: message });
             }
             return res.status(500).render("general/error.html", {
                 title: "500 - Database Error",
@@ -149,7 +149,7 @@ export function errorHandler(dependencies = {}) {
         if (utils.isApiRequest(req)) {
             return res.status(statusCode).json({
                 success: false,
-                error: config.app.env === "development" ? message : "Internal server error",
+                message: config.app.env === "development" ? message : "Internal server error",
             });
         }
 

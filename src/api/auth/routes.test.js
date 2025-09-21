@@ -35,16 +35,16 @@ describe("Auth", () => {
             });
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toBeTruthy();
-            expect(response.body.error.includes("Invalid password")).toBe(true);
+            expect(response.body.message).toBeTruthy();
+            expect(response.body.message.includes("Invalid password")).toBe(true);
         });
 
         it("should reject login with missing password", async () => {
             const response = await testServer.post("/api/auth", {});
 
             expect(response.status).toBe(400);
-            expect(response.body.error).toBeTruthy();
-            expect(response.body.error.includes("Password is required")).toBe(true);
+            expect(response.body.message).toBeTruthy();
+            expect(response.body.message.includes("Password is required")).toBe(true);
         });
     });
 
