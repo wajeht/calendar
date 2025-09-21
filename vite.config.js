@@ -42,18 +42,26 @@ const viteConfig = {
         reportCompressedSize: true,
         chunkSizeWarningLimit: 1600,
         emptyOutDir: false,
-        rollupOptions: {
-            output: process.env.NODE_ENV === "development" ? {
-                entryFileNames: `assets/[name].js`,
-                chunkFileNames: `assets/[name].js`,
-                assetFileNames: `assets/[name].[ext]`,
-            } : {
-                entryFileNames: `assets/[name]-[hash].js`,
-                chunkFileNames: `assets/[name]-[hash].js`,
-                assetFileNames: `assets/[name]-[hash].[ext]`,
-            },
-        },
     },
 };
 
-export default defineConfig(viteConfig);
+export default defineConfig(({ mode }) => ({
+    ...viteConfig,
+    build: {
+        ...viteConfig.build,
+        rollupOptions: {
+            output:
+                mode === "development"
+                    ? {
+                          entryFileNames: `assets/[name].js`,
+                          chunkFileNames: `assets/[name].js`,
+                          assetFileNames: `assets/[name].[ext]`,
+                      }
+                    : {
+                          entryFileNames: `assets/[name]-[hash].js`,
+                          chunkFileNames: `assets/[name]-[hash].js`,
+                          assetFileNames: `assets/[name]-[hash].[ext]`,
+                      },
+        },
+    },
+}));
