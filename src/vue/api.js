@@ -10,15 +10,13 @@ export const api = {
                 body: JSON.stringify({ password }),
             });
 
-            if (response.ok) {
-                return { success: true };
-            } else {
-                const result = await response.json().catch(() => ({
-                    success: false,
-                    message: "Invalid password",
-                }));
-                return result;
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
 
         async logout() {
@@ -27,15 +25,13 @@ export const api = {
                 credentials: "include",
             });
 
-            if (response.ok) {
-                return { success: true };
-            } else {
-                const result = await response.json().catch(() => ({
-                    success: false,
-                    message: "Failed to logout",
-                }));
-                return result;
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
 
         async verify() {
@@ -44,7 +40,13 @@ export const api = {
                 credentials: "include",
             });
 
-            return response.ok;
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
     },
 
@@ -54,15 +56,13 @@ export const api = {
                 credentials: "include",
             });
 
-            if (response.ok) {
-                return await response.json();
-            } else {
-                const result = await response.json().catch(() => ({
-                    success: false,
-                    message: `Failed to fetch calendars: ${response.status}`,
-                }));
-                throw new Error(result.message || "Failed to fetch calendars");
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
 
         async create(calendarData) {
@@ -79,15 +79,13 @@ export const api = {
                 }),
             });
 
-            if (response.ok) {
-                return { success: true };
-            } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { success: false, message: text };
-                });
-                return result;
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
 
         async update(calendarId, calendarData) {
@@ -104,15 +102,13 @@ export const api = {
                 }),
             });
 
-            if (response.ok) {
-                return { success: true };
-            } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { success: false, message: text };
-                });
-                return result;
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
 
         async delete(calendarId) {
@@ -121,15 +117,13 @@ export const api = {
                 credentials: "include",
             });
 
-            if (response.ok) {
-                return { success: true };
-            } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { success: false, message: text };
-                });
-                return result;
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
 
         async import(calendarsList) {
@@ -140,15 +134,67 @@ export const api = {
                 body: JSON.stringify({ calendars: calendarsList }),
             });
 
-            if (response.ok) {
-                return { success: true };
-            } else {
-                const result = await response.json().catch(async () => {
-                    const text = await response.text();
-                    return { success: false, message: text };
-                });
-                return result;
-            }
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
+        },
+    },
+
+    settings: {
+        async isPasswordConfigured() {
+            const response = await fetch("/api/settings/password-configured", {
+                credentials: "include",
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
+        },
+
+        async setupPassword(password, confirmPassword) {
+            const response = await fetch("/api/settings/setup-password", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password, confirmPassword }),
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
+        },
+
+        async changePassword(currentPassword, newPassword, confirmPassword) {
+            const response = await fetch("/api/settings/password", {
+                method: "PUT",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                    confirmPassword,
+                }),
+            });
+
+            const result = await response.json().catch(() => ({
+                success: false,
+                message: "Failed to parse response",
+                errors: {},
+            }));
+
+            return result;
         },
     },
 };
