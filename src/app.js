@@ -4,8 +4,8 @@ import express from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import { createContext } from "./context.js";
-import { rateLimit } from "express-rate-limit";
 import { createRouter } from "./api/index.js";
+import { rateLimit } from "express-rate-limit";
 
 export async function createApp(customConfig = {}) {
     const ctx = createContext(customConfig);
