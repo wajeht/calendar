@@ -191,6 +191,15 @@ async function changePassword() {
     }
 }
 
+async function copyToClipboard(url) {
+    try {
+        await navigator.clipboard.writeText(url);
+        toast.success("URL copied to clipboard");
+    } catch (error) {
+        toast.error("Failed to copy URL to clipboard");
+    }
+}
+
 onMounted(() => {
     getCronSettings();
 });
@@ -252,22 +261,17 @@ onMounted(() => {
                             <thead class="bg-gray-50 sticky top-0 z-10">
                                 <tr>
                                     <th
-                                        class="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        class="w-2/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                     >
                                         Calendar
                                     </th>
                                     <th
-                                        class="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        URL
-                                    </th>
-                                    <th
-                                        class="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        class="w-1/3 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                     >
                                         Status
                                     </th>
                                     <th
-                                        class="w-1/4 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                        class="w-1/3 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                                     >
                                         Actions
                                     </th>
@@ -280,39 +284,41 @@ onMounted(() => {
                                     class="hover:bg-gray-50"
                                 >
                                     <td class="px-4 py-4">
-                                        <div class="flex items-center space-x-3">
+                                        <div class="flex items-start space-x-3">
                                             <div
-                                                class="w-4 h-4 rounded-full flex-shrink-0"
+                                                class="w-4 h-4 rounded-full flex-shrink-0 mt-0.5"
                                                 :style="{ backgroundColor: calendar.color }"
                                             ></div>
-                                            <span class="font-medium text-gray-900">{{
-                                                calendar.name
-                                            }}</span>
+                                            <div class="min-w-0 flex-1">
+                                                <div
+                                                    class="font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
+                                                    @click="copyToClipboard(calendar.url)"
+                                                    :title="'Click to copy URL: ' + calendar.url"
+                                                >
+                                                    {{ calendar.name }}
+                                                </div>
+                                                <div class="text-xs text-gray-500 truncate mt-1">
+                                                    {{ calendar.url }}
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-4 py-4">
                                         <span
-                                            class="text-sm text-gray-500 truncate block"
-                                            :title="calendar.url"
-                                            >{{ calendar.url }}</span
-                                        >
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <span
                                             v-if="!calendar.visible_to_public"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
                                         >
                                             Hidden from Public
                                         </span>
                                         <span
                                             v-else-if="!calendar.show_details_to_public"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap"
                                         >
                                             Details Hidden from Public
                                         </span>
                                         <span
                                             v-else
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
                                         >
                                             Visible to Public
                                         </span>
@@ -337,7 +343,7 @@ onMounted(() => {
                                     </td>
                                 </tr>
                                 <tr v-if="calendars.length === 0">
-                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500">
                                         No calendars configured. Click "Add Calendar" to get
                                         started.
                                     </td>
