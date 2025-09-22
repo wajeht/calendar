@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, expect } from "bun:test";
 import { setupAuthenticatedServer } from "../../utils/test-utils.js";
 
 describe("Calendar", () => {

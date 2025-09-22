@@ -1,7 +1,9 @@
 import request from "supertest";
 
 export async function createTestServer() {
-    process.env.NODE_ENV = "test";
+    Bun.env.APP_ENV = "test";
+    Bun.env.APP_PASSWORD = "test-password";
+    Bun.env.APP_SECRET = "test-secret-key-for-sessions";
     const { createApp } = await import("../app.js");
     const { app, ctx } = await createApp();
 

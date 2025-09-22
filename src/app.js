@@ -159,7 +159,7 @@ export async function createServer(customConfig = {}) {
     server.on("listening", async () => {
         ctx.logger.success(`Server running on http://localhost:${PORT}`);
 
-        if (process.env.NODE_ENV !== "test") {
+        if (Bun.env.APP_ENV !== "test") {
             try {
                 await ctx.services.cron.start();
             } catch (error) {
@@ -196,7 +196,7 @@ export async function closeServer({ server, ctx }) {
     ctx.logger.info("Shutting down server gracefully...");
 
     try {
-        if (process.env.NODE_ENV !== "test") {
+        if (Bun.env.APP_ENV !== "test") {
             try {
                 ctx.services.cron.stop();
                 ctx.logger.info("Cron service stopped");

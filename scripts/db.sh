@@ -82,7 +82,7 @@ main() {
         usage
     fi
 
-    if [[ "$NODE_ENV" == "production" || -z "$PRODUCTION_SSH_URL" ]]; then
+    if [[ "$APP_ENV" == "production" || -z "$PRODUCTION_SSH_URL" ]]; then
         echo "Error: Invalid environment or missing PRODUCTION_SSH_URL"
         exit 1
     fi

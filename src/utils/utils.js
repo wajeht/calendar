@@ -202,7 +202,7 @@ export function createUtils(dependencies = {}) {
         },
 
         cwd() {
-            return process.cwd();
+            return import.meta.dir;
         },
 
         /**

@@ -103,7 +103,7 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info(`Calendar created: ${calendar.name}`);
 
-        if (process.env.NODE_ENV !== "test") {
+        if (Bun.env.APP_ENV !== "test") {
             setImmediate(async () => {
                 try {
                     await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
@@ -153,7 +153,7 @@ export function createCalendarRouter(dependencies = {}) {
             updateData.visible_to_public !== undefined ||
             updateData.show_details_to_public !== undefined
         ) {
-            if (process.env.NODE_ENV !== "test") {
+            if (Bun.env.APP_ENV !== "test") {
                 setImmediate(async () => {
                     try {
                         await services.calendar.fetchAndProcessCalendar(

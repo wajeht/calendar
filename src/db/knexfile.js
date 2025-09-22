@@ -1,21 +1,19 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Bun provides path as a global
+const __filename = import.meta.url;
+const __dirname = import.meta.dir || new URL(".", import.meta.url).pathname;
 
 const knexConfig = {
-    client: "better-sqlite3",
+    client: "sqlite3",
     useNullAsDefault: true,
     asyncStackTraces: false,
     connection: {
-        filename: path.resolve(__dirname, "sqlite", "db.sqlite"),
+        filename: `${__dirname}/sqlite/db.sqlite`,
     },
     migrations: {
         tableName: "knex_migrations",
-        directory: path.resolve(__dirname, "./migrations"),
+        directory: `${__dirname}/migrations`,
     },
-    seeds: { directory: path.resolve(__dirname, "./seeds") },
+    seeds: { directory: `${__dirname}/seeds` },
     pool: {
         min: 2,
         max: 10,
@@ -27,25 +25,22 @@ const knexConfig = {
         afterCreate: (conn, done) => {
             try {
                 // Enable foreign key constraints
-                conn.pragma("foreign_keys = ON");
+                conn.run("PRAGMA foreign_keys = ON");
 
                 // Use Write-Ahead Logging for better concurrency
-                conn.pragma("journal_mode = WAL");
+                conn.run("PRAGMA journal_mode = WAL");
 
                 // Set synchronous mode to NORMAL for better performance
-                conn.pragma("synchronous = NORMAL");
+                conn.run("PRAGMA synchronous = NORMAL");
 
                 // Adjusts the number of pages in the memory cache
-                conn.pragma("cache_size = 10000");
+                conn.run("PRAGMA cache_size = 10000");
 
                 // Stores temp objects in memory
-                conn.pragma("temp_store = MEMORY");
+                conn.run("PRAGMA temp_store = MEMORY");
 
                 // Wait for 5000 ms before timing out
-                conn.pragma("busy_timeout = 5000");
-
-                // Enable multi-threaded operations (2 threads for 2 CPU cores)
-                conn.pragma("threads = 2");
+                conn.run("PRAGMA busy_timeout = 5000");
 
                 done();
             } catch (err) {
@@ -55,7 +50,7 @@ const knexConfig = {
     },
 };
 
-if (process.env.NODE_ENV === "test") {
+if (Bun.env.APP_ENV === "test") {
     console.log("🧪 Using in-memory database for tests");
     knexConfig.connection = { filename: ":memory:" };
 }

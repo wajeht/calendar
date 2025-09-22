@@ -1,5 +1,5 @@
 import { createTestServer } from "../../utils/test-utils.js";
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, expect } from "bun:test";
 
 describe("Auth", () => {
     let testServer;

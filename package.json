@@ -9,14 +9,14 @@
         "doc": "docs"
     },
     "scripts": {
-        "start": "node ./src/server.js",
-        "dev": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"npm run dev:vue\" \"npm run dev:server\"",
-        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"rm ./public/assets/* && vite build --watch --mode development\" \"npm run dev:server\"",
-        "dev:server": "nodemon ./src/server.js",
+        "start": "bun ./src/server.js",
+        "dev": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"bun run dev:vue\" \"bun run dev:server\"",
+        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"rm ./public/assets/* && vite build --watch --mode development\" \"bun run dev:server\"",
+        "dev:server": "bun --watch ./src/server.js",
         "dev:vue": "vite",
         "build": "rm -rf ./public/assets/* && vite build",
         "preview": "vite preview",
-        "db:prepare:prod": "npm run db:migrate:latest",
+        "db:prepare:prod": "bun run db:migrate:latest",
         "db:rollback": "knex migrate:rollback --knexfile=./src/db/knexfile.js",
         "db:migrate:make": "knex migrate:make --knexfile=./src/db/knexfile.js",
         "db:migrate:latest": "knex migrate:latest --knexfile=./src/db/knexfile.js",
@@ -26,8 +26,8 @@
         "db:reset:password": "sqlite3 src/db/sqlite/db.sqlite \"DELETE FROM settings WHERE key = 'app_password';\"",
         "rmds": "find . -name '.DS_Store' -delete",
         "format": "prettier --write .",
-        "test": "vitest run",
-        "test:watch": "vitest"
+        "test": "bun test",
+        "test:watch": "bun test --watch"
     },
     "repository": {
         "type": "git",
@@ -54,17 +54,16 @@
         "@fullcalendar/timegrid": "^6.1.10",
         "@fullcalendar/vue3": "^6.1.10",
         "bcryptjs": "^3.0.2",
-        "better-sqlite3": "^12.2.0",
         "compression": "^1.8.1",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
-        "dotenv": "^17.2.2",
         "express": "^5.1.0",
         "express-rate-limit": "^8.1.0",
         "helmet": "^8.1.0",
         "ical.js": "^1.4.0",
         "knex": "^3.1.0",
         "node-cron": "^4.2.1",
+        "sqlite3": "^5.1.7",
         "vue": "^3.5.18",
         "vue-router": "^4.5.1"
     },
@@ -72,11 +71,9 @@
         "@tailwindcss/vite": "^4.1.13",
         "@vitejs/plugin-vue": "^6.0.1",
         "concurrently": "^9.1.0",
-        "nodemon": "^3.1.10",
         "prettier": "3.6.2",
         "supertest": "^7.1.4",
-        "vite": "^7.1.6",
-        "vitest": "^3.2.4"
+        "vite": "^7.1.6"
     },
     "optionalDependencies": {
         "@rollup/rollup-darwin-arm64": "*",
