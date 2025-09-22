@@ -298,7 +298,7 @@ export function createCalendarService(dependencies = {}) {
         return props;
     }
 
-    function buildFullCalendarEvents(calendar, events) {
+    function buildFullCalendarEvents(calendar, events, isAuthenticated = true) {
         if (!events || events.length === 0) return [];
 
         const validEvents = [];
@@ -316,10 +316,12 @@ export function createCalendarService(dependencies = {}) {
                 continue;
             }
 
-            // Check if this should hide event details (based on calendar settings or empty event details)
+            // For public users, check if details should be hidden
+            // For authenticated users, always show details
             const shouldHideDetails =
-                !calendar.show_details_to_public ||
-                (event.title === "" && event.description === "" && event.location === "");
+                !isAuthenticated &&
+                (!calendar.show_details_to_public ||
+                    (event.title === "" && event.description === "" && event.location === ""));
 
             const fcEvent = {
                 title: event.title || (shouldHideDetails ? "" : "Untitled Event"),
@@ -350,12 +352,13 @@ export function createCalendarService(dependencies = {}) {
     function processEventsForViews(events, calendar) {
         if (!events || events.length === 0) {
             return {
-                publicEvents: buildFullCalendarEvents(calendar, []),
-                authenticatedEvents: buildFullCalendarEvents(calendar, events),
+                publicEvents: buildFullCalendarEvents(calendar, [], false),
+                authenticatedEvents: buildFullCalendarEvents(calendar, events, true),
             };
         }
 
-        const authenticatedEvents = buildFullCalendarEvents(calendar, events);
+        // Authenticated users always see full details
+        const authenticatedEvents = buildFullCalendarEvents(calendar, events, true);
         let publicEvents;
 
         // If calendar is not visible to public, no public events at all
@@ -386,10 +389,10 @@ export function createCalendarService(dependencies = {}) {
                     url: null, // Hide URL as well
                 };
             }
-            publicEvents = buildFullCalendarEvents(calendar, strippedEvents);
+            publicEvents = buildFullCalendarEvents(calendar, strippedEvents, false);
         } else {
             // Show everything for public view
-            publicEvents = buildFullCalendarEvents(calendar, events);
+            publicEvents = buildFullCalendarEvents(calendar, events, false);
         }
 
         return { publicEvents, authenticatedEvents };
