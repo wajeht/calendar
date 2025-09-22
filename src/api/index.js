@@ -4,15 +4,11 @@ import { createSettingsRouter } from "./settings/index.js";
 import { createCalendarRouter } from "./calendar/index.js";
 
 export function createGeneralRouter(dependencies = {}) {
-    const { utils, db, config } = dependencies;
+    const { utils, db } = dependencies;
 
     const router = express.Router();
 
     router.get("/", (_req, res) => {
-        if (config.app.env === "development") {
-            return res.redirect(`http://localhost:${config.app.vuePort}`);
-        }
-
         return res
             .setHeader("Content-Type", "text/html")
             .status(200)
@@ -243,7 +239,7 @@ export function createRouter(dependencies = {}) {
         }),
     );
 
-    router.use("/", createGeneralRouter({ utils, db, config }));
+    router.use("/", createGeneralRouter({ utils, db }));
 
     router.use(notFoundHandler({ logger, utils }));
 
