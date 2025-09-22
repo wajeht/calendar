@@ -41,7 +41,11 @@ const confirmDialog = reactive({
     type: "default",
     confirmText: "Confirm",
     resolve: null,
-    reject: null,
+    reject: () => {
+        confirmDialog.show = false;
+        confirmDialog.resolve = null;
+        confirmDialog.reject = null;
+    },
 });
 
 const viewMappings = {
@@ -139,7 +143,6 @@ function handlePasswordConfigured() {
 function handleEventClick(info) {
     info.jsEvent.preventDefault();
 
-    // Only block event details for public users when show_details_to_public is false
     if (
         !isAuthenticated.value &&
         info.event.extendedProps &&
@@ -233,26 +236,9 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
-function handleKeydown(e) {
-    if (e.key === "Escape") {
-        if (showEventModal.value) closeEventModal();
-        else if (showSettingsModal.value) showSettingsModal.value = false;
-        else if (showPasswordModal.value) showPasswordModal.value = false;
-        else if (showAboutModal.value) showAboutModal.value = false;
-        else if (confirmDialog.show) confirmDialog.reject();
-    }
-}
-
 onMounted(async () => {
-    document.addEventListener("keydown", handleKeydown);
     await handlePasswordConfigurationCheck();
-
-    // Load public calendar data
     await loadCalendars();
-});
-
-onUnmounted(() => {
-    document.removeEventListener("keydown", handleKeydown);
 });
 </script>
 

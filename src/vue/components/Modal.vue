@@ -1,5 +1,8 @@
 <script setup>
-import { computed, useTemplateRef, onMounted, ref } from "vue";
+import { computed, useTemplateRef, onMounted, onUnmounted, ref } from "vue";
+import { useModalStack } from "../composables/useModalStack.js";
+
+const { modalStack, handleEscape } = useModalStack();
 
 const props = defineProps({
     title: {
@@ -31,7 +34,7 @@ function handleDialogClick(event) {
 }
 
 function closeModal() {
-    if (isClosing.value) return;
+    if (isClosing.value || !props.closable) return;
     isClosing.value = true;
     setTimeout(() => {
         dialogRef.value?.close();
@@ -39,8 +42,26 @@ function closeModal() {
     }, 150);
 }
 
+function handleBackdropClick() {
+    if (props.closable && modalStack.value.at(-1) === closeModal) {
+        closeModal();
+    }
+}
+
 onMounted(() => {
     dialogRef.value?.show();
+    modalStack.value.push(closeModal);
+    if (modalStack.value.length === 1) {
+        document.addEventListener("keydown", handleEscape);
+    }
+});
+
+onUnmounted(() => {
+    const index = modalStack.value.indexOf(closeModal);
+    if (index > -1) modalStack.value.splice(index, 1);
+    if (modalStack.value.length === 0) {
+        document.removeEventListener("keydown", handleEscape);
+    }
 });
 
 const sizeClasses = computed(() => {
@@ -58,7 +79,7 @@ const sizeClasses = computed(() => {
         <div
             v-if="!isClosing"
             :class="['fixed inset-0 bg-black/40', props.highZIndex ? 'z-[3999]' : 'z-[2999]']"
-            @click="props.closable ? closeModal : null"
+            @click="handleBackdropClick"
         ></div>
 
         <dialog
@@ -84,10 +105,12 @@ const sizeClasses = computed(() => {
                 </h2>
                 <button
                     v-if="props.closable"
-                    class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-none border-none text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800"
+                    class="modal-close-btn absolute top-1/2 right-4 transform -translate-y-1/2 bg-transparent border-0 text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800 transition-colors duration-150"
+                    tabindex="-1"
                     @click="closeModal"
+                    style="font-family: inherit; outline: none"
                 >
-                    &times;
+                    ×
                 </button>
             </div>
 
@@ -126,12 +149,5 @@ const sizeClasses = computed(() => {
 dialog::backdrop {
     background: transparent !important;
     backdrop-filter: none !important;
-}
-
-@starting-style {
-    dialog:open {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.95);
-    }
 }
 </style>
