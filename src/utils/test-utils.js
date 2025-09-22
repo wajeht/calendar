@@ -1,4 +1,5 @@
 import request from "supertest";
+import { beforeAll, afterAll } from "vitest";
 
 export async function createTestServer() {
     process.env.NODE_ENV = "test";
@@ -67,4 +68,61 @@ export async function setupAuthenticatedServer() {
     const testServer = await createTestServer();
     await testServer.login();
     return testServer;
+}
+
+export function setupTestServer() {
+    let testServer;
+
+    beforeAll(async () => {
+        testServer = await createTestServer();
+    });
+
+    afterAll(async () => {
+        if (testServer) {
+            await testServer.stop();
+        }
+    });
+
+    return new Proxy(
+        {},
+        {
+            get(target, prop) {
+                if (!testServer) {
+                    throw new Error(
+                        "Test server not initialized. Make sure setupTestServer() is called within a describe block.",
+                    );
+                }
+                return testServer[prop];
+            },
+        },
+    );
+}
+
+export function setupAuthenticatedTestServer() {
+    let testServer;
+
+    beforeAll(async () => {
+        testServer = await setupAuthenticatedServer();
+        await testServer.cleanDatabase();
+    });
+
+    afterAll(async () => {
+        if (testServer) {
+            await testServer.stop();
+        }
+    });
+
+    return new Proxy(
+        {},
+        {
+            get(target, prop) {
+                if (!testServer) {
+                    throw new Error(
+                        "Test server not initialized. Make sure setupAuthenticatedTestServer() is called within a describe block.",
+                    );
+                }
+                return testServer[prop];
+            },
+        },
+    );
 }

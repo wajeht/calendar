@@ -1,32 +1,21 @@
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
-import { setupAuthenticatedServer } from "../../utils/test-utils.js";
+import { describe, it, beforeAll, expect } from "vitest";
+import { setupAuthenticatedTestServer } from "../../utils/test-utils.js";
 
 describe("Calendar", () => {
-    let testServer;
-
-    beforeAll(async () => {
-        testServer = await setupAuthenticatedServer();
-        await testServer.cleanDatabase();
-    });
-
-    afterAll(async () => {
-        if (testServer) {
-            await testServer.stop();
-        }
-    });
+    const server = setupAuthenticatedTestServer();
 
     describe("GET /api/calendars", () => {
         it("should get calendars list regardless of auth status", async () => {
-            let response = await testServer.get("/api/calendars");
+            let response = await server.get("/api/calendars");
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body.data)).toBeTruthy();
 
-            await testServer.logout();
-            response = await testServer.get("/api/calendars");
+            await server.logout();
+            response = await server.get("/api/calendars");
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body.data)).toBeTruthy();
 
-            await testServer.login();
+            await server.login();
         });
     });
 
@@ -38,7 +27,7 @@ describe("Calendar", () => {
                 color: "#ff0000",
             };
 
-            const response = await testServer.post("/api/calendars", calendarData);
+            const response = await server.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(201);
             expect(response.body.data.name).toBe("Test Calendar");
@@ -52,7 +41,7 @@ describe("Calendar", () => {
                 url: "https://calendar.google.com/calendar/ical/test2@gmail.com/public/basic.ics",
             };
 
-            const response = await testServer.post("/api/calendars", calendarData);
+            const response = await server.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -64,7 +53,7 @@ describe("Calendar", () => {
                 url: "not-a-valid-url",
             };
 
-            const response = await testServer.post("/api/calendars", calendarData);
+            const response = await server.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -76,7 +65,7 @@ describe("Calendar", () => {
                 url: "https://calendar.google.com/calendar/ical/test@gmail.com/public/basic.ics",
             };
 
-            const response = await testServer.post("/api/calendars", calendarData);
+            const response = await server.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -84,18 +73,18 @@ describe("Calendar", () => {
         });
 
         it("should require authentication", async () => {
-            await testServer.logout();
+            await server.logout();
 
             const calendarData = {
                 name: "Unauthorized Calendar",
                 url: "https://calendar.google.com/calendar/ical/unauthorized@gmail.com/public/basic.ics",
             };
 
-            const response = await testServer.post("/api/calendars", calendarData);
+            const response = await server.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(401);
 
-            await testServer.login();
+            await server.login();
         });
     });
 
@@ -103,7 +92,7 @@ describe("Calendar", () => {
         let calendarId;
 
         beforeAll(async () => {
-            const calendar = await testServer.ctx.models.calendar.create({
+            const calendar = await server.ctx.models.calendar.create({
                 name: "Get Test Calendar",
                 url: "https://calendar.google.com/calendar/ical/get-test@gmail.com/public/basic.ics",
             });
@@ -111,7 +100,7 @@ describe("Calendar", () => {
         });
 
         it("should get calendar by ID", async () => {
-            const response = await testServer.get(`/api/calendars/${calendarId}`);
+            const response = await server.get(`/api/calendars/${calendarId}`);
             const data = response.body;
 
             expect(response.status).toBe(200);
@@ -121,19 +110,19 @@ describe("Calendar", () => {
         });
 
         it("should return 404 for non-existent calendar", async () => {
-            const response = await testServer.get("/api/calendars/99999");
+            const response = await server.get("/api/calendars/99999");
 
             expect(response.status).toBe(404);
         });
 
         it("should require authentication", async () => {
-            await testServer.logout();
+            await server.logout();
 
-            const response = await testServer.get(`/api/calendars/${calendarId}`);
+            const response = await server.get(`/api/calendars/${calendarId}`);
 
             expect(response.status).toBe(401);
 
-            await testServer.login();
+            await server.login();
         });
     });
 
@@ -141,7 +130,7 @@ describe("Calendar", () => {
         let calendarId;
 
         beforeAll(async () => {
-            const calendar = await testServer.ctx.models.calendar.create({
+            const calendar = await server.ctx.models.calendar.create({
                 name: "Update Test Calendar",
                 url: "https://calendar.google.com/calendar/ical/update-test@gmail.com/public/basic.ics",
             });
@@ -153,7 +142,7 @@ describe("Calendar", () => {
                 name: "Updated Calendar Name",
             };
 
-            const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
+            const response = await server.put(`/api/calendars/${calendarId}`, updateData);
             const data = response.body;
 
             expect(response.status).toBe(200);
@@ -166,7 +155,7 @@ describe("Calendar", () => {
                 visible_to_public: false,
             };
 
-            const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
+            const response = await server.put(`/api/calendars/${calendarId}`, updateData);
             const data = response.body;
 
             expect(response.status).toBe(200);
@@ -178,23 +167,23 @@ describe("Calendar", () => {
                 name: "Non-existent Calendar",
             };
 
-            const response = await testServer.put("/api/calendars/99999", updateData);
+            const response = await server.put("/api/calendars/99999", updateData);
 
             expect(response.status).toBe(404);
         });
 
         it("should require authentication", async () => {
-            await testServer.logout();
+            await server.logout();
 
             const updateData = {
                 name: "Unauthorized Update",
             };
 
-            const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
+            const response = await server.put(`/api/calendars/${calendarId}`, updateData);
 
             expect(response.status).toBe(401);
 
-            await testServer.login();
+            await server.login();
         });
     });
 
@@ -202,7 +191,7 @@ describe("Calendar", () => {
         let calendarId;
 
         beforeAll(async () => {
-            const calendar = await testServer.ctx.models.calendar.create({
+            const calendar = await server.ctx.models.calendar.create({
                 name: "Delete Test Calendar",
                 url: "https://calendar.google.com/calendar/ical/delete-test@gmail.com/public/basic.ics",
             });
@@ -210,37 +199,37 @@ describe("Calendar", () => {
         });
 
         it("should delete calendar by ID", async () => {
-            const response = await testServer.delete(`/api/calendars/${calendarId}`);
+            const response = await server.delete(`/api/calendars/${calendarId}`);
             const data = response.body;
 
             expect(response.status).toBe(200);
             expect(data.success).toBe(true);
             expect(data.message).toBe("Calendar deleted successfully");
 
-            const getResponse = await testServer.get(`/api/calendars/${calendarId}`);
+            const getResponse = await server.get(`/api/calendars/${calendarId}`);
             expect(getResponse.status).toBe(404);
         });
 
         it("should return 404 for non-existent calendar", async () => {
-            const response = await testServer.delete("/api/calendars/99999");
+            const response = await server.delete("/api/calendars/99999");
 
             expect(response.status).toBe(404);
         });
 
         it("should require authentication", async () => {
-            await testServer.logout();
+            await server.logout();
 
-            const response = await testServer.delete("/api/calendars/1");
+            const response = await server.delete("/api/calendars/1");
 
             expect(response.status).toBe(401);
 
-            await testServer.login();
+            await server.login();
         });
     });
 
     describe("POST /api/calendars/refresh", () => {
         it("should initiate calendar refresh", async () => {
-            const response = await testServer.post("/api/calendars/refresh");
+            const response = await server.post("/api/calendars/refresh");
             const data = response.body;
 
             expect(response.status).toBe(200);
@@ -249,13 +238,13 @@ describe("Calendar", () => {
         });
 
         it("should require authentication", async () => {
-            await testServer.logout();
+            await server.logout();
 
-            const response = await testServer.post("/api/calendars/refresh");
+            const response = await server.post("/api/calendars/refresh");
 
             expect(response.status).toBe(401);
 
-            await testServer.login();
+            await server.login();
         });
     });
 });

@@ -1,22 +1,12 @@
-import { createTestServer } from "../../utils/test-utils.js";
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { setupTestServer } from "../../utils/test-utils.js";
+import { describe, it, beforeAll, expect } from "vitest";
 
 describe("Auth", () => {
-    let testServer;
-
-    beforeAll(async () => {
-        testServer = await createTestServer();
-    });
-
-    afterAll(async () => {
-        if (testServer) {
-            await testServer.stop();
-        }
-    });
+    const server = setupTestServer();
 
     describe("POST /api/auth", () => {
         it("should login successfully with correct password", async () => {
-            const response = await testServer.post("/api/auth", {
+            const response = await server.post("/api/auth", {
                 password: "test-password",
             });
 
@@ -30,7 +20,7 @@ describe("Auth", () => {
         });
 
         it("should reject login with wrong password", async () => {
-            const response = await testServer.post("/api/auth", {
+            const response = await server.post("/api/auth", {
                 password: "wrong-password",
             });
 
@@ -40,7 +30,7 @@ describe("Auth", () => {
         });
 
         it("should reject login with missing password", async () => {
-            const response = await testServer.post("/api/auth", {});
+            const response = await server.post("/api/auth", {});
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -50,11 +40,11 @@ describe("Auth", () => {
 
     describe("GET /api/auth/verify", () => {
         beforeAll(async () => {
-            await testServer.login();
+            await server.login();
         });
 
         it("should verify valid session token", async () => {
-            const response = await testServer.get("/api/auth/verify");
+            const response = await server.get("/api/auth/verify");
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -62,29 +52,29 @@ describe("Auth", () => {
         });
 
         it("should reject invalid session token", async () => {
-            await testServer.logout();
+            await server.logout();
 
-            const response = await testServer
+            const response = await server
                 .request("get", "/api/auth/verify")
                 .set("Cookie", "session_token=invalid-token");
 
             expect(response.status).toBe(401);
-            await testServer.login();
+            await server.login();
         });
 
         it("should reject missing session token", async () => {
-            await testServer.logout();
+            await server.logout();
 
-            const response = await testServer.get("/api/auth/verify");
+            const response = await server.get("/api/auth/verify");
             expect(response.status).toBe(401);
 
-            await testServer.login();
+            await server.login();
         });
     });
 
     describe("POST /api/auth/logout", () => {
         it("should logout successfully", async () => {
-            const response = await testServer.post("/api/auth/logout");
+            const response = await server.post("/api/auth/logout");
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -98,15 +88,15 @@ describe("Auth", () => {
 
     describe("Full Auth Flow", () => {
         it("should complete login -> verify -> logout flow", async () => {
-            const sessionToken = await testServer.login();
+            const sessionToken = await server.login();
             expect(sessionToken).toBeTruthy();
 
-            const verifyResponse = await testServer.get("/api/auth/verify");
+            const verifyResponse = await server.get("/api/auth/verify");
             expect(verifyResponse.status).toBe(200);
 
-            await testServer.logout();
+            await server.logout();
 
-            const invalidVerifyResponse = await testServer.get("/api/auth/verify");
+            const invalidVerifyResponse = await server.get("/api/auth/verify");
             expect(invalidVerifyResponse.status).toBe(401);
         });
     });
