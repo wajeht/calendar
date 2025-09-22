@@ -9,7 +9,7 @@ export function createGeneralRouter(dependencies = {}) {
     const router = express.Router();
 
     router.get("/", (_req, res) => {
-        if (config.app.env === 'development') {
+        if (config.app.env === "development") {
             return res.redirect(`http://localhost:${config.app.vuePort}`);
         }
 
@@ -192,7 +192,8 @@ export function errorHandler(dependencies = {}) {
 }
 
 export function createRouter(dependencies = {}) {
-    const { models, services, middleware, utils, logger, config, errors, validators, db } = dependencies;
+    const { models, services, middleware, utils, logger, config, errors, validators, db } =
+        dependencies;
 
     if (!models) throw new Error("Models required for router");
     if (!services) throw new Error("Services required for router");
