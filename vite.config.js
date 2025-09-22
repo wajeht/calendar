@@ -2,11 +2,13 @@ import { fileURLToPath, URL } from "node:url";
 
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { config } from "./src/config.js";
-import tailwindcss from "@tailwindcss/vite";
+
+// Use environment variables directly since Vite runs in Node.js
+const APP_VUE_PORT = parseInt(process.env.APP_VUE_PORT) || 3000;
+const APP_PORT = parseInt(process.env.APP_PORT) || 80;
 
 const viteConfig = {
-    plugins: [vue(), tailwindcss()],
+    plugins: [vue()],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src/vue", import.meta.url)),
@@ -15,23 +17,23 @@ const viteConfig = {
     root: "./src/vue",
     publicDir: "./public",
     server: {
-        port: config.app.vuePort,
+        port: APP_VUE_PORT,
         host: true,
         strictPort: true, // fail if 3000 is taken
         allowedHosts: ["localhost"],
         proxy: {
             "^/api/(?!.*\\.js$).*": {
-                target: `http://localhost:${config.app.port}`,
+                target: `http://localhost:${APP_PORT}`,
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, "/api"),
             },
             "/healthz": {
-                target: `http://localhost:${config.app.port}`,
+                target: `http://localhost:${APP_PORT}`,
                 changeOrigin: true,
                 rewrite: (path) => path,
             },
             "/favicon.ico": {
-                target: `http://localhost:${config.app.port}`,
+                target: `http://localhost:${APP_PORT}`,
                 changeOrigin: true,
                 rewrite: (path) => path,
             },

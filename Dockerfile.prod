@@ -11,6 +11,8 @@ RUN bun install
 # Copy source files needed for Vue build
 COPY src ./src
 COPY vite.config.js ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
 COPY public ./public
 
 # Build Vue app
