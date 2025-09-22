@@ -1,4 +1,6 @@
-import "dotenv/config";
+try {
+    process.loadEnvFile("./.env");
+} catch {}
 
 function deepFreeze(obj) {
     Object.values(obj).forEach((val) => {
