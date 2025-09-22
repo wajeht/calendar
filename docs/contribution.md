@@ -168,31 +168,55 @@ npm run test:watch    # Watch mode
 ### Writing Tests
 
 ```javascript
-// API tests (using Vitest + Supertest)
-import { describe, it, expect, beforeEach } from "vitest";
-import request from "supertest";
-import { createTestApp } from "../utils/test-utils.js";
+// API tests (using Vitest + custom test server)
+import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { createTestServer, setupAuthenticatedServer } from "../../utils/test-utils.js";
 
 describe("Calendar API", () => {
-    let app;
+    let testServer;
 
-    beforeEach(async () => {
-        app = await createTestApp();
+    beforeAll(async () => {
+        // For authenticated routes
+        testServer = await setupAuthenticatedServer();
+        await testServer.cleanDatabase();
+    });
+
+    afterAll(async () => {
+        if (testServer) {
+            await testServer.stop();
+        }
     });
 
     it("should create calendar", async () => {
-        const response = await request(app)
-            .post("/api/calendars")
-            .send({
-                name: "Test Calendar",
-                url: "https://example.com/calendar.ics",
-            })
-            .expect(201);
+        const response = await testServer.post("/api/calendars", {
+            name: "Test Calendar",
+            url: "https://example.com/calendar.ics",
+        });
 
+        expect(response.status).toBe(201);
         expect(response.body.success).toBe(true);
+    });
+
+    it("should handle authentication", async () => {
+        // Test without auth
+        await testServer.logout();
+        const response = await testServer.get("/api/calendars");
+        expect(response.status).toBe(200);
+
+        // Test with auth
+        await testServer.login();
+        const authResponse = await testServer.get("/api/calendars");
+        expect(authResponse.status).toBe(200);
     });
 });
 ```
+
+**Test utilities available:**
+
+- `createTestServer()` - Basic test server
+- `setupAuthenticatedServer()` - Pre-authenticated test server
+- `testServer.login()` / `testServer.logout()` - Auth helpers
+- `testServer.cleanDatabase()` - Reset test data
 
 ## 🚨 Pull Request Guidelines
 
