@@ -19,7 +19,9 @@ describe("Main API", () => {
 
             expect(response.status).toBe(200);
             expect(response.body.status).toMatch(/^(healthy|unhealthy)$/);
-            expect(response.body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+            expect(response.body.timestamp).toMatch(
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+            );
             expect(response.body.uptime).toBeGreaterThan(0);
             expect(typeof response.body.uptime).toBe("number");
         });
@@ -29,7 +31,7 @@ describe("Main API", () => {
 
             expect(response.status).toBe(200);
             expect(response.body.database).toEqual({
-                healthy: true
+                healthy: true,
             });
         });
     });

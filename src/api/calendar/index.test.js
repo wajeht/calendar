@@ -265,7 +265,9 @@ describe("Calendar", () => {
             expect(response.body.errors).toBe(null);
             expect(Array.isArray(response.body.data.calendars)).toBe(true);
             expect(response.body.data.calendars.length).toBeGreaterThanOrEqual(0);
-            expect(response.body.data.exportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+            expect(response.body.data.exportedAt).toMatch(
+                /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+            );
             expect(response.body.data.version).toBe("1.0");
         });
 

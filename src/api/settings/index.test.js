@@ -103,7 +103,9 @@ describe("Settings", () => {
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.message).toBe("Password configuration status retrieved successfully");
+            expect(response.body.message).toBe(
+                "Password configuration status retrieved successfully",
+            );
             expect(response.body.errors).toBe(null);
             expect(typeof response.body.data.configured).toBe("boolean");
         });
