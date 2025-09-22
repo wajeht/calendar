@@ -128,7 +128,12 @@ function handlePasswordConfigured() {
 function handleEventClick(info) {
     info.jsEvent.preventDefault();
 
-    if (info.event.extendedProps && !info.event.extendedProps.show_details_to_public) {
+    // Only block event details for public users when show_details_to_public is false
+    if (
+        !isAuthenticated.value &&
+        info.event.extendedProps &&
+        !info.event.extendedProps.show_details_to_public
+    ) {
         return;
     }
 
