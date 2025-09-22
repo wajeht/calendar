@@ -1,4 +1,5 @@
 import { styleText } from "node:util";
+import { inspect } from "node:util";
 
 export function createLogger(config = {}) {
     const { level = "info" } = config;
@@ -8,30 +9,58 @@ export function createLogger(config = {}) {
 
     const shouldLog = (logLevel) => levels[logLevel] >= currentLevel;
 
+    const getTimestamp = () => {
+        return new Date().toISOString();
+    };
+
+    const formatArgs = (args) => {
+        return args.length > 0
+            ? " " + args.map((arg) => (typeof arg === "string" ? arg : inspect(arg))).join(" ")
+            : "";
+    };
+
     return {
         info: (message, ...args) => {
             if (shouldLog("info")) {
-                console.log(styleText("cyan", `ℹ️  ${message}`), ...args);
+                process.stdout.write(
+                    styleText("cyan", `[${getTimestamp()}] ℹ️  ${message}`) +
+                        formatArgs(args) +
+                        "\n",
+                );
             }
         },
         error: (message, ...args) => {
             if (shouldLog("error")) {
-                console.error(styleText("red", `❌ ${message}`), ...args);
+                process.stderr.write(
+                    styleText("red", `[${getTimestamp()}] ❌ ${message}`) + formatArgs(args) + "\n",
+                );
             }
         },
         success: (message, ...args) => {
             if (shouldLog("info")) {
-                console.log(styleText("green", `✅ ${message}`), ...args);
+                process.stdout.write(
+                    styleText("green", `[${getTimestamp()}] ✅ ${message}`) +
+                        formatArgs(args) +
+                        "\n",
+                );
             }
         },
         warn: (message, ...args) => {
             if (shouldLog("warn")) {
-                console.warn(styleText("yellow", `⚠️  ${message}`), ...args);
+                process.stdout.write(
+                    styleText("yellow", `[${getTimestamp()}] ⚠️  ${message}`) +
+                        formatArgs(args) +
+                        "\n",
+                );
             }
         },
         debug: (message, ...args) => {
             if (shouldLog("debug")) {
-                console.log(styleText("magenta", `🐛 ${message}`), ...args);
+                process.stdout.write(
+                    styleText("magenta", `[${getTimestamp()}] 🐛 ${message}`) +
+                        formatArgs(args) +
+                        "\n",
+                );
             }
         },
     };
