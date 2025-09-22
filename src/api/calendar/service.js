@@ -14,11 +14,11 @@ export function createCalendarService(dependencies = {}) {
         // This preserves the original time values and lets the frontend handle timezone display
         if (!icalTime.zone || icalTime.zone.tzid === "floating") {
             const year = icalTime.year;
-            const month = String(icalTime.month).padStart(2, '0');
-            const day = String(icalTime.day).padStart(2, '0');
-            const hour = String(icalTime.hour).padStart(2, '0');
-            const minute = String(icalTime.minute).padStart(2, '0');
-            const second = String(icalTime.second).padStart(2, '0');
+            const month = String(icalTime.month).padStart(2, "0");
+            const day = String(icalTime.day).padStart(2, "0");
+            const hour = String(icalTime.hour).padStart(2, "0");
+            const minute = String(icalTime.minute).padStart(2, "0");
+            const second = String(icalTime.second).padStart(2, "0");
 
             return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
         }

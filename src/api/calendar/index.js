@@ -132,11 +132,6 @@ export function createCalendarRouter(dependencies = {}) {
 
         const updateData = { ...req.body };
 
-        if ("visible" in updateData) {
-            updateData.visible_to_public = updateData.visible;
-            delete updateData.visible;
-        }
-
         validators.validateCalendarUpdate(updateData);
 
         if (updateData.name !== undefined) {

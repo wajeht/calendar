@@ -163,7 +163,7 @@ describe("Calendar", () => {
 
         it("should update calendar visibility", async () => {
             const updateData = {
-                visible: false,
+                visible_to_public: false,
             };
 
             const response = await testServer.put(`/api/calendars/${calendarId}`, updateData);
