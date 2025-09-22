@@ -1,0 +1,1 @@
+import{_ as s,f as n,e as r,i as e}from"./index-B2WPDu4r.js";const t={},c={class:"flex h-screen w-screen justify-center items-center"};function a(l,o){return r(),n("main",c,[...o[0]||(o[0]=[e("div",{class:"flex gap-5"},[e("h1",{class:"font-bold"},"404"),e("p",null,"The page you are looking for could not be found.")],-1)])])}const i=s(t,[["render",a]]);export{i as default};
