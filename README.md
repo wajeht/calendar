@@ -11,7 +11,7 @@ A web-based calendar application with multiple calendar source support via iCal/
 ```
 📝 Add Calendar (name + color + iCal URL) → 🗄️ Database
     ↓
-🕐 Cron fetches iCal → ICAL.js parser → 3 versions stored:
+⚡ Immediately fetches iCal → ICAL.js parser → 3 versions stored:
 ├─ Raw iCal data
 ├─ Full events (titles, attendees, descriptions, locations)
 └─ Stripped events (time slots only)
@@ -27,10 +27,6 @@ Check flags:                      Always full details:
 📱 Click event                    📱 Click event
 Limited/no details               Rich modal with smart links
 ```
-
-**Authentication:** First visit shows password setup → Login creates session → Failed attempts = lockout → Authenticated users get settings access
-
-**Features:** Handles recurring events 🔄, timezones 🌐, background sync 📡, smart link detection (emails, phones, URLs), duration calculations
 
 ## 📑 Docs
 
