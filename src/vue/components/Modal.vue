@@ -28,6 +28,7 @@ const emit = defineEmits(["close"]);
 
 const dialogRef = useTemplateRef("dialogRef");
 const isClosing = ref(false);
+const isVisible = ref(false);
 
 function handleDialogClick(event) {
     event.stopPropagation();
@@ -54,6 +55,11 @@ onMounted(() => {
     if (modalStack.value.length === 1) {
         document.addEventListener("keydown", handleEscape);
     }
+
+    // Trigger entrance animation
+    setTimeout(() => {
+        isVisible.value = true;
+    }, 10);
 });
 
 onUnmounted(() => {
@@ -91,6 +97,7 @@ const sizeClasses = computed(() => {
                 'text-[13px] leading-tight',
                 props.highZIndex ? 'z-[4001]' : 'z-[3001]',
                 isClosing ? 'modal-closing' : '',
+                !isVisible ? 'modal-entering' : '',
                 sizeClasses,
             ]"
             @click="handleDialogClick"
@@ -139,6 +146,11 @@ const sizeClasses = computed(() => {
     transition:
         opacity 0.15s ease-out,
         transform 0.15s ease-out;
+}
+
+.modal-entering {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
 }
 
 .modal-closing {
