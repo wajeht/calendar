@@ -8,46 +8,29 @@ A web-based calendar application with multiple calendar source support via iCal/
 
 # 📖 How It Works
 
-This calendar app fetches iCal data from external sources and displays events with different access levels.
-
 ```
-📝 Add Calendar
-name + color + iCal URL → stored in database
+📝 Add Calendar (name + color + iCal URL) → 🗄️ Database
     ↓
-🕐 Cron Job Fetches Data
-iCal URL → ICAL.js parser → 3 versions stored:
+🕐 Cron fetches iCal → ICAL.js parser → 3 versions stored:
 ├─ Raw iCal data
 ├─ Full events (titles, attendees, descriptions, locations)
 └─ Stripped events (time slots only)
-```
-
-**Access Control:**
-```
-🌍 Public User                   🔒 Authenticated User
-    ↓                                ↓
-Check flags:                     Always gets full details:
-├─ visible_to_public?            ├─ Event titles & descriptions
-├─ show_details_to_public?       ├─ Attendee emails (clickable)
-└─ Show nothing/blocks/full      ├─ Organizer info & meeting links
-                                 └─ Complete metadata
-```
-
-**Authentication Flow:**
-```
-First Visit → Setup Password Screen
     ↓
-🔑 Login → Session Cookie → Access Settings & Full Details
+👤 User visits calendar
     ↓
-❌ Failed Attempts → Temporary Lockout
+🌍 Public User                    🔒 Authenticated User
+Check flags:                      Always full details:
+├─ visible_to_public?             ├─ Titles & descriptions
+├─ show_details_to_public?        ├─ Clickable attendee emails
+└─ Show nothing/blocks/full       └─ Meeting links & metadata
+    ↓                                 ↓
+📱 Click event                    📱 Click event
+Limited/no details               Rich modal with smart links
 ```
 
-**Event Click:**
-```
-Public User: Limited/No details based on settings
-Auth User: Rich modal with smart links, duration, attendees
-```
+**Authentication:** First visit shows password setup → Login creates session → Failed attempts = lockout → Authenticated users get settings access
 
-Auto-handles: recurring events 🔄, timezones 🌐, background sync 📡
+**Features:** Handles recurring events 🔄, timezones 🌐, background sync 📡, smart link detection (emails, phones, URLs), duration calculations
 
 ## 📑 Docs
 
