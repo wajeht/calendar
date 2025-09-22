@@ -8,12 +8,16 @@ describe("Calendar", () => {
         it("should get calendars list regardless of auth status", async () => {
             let response = await server.get("/api/calendars");
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body.data)).toBeTruthy();
+            expect(response.body.success).toBe(true);
+            expect(response.body.errors).toBe(null);
+            expect(Array.isArray(response.body.data)).toBe(true);
 
             await server.logout();
             response = await server.get("/api/calendars");
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body.data)).toBeTruthy();
+            expect(response.body.success).toBe(true);
+            expect(response.body.errors).toBe(null);
+            expect(Array.isArray(response.body.data)).toBe(true);
 
             await server.login();
         });
@@ -30,10 +34,13 @@ describe("Calendar", () => {
             const response = await server.post("/api/calendars", calendarData);
 
             expect(response.status).toBe(201);
+            expect(response.body.success).toBe(true);
+            expect(response.body.errors).toBe(null);
             expect(response.body.data.name).toBe("Test Calendar");
             expect(response.body.data.url).toBe(calendarData.url);
             expect(response.body.data.color).toBe("#ff0000");
-            expect(response.body.data.id).toBeTruthy();
+            expect(typeof response.body.data.id).toBe("number");
+            expect(response.body.data.id).toBeGreaterThan(0);
         });
 
         it("should reject calendar with missing name", async () => {
@@ -255,10 +262,10 @@ describe("Calendar", () => {
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
             expect(response.body.message).toBe("Calendars exported successfully");
-            expect(response.body.data).toBeDefined();
-            expect(response.body.data.calendars).toBeDefined();
+            expect(response.body.errors).toBe(null);
             expect(Array.isArray(response.body.data.calendars)).toBe(true);
-            expect(response.body.data.exportedAt).toBeDefined();
+            expect(response.body.data.calendars.length).toBeGreaterThanOrEqual(0);
+            expect(response.body.data.exportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
             expect(response.body.data.version).toBe("1.0");
         });
 
@@ -290,7 +297,11 @@ describe("Calendar", () => {
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
             expect(response.body.message).toBe("Calendars imported successfully");
-            expect(response.body.data).toBeDefined();
+            expect(response.body.errors).toBe(null);
+            expect(response.body.data.imported).toBe(1);
+            expect(response.body.data.skipped).toBe(0);
+            expect(Array.isArray(response.body.data.errors)).toBe(true);
+            expect(response.body.data.errors.length).toBe(0);
         });
 
         it("should accept empty calendars array", async () => {
@@ -302,7 +313,12 @@ describe("Calendar", () => {
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("Calendars imported successfully");
+            expect(response.body.errors).toBe(null);
             expect(response.body.data.imported).toBe(0);
+            expect(response.body.data.skipped).toBe(0);
+            expect(Array.isArray(response.body.data.errors)).toBe(true);
+            expect(response.body.data.errors.length).toBe(0);
         });
 
         it("should reject missing calendars field", async () => {

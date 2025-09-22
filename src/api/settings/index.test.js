@@ -11,8 +11,10 @@ describe("Settings", () => {
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.data).toBeDefined();
+            expect(response.body.message).toBe("Cron settings retrieved successfully");
+            expect(response.body.errors).toBe(null);
             expect(typeof response.body.data.enabled).toBe("boolean");
+            expect(response.body.data.schedule).toBeDefined();
         });
 
         it("should require authentication", async () => {
@@ -101,6 +103,8 @@ describe("Settings", () => {
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("Password configuration status retrieved successfully");
+            expect(response.body.errors).toBe(null);
             expect(typeof response.body.data.configured).toBe("boolean");
         });
 
