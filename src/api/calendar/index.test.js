@@ -247,4 +247,89 @@ describe("Calendar", () => {
             await server.login();
         });
     });
+
+    describe("GET /api/calendars/export", () => {
+        it("should export calendars successfully", async () => {
+            const response = await server.get("/api/calendars/export");
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("Calendars exported successfully");
+            expect(response.body.data).toBeDefined();
+            expect(response.body.data.calendars).toBeDefined();
+            expect(Array.isArray(response.body.data.calendars)).toBe(true);
+            expect(response.body.data.exportedAt).toBeDefined();
+            expect(response.body.data.version).toBe("1.0");
+        });
+
+        it("should require authentication", async () => {
+            await server.logout();
+
+            const response = await server.get("/api/calendars/export");
+
+            expect(response.status).toBe(401);
+
+            await server.login();
+        });
+    });
+
+    describe("POST /api/calendars/import", () => {
+        it("should import calendars successfully", async () => {
+            const importData = {
+                calendars: [
+                    {
+                        name: "Imported Calendar",
+                        url: "https://calendar.google.com/calendar/ical/imported@gmail.com/public/basic.ics",
+                        color: "#00ff00",
+                    },
+                ],
+            };
+
+            const response = await server.post("/api/calendars/import", importData);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("Calendars imported successfully");
+            expect(response.body.data).toBeDefined();
+        });
+
+        it("should accept empty calendars array", async () => {
+            const importData = {
+                calendars: [],
+            };
+
+            const response = await server.post("/api/calendars/import", importData);
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.imported).toBe(0);
+        });
+
+        it("should reject missing calendars field", async () => {
+            const importData = {};
+
+            const response = await server.post("/api/calendars/import", importData);
+
+            expect(response.status).toBe(500);
+        });
+
+        it("should require authentication", async () => {
+            await server.logout();
+
+            const importData = {
+                calendars: [
+                    {
+                        name: "Unauthorized Import",
+                        url: "https://calendar.google.com/calendar/ical/unauthorized@gmail.com/public/basic.ics",
+                    },
+                ],
+            };
+
+            const response = await server.post("/api/calendars/import", importData);
+
+            expect(response.status).toBe(401);
+
+            await server.login();
+        });
+    });
 });
