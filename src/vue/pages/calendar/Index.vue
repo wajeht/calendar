@@ -12,6 +12,7 @@ import SettingsModal from "./partials/ModalSettings.vue";
 import EventModal from "./partials/ModalEvent.vue";
 import ConfirmModal from "./partials/ModalConfirm.vue";
 import SetupPasswordModal from "./partials/ModalSetupPassword.vue";
+import AboutModal from "./partials/ModalAbout.vue";
 
 import { useToast } from "../../composables/useToast";
 import { useAuth } from "../../composables/useAuth.js";
@@ -28,6 +29,7 @@ const showPasswordModal = ref(false);
 const showSettingsModal = ref(false);
 const showEventModal = ref(false);
 const showSetupPasswordModal = ref(false);
+const showAboutModal = ref(false);
 const selectedEvent = ref(null);
 const selectedEventCalendar = ref(null);
 const isPasswordConfigured = ref(null); // null = checking, true = configured, false = not configured
@@ -57,13 +59,18 @@ const calendarOptions = ref({
     headerToolbar: {
         left: "prev,next today",
         center: "title",
-        right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton",
+        right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton aboutButton",
     },
     customButtons: {
         settingsButton: {
             text: "settings",
             hint: "Manage Calendars",
             click: handleSettingsClick,
+        },
+        aboutButton: {
+            text: "about",
+            hint: "About this app",
+            click: handleAboutClick,
         },
     },
     height: "100%",
@@ -107,6 +114,10 @@ async function handleSettingsClick() {
             showPasswordModal.value = true;
         }
     }
+}
+
+function handleAboutClick() {
+    showAboutModal.value = true;
 }
 
 async function handlePasswordConfigurationCheck() {
@@ -227,6 +238,7 @@ function handleKeydown(e) {
         if (showEventModal.value) closeEventModal();
         else if (showSettingsModal.value) showSettingsModal.value = false;
         else if (showPasswordModal.value) showPasswordModal.value = false;
+        else if (showAboutModal.value) showAboutModal.value = false;
         else if (confirmDialog.show) confirmDialog.reject();
     }
 }
@@ -283,6 +295,8 @@ onUnmounted(() => {
             @close="showSetupPasswordModal = false"
             @password-configured="handlePasswordConfigured"
         />
+
+        <AboutModal v-if="showAboutModal" @close="showAboutModal = false" />
     </main>
 </template>
 
