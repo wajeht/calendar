@@ -6,10 +6,19 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
+
     ```bash
     git clone https://github.com/YOUR_USERNAME/calendar.git
     cd calendar
     ```
+
+    Or clone the original repository:
+
+    ```bash
+    git clone https://github.com/wajeht/calendar.git
+    cd calendar
+    ```
+
 3. **Install** dependencies:
     ```bash
     npm install
