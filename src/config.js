@@ -11,6 +11,7 @@ function deepFreeze(obj) {
 
 export const config = deepFreeze({
     app: {
+        vuePort: parseInt(process.env.APP_VUE_PORT) || 3000,
         port: parseInt(process.env.APP_PORT) || 80,
         env: process.env.APP_ENV || process.env.NODE_ENV || "development",
         jsonLimit: process.env.JSON_LIMIT || "1mb",

@@ -15,9 +15,9 @@ const viteConfig = {
     root: "./src/vue",
     publicDir: "./public",
     server: {
-        port: 3000,
+        port: config.app.vuePort,
         host: true,
-        strictPort: true,
+        strictPort: true, // fail if 3000 is taken
         allowedHosts: ["localhost"],
         proxy: {
             "^/api/(?!.*\\.js$).*": {
