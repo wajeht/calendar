@@ -1,0 +1,1 @@
+import{_ as s,e as n,b as r,g as e}from"./index-jZ-fGRT9.js";const t={},c={class:"flex h-screen w-screen justify-center items-center"};function a(l,o){return r(),n("main",c,[...o[0]||(o[0]=[e("div",{class:"flex gap-5"},[e("h1",{class:"font-bold"},"404"),e("p",null,"The page you are looking for could not be found.")],-1)])])}const d=s(t,[["render",a]]);export{d as default};

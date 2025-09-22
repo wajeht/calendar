@@ -3,6 +3,10 @@ import Modal from "../../../components/Modal.vue";
 import Button from "../../../components/Button.vue";
 
 const emit = defineEmits(["close"]);
+
+function openGitHubRepository() {
+    return window.open("https://github.com/wajeht/calendar", "_blank");
+}
 </script>
 
 <template>
@@ -50,12 +54,7 @@ const emit = defineEmits(["close"]);
             </div>
 
             <div>
-                <Button
-                    variant="primary"
-                    @click="window.open('https://github.com/wajeht/calendar', '_blank')"
-                >
-                    View on GitHub
-                </Button>
+                <Button variant="primary" @click="openGitHubRepository"> View on GitHub </Button>
             </div>
         </div>
 
