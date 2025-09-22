@@ -109,9 +109,7 @@ export function useAuth() {
             if (result.success) {
                 toast.success(result.message || "Password changed successfully");
             } else {
-                if (!result.errors) {
-                    toast.error(result.message || "Failed to change password");
-                }
+                toast.error(result.message || "Failed to change password");
             }
             return result;
         } catch (error) {
