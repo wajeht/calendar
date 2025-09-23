@@ -116,7 +116,6 @@ async function handleSettingsClick() {
 }
 
 function handleShowPasswordModal() {
-    showSettingsModal.value = false;
     showPasswordModal.value = true;
 }
 
@@ -173,6 +172,11 @@ function handleEventSourceFailure(error) {
 function handleAuthenticated() {
     showPasswordModal.value = false;
     loadCalendars();
+
+    // Keep settings modal open and refresh it to enable all tabs
+    if (showSettingsModal.value) {
+        settingsInitialTab.value = "calendars";
+    }
 }
 
 async function loadCalendars() {

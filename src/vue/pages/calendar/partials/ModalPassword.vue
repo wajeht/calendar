@@ -40,7 +40,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Modal title="Authentication Required" @close="emit('close')">
+    <Modal title="Authentication Required" high-z-index @close="emit('close')">
         <FormGroup label="Password" required input-id="password" :error="errors.password">
             <Input
                 id="password"
