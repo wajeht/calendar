@@ -1,9 +1,9 @@
 <script setup>
 import Toast from "./components/Toast.vue";
-import { RouterView } from "vue-router";
+import Calendar from "./components/Calendar.vue";
 </script>
 
 <template>
-    <RouterView />
+    <Calendar />
     <Toast />
 </template>

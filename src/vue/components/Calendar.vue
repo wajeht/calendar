@@ -7,15 +7,15 @@ import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import iCalendarPlugin from "@fullcalendar/icalendar";
 
-import PasswordModal from "./partials/ModalPassword.vue";
-import SettingsModal from "./partials/ModalSettings.vue";
-import EventModal from "./partials/ModalEvent.vue";
-import ConfirmModal from "./partials/ModalConfirm.vue";
-import SetupPasswordModal from "./partials/ModalSetupPassword.vue";
+import PasswordModal from "./modals/ModalPassword.vue";
+import SettingsModal from "./modals/ModalSettings.vue";
+import EventModal from "./modals/ModalEvent.vue";
+import ConfirmModal from "./modals/ModalConfirm.vue";
+import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
 
-import { useToast } from "../../composables/useToast";
-import { useAuth } from "../../composables/useAuth.js";
-import { useCalendar } from "../../composables/useCalendar.js";
+import { useToast } from "../composables/useToast";
+import { useAuth } from "../composables/useAuth.js";
+import { useCalendar } from "../composables/useCalendar.js";
 
 const toast = useToast();
 const { isAuthenticated, verifySession, checkPasswordConfiguration } = useAuth();

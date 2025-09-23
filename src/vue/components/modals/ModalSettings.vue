@@ -1,15 +1,15 @@
 <script setup>
 import { ref, reactive, useTemplateRef, onMounted } from "vue";
-import { useToast } from "../../../composables/useToast";
-import { useAuth } from "../../../composables/useAuth.js";
-import { useCalendar } from "../../../composables/useCalendar.js";
-import { useSettings } from "../../../composables/useSettings.js";
-import Modal from "../../../components/Modal.vue";
-import FormGroup from "../../../components/FormGroup.vue";
-import Input from "../../../components/Input.vue";
-import Select from "../../../components/Select.vue";
-import Button from "../../../components/Button.vue";
-import Checkbox from "../../../components/Checkbox.vue";
+import { useToast } from "../../composables/useToast";
+import { useAuth } from "../../composables/useAuth.js";
+import { useCalendar } from "../../composables/useCalendar.js";
+import { useSettings } from "../../composables/useSettings.js";
+import Modal from "../../components/Modal.vue";
+import FormGroup from "../../components/FormGroup.vue";
+import Input from "../../components/Input.vue";
+import Select from "../../components/Select.vue";
+import Button from "../../components/Button.vue";
+import Checkbox from "../../components/Checkbox.vue";
 import AddCalendarModal from "./ModalAddCalendar.vue";
 import EditCalendarModal from "./ModalEditCalendar.vue";
 import DeleteCalendarModal from "./ModalDeleteCalendar.vue";

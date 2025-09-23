@@ -66,8 +66,7 @@
         "ical.js": "^2.2.1",
         "knex": "^3.1.0",
         "node-cron": "^4.2.1",
-        "vue": "^3.5.18",
-        "vue-router": "^4.5.1"
+        "vue": "^3.5.18"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.1.13",
