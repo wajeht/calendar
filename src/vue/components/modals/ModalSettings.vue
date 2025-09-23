@@ -340,12 +340,12 @@ watch(isAuthenticated, (newValue) => {
                         Calendars
                     </Button>
                     <Button
-                        @click="handleTabClick('settings')"
-                        :variant="activeTab === 'settings' ? 'primary' : 'default'"
+                        @click="handleTabClick('preferences')"
+                        :variant="activeTab === 'preferences' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        Cron
+                        Preferences
                     </Button>
                     <Button
                         @click="handleTabClick('account')"
@@ -396,7 +396,7 @@ watch(isAuthenticated, (newValue) => {
                     <!-- Calendar List -->
                     <div class="space-y-4">
                         <div
-                            class="h-[280px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
+                            class="h-[400px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
                         >
                             <div class="overflow-x-hidden">
                                 <table class="w-full table-fixed">
@@ -488,47 +488,21 @@ watch(isAuthenticated, (newValue) => {
                             </div>
                         </div>
                     </div>
-
-                    <!-- Import/Export Section -->
-                    <div class="border-t border-gray-200 pt-4">
-                        <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Button
-                                @click="exportCalendars"
-                                variant="primary"
-                                :loading="isExporting"
-                                class="w-full"
-                            >
-                                Export Settings
-                            </Button>
-                            <Button
-                                @click="triggerImport"
-                                variant="default"
-                                :loading="isImporting"
-                                class="w-full"
-                            >
-                                Import Settings
-                            </Button>
-                            <input
-                                ref="importInput"
-                                type="file"
-                                accept=".json"
-                                @change="importCalendars"
-                                class="hidden"
-                            />
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Settings Tab -->
-                <div v-if="activeTab === 'settings'" class="h-full overflow-y-auto space-y-6 p-6">
+                <!-- Preferences Tab -->
+                <div
+                    v-if="activeTab === 'preferences'"
+                    class="h-full overflow-y-auto space-y-6 p-6"
+                >
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Cron</h3>
+                        <h3 class="text-lg font-medium text-gray-900">Preferences</h3>
                     </div>
 
                     <div class="space-y-6">
                         <!-- Auto Refresh Section -->
                         <div class="space-y-4">
+                            <h4 class="text-md font-medium text-gray-900">Auto Refresh</h4>
                             <div>
                                 <Checkbox
                                     v-model="cronSettings.enabled"
@@ -572,6 +546,36 @@ watch(isAuthenticated, (newValue) => {
                             >
                                 Refresh All Calendars Now
                             </Button>
+                        </div>
+
+                        <!-- Import/Export Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Button
+                                    @click="exportCalendars"
+                                    variant="primary"
+                                    :loading="isExporting"
+                                    class="w-full"
+                                >
+                                    Export Settings
+                                </Button>
+                                <Button
+                                    @click="triggerImport"
+                                    variant="default"
+                                    :loading="isImporting"
+                                    class="w-full"
+                                >
+                                    Import Settings
+                                </Button>
+                                <input
+                                    ref="importInput"
+                                    type="file"
+                                    accept=".json"
+                                    @change="importCalendars"
+                                    class="hidden"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
