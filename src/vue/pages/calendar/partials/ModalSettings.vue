@@ -252,7 +252,7 @@ onMounted(() => {
                         :disabled="!isAuthenticated"
                         class="w-full !text-left"
                     >
-                        settings
+                        cron
                     </Button>
                     <Button
                         @click="handleTabClick('account')"
@@ -427,7 +427,7 @@ onMounted(() => {
                 <!-- Settings Tab -->
                 <div v-if="activeTab === 'settings'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Settings Management</h3>
+                        <h3 class="text-lg font-medium text-gray-900">Cron Management</h3>
                     </div>
 
                     <div class="space-y-6">
