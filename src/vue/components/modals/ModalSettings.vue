@@ -325,7 +325,7 @@ watch(isAuthenticated, (newValue) => {
 </script>
 
 <template>
-    <Modal title="Calendar" size="large" :body-padding="false" @close="emit('close')">
+    <Modal title="Settings" size="large" :body-padding="false" @close="emit('close')">
         <!-- Vertical Layout Container -->
         <div class="flex h-[500px]">
             <!-- Sidebar Navigation -->
@@ -337,7 +337,7 @@ watch(isAuthenticated, (newValue) => {
                         :disabled="!isAuthenticated"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        calendars
+                        Calendars
                     </Button>
                     <Button
                         @click="handleTabClick('settings')"
@@ -345,7 +345,7 @@ watch(isAuthenticated, (newValue) => {
                         :disabled="!isAuthenticated"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        cron
+                        Cron
                     </Button>
                     <Button
                         @click="handleTabClick('account')"
@@ -353,14 +353,14 @@ watch(isAuthenticated, (newValue) => {
                         :disabled="!isAuthenticated"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        account
+                        Account
                     </Button>
                     <Button
                         @click="handleTabClick('about')"
                         :variant="activeTab === 'about' ? 'primary' : 'default'"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        about
+                        About
                     </Button>
                     <Button
                         v-if="isAuthenticated"
@@ -369,15 +369,15 @@ watch(isAuthenticated, (newValue) => {
                         :loading="isLoggingOut"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        logout
+                        Logout
                     </Button>
                     <Button
                         v-else
                         @click="handleLogin"
-                        variant="primary"
+                        variant="default"
                         class="w-full justify-start !text-left !mr-0"
                     >
-                        login
+                        Login
                     </Button>
                 </nav>
             </div>
@@ -646,7 +646,7 @@ watch(isAuthenticated, (newValue) => {
                 <!-- About Tab -->
                 <div v-if="activeTab === 'about'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Calendar</h3>
+                        <h3 class="text-lg font-medium text-gray-900">About</h3>
                     </div>
 
                     <div class="space-y-6">
