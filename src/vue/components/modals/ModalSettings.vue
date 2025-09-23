@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, useTemplateRef, onMounted } from "vue";
+import { ref, reactive, useTemplateRef, onMounted, computed } from "vue";
 import { useToast } from "../../composables/useToast";
 import { useAuth } from "../../composables/useAuth.js";
 import { useCalendar } from "../../composables/useCalendar.js";
@@ -69,6 +69,10 @@ const passwordErrors = reactive({
 const isRefreshing = ref(false);
 const isExporting = ref(false);
 const isImporting = ref(false);
+
+const copyRightYear = computed(() => {
+    return new Date().getFullYear();
+});
 
 function editCalendar(calendar) {
     editingCalendar.value = calendar;
@@ -277,7 +281,7 @@ onMounted(() => {
                 <!-- Calendars Tab -->
                 <div v-if="activeTab === 'calendars'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Calendar Management</h3>
+                        <h3 class="text-lg font-medium text-gray-900">Calendars</h3>
                         <Button variant="primary" @click="showAddModal = true">
                             Add Calendar
                         </Button>
@@ -413,7 +417,7 @@ onMounted(() => {
                 <!-- Settings Tab -->
                 <div v-if="activeTab === 'settings'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Cron Management</h3>
+                        <h3 class="text-lg font-medium text-gray-900">Cron</h3>
                     </div>
 
                     <div class="space-y-6">
@@ -470,7 +474,7 @@ onMounted(() => {
                 <div v-if="activeTab === 'account'" class="h-full overflow-y-auto space-y-6 p-6">
                     <!-- Password Change Section -->
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Account</h3>
                         <div class="space-y-4">
                             <FormGroup
                                 label="Current Password"
@@ -536,7 +540,7 @@ onMounted(() => {
                 <!-- About Tab -->
                 <div v-if="activeTab === 'about'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">About Calendar</h3>
+                        <h3 class="text-lg font-medium text-gray-900">Calendar</h3>
                     </div>
 
                     <div class="space-y-6">
@@ -544,18 +548,6 @@ onMounted(() => {
                             <p class="text-sm text-gray-600 leading-relaxed">
                                 A web-based calendar application with multiple calendar source
                                 support via iCal/WebCal URLs
-                            </p>
-
-                            <p class="text-sm text-gray-600">
-                                Made with ❤️ by
-                                <a
-                                    href="https://github.com/wajeht"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="text-gray-800 hover:text-gray-900 font-medium underline"
-                                >
-                                    @wajeht
-                                </a>
                             </p>
 
                             <p class="text-sm text-gray-600">
@@ -575,14 +567,28 @@ onMounted(() => {
                                 >
                                     create an issue
                                 </a>
-                                on GitHub
+                                on
+                                <a
+                                    href="https://github.com/wajeht/calendar"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-gray-800 hover:text-gray-900 underline"
+                                >
+                                    Github
+                                </a>
                             </p>
 
-                            <div class="pt-2">
-                                <Button variant="primary" @click="openGitHubRepository">
-                                    View on GitHub
-                                </Button>
-                            </div>
+                            <p class="text-sm text-gray-600">
+                                Copyright © {{ copyRightYear }}. Made with ❤️ by
+                                <a
+                                    href="https://github.com/wajeht"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-gray-800 hover:text-gray-900 font-medium underline"
+                                >
+                                    @wajeht
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>
