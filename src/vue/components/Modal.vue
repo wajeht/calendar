@@ -12,7 +12,7 @@ const props = defineProps({
     size: {
         type: String,
         default: "default",
-        validator: (value) => ["default", "large"].includes(value),
+        validator: (value) => ["default", "large", "xl"].includes(value),
     },
     highZIndex: {
         type: Boolean,
@@ -74,6 +74,8 @@ const sizeClasses = computed(() => {
     switch (props.size) {
         case "large":
             return "max-w-2xl w-[90%] max-h-[85vh]";
+        case "xl":
+            return "max-w-5xl w-[95%] max-h-[85vh]";
         default:
             return "max-w-md w-[90%] max-h-[85vh]";
     }

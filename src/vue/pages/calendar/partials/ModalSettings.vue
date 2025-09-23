@@ -284,7 +284,7 @@ onMounted(() => {
                     </div>
 
                     <!-- Calendar List -->
-                    <div class="flex-1 min-h-0 mb-4">
+                    <div class="flex-1 min-h-0">
                         <div
                             class="h-full max-h-[280px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
                         >
@@ -293,17 +293,12 @@ onMounted(() => {
                                     <thead class="bg-gray-50 sticky top-0 z-10">
                                         <tr>
                                             <th
-                                                class="w-2/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                class="w-3/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             >
                                                 Calendar
                                             </th>
                                             <th
-                                                class="w-1/3 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                            >
-                                                Status
-                                            </th>
-                                            <th
-                                                class="w-1/3 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                class="w-1/4 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                                             >
                                                 Actions
                                             </th>
@@ -322,42 +317,33 @@ onMounted(() => {
                                                         :style="{ backgroundColor: calendar.color }"
                                                     ></div>
                                                     <div class="min-w-0 flex-1">
-                                                        <div
-                                                            class="font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
-                                                            @click="copyToClipboard(calendar.url)"
-                                                            :title="
-                                                                'Click to copy URL: ' + calendar.url
-                                                            "
-                                                        >
+                                                        <div class="font-medium text-gray-900">
                                                             {{ calendar.name }}
                                                         </div>
-                                                        <div
-                                                            class="text-xs text-gray-500 truncate mt-1"
-                                                        >
-                                                            {{ calendar.url }}
+                                                        <div class="mt-2">
+                                                            <span
+                                                                v-if="!calendar.visible_to_public"
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
+                                                            >
+                                                                Hidden from Public
+                                                            </span>
+                                                            <span
+                                                                v-else-if="
+                                                                    !calendar.show_details_to_public
+                                                                "
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap"
+                                                            >
+                                                                Details Hidden from Public
+                                                            </span>
+                                                            <span
+                                                                v-else
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
+                                                            >
+                                                                Visible to Public
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td class="px-4 py-4">
-                                                <span
-                                                    v-if="!calendar.visible_to_public"
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
-                                                >
-                                                    Hidden from Public
-                                                </span>
-                                                <span
-                                                    v-else-if="!calendar.show_details_to_public"
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap"
-                                                >
-                                                    Details Hidden from Public
-                                                </span>
-                                                <span
-                                                    v-else
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
-                                                >
-                                                    Visible to Public
-                                                </span>
                                             </td>
                                             <td class="px-4 py-4 text-right">
                                                 <div class="flex gap-2 justify-end">
@@ -380,7 +366,7 @@ onMounted(() => {
                                         </tr>
                                         <tr v-if="calendars.length === 0">
                                             <td
-                                                colspan="3"
+                                                colspan="2"
                                                 class="px-4 py-8 text-center text-gray-500"
                                             >
                                                 No calendars configured. Click "Add Calendar" to get
