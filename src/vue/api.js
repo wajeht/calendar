@@ -47,6 +47,28 @@ export const api = {
         async verify() {
             return request("/api/auth/verify");
         },
+
+        async isPasswordConfigured() {
+            return request("/api/auth/password-configured");
+        },
+
+        async setupPassword(password, confirmPassword) {
+            return request("/api/auth/setup-password", {
+                method: "POST",
+                body: JSON.stringify({ password, confirmPassword }),
+            });
+        },
+
+        async changePassword(currentPassword, newPassword, confirmPassword) {
+            return request("/api/auth/password", {
+                method: "PUT",
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                    confirmPassword,
+                }),
+            });
+        },
     },
 
     calendar: {
@@ -111,28 +133,6 @@ export const api = {
     },
 
     settings: {
-        async isPasswordConfigured() {
-            return request("/api/settings/password-configured");
-        },
-
-        async setupPassword(password, confirmPassword) {
-            return request("/api/settings/setup-password", {
-                method: "POST",
-                body: JSON.stringify({ password, confirmPassword }),
-            });
-        },
-
-        async changePassword(currentPassword, newPassword, confirmPassword) {
-            return request("/api/settings/password", {
-                method: "PUT",
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword,
-                    confirmPassword,
-                }),
-            });
-        },
-
         async getCronSettings() {
             return request("/api/settings/cron");
         },

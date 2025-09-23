@@ -11,7 +11,7 @@ export function useAuth() {
     async function checkPasswordConfiguration() {
         isLoading.value = true;
         try {
-            const result = await api.settings.isPasswordConfigured();
+            const result = await api.auth.isPasswordConfigured();
             return result;
         } catch (error) {
             toast.error("Error checking password configuration: " + error.message);
@@ -24,7 +24,7 @@ export function useAuth() {
     async function setupPassword(password, confirmPassword) {
         isLoading.value = true;
         try {
-            const result = await api.settings.setupPassword(password, confirmPassword);
+            const result = await api.auth.setupPassword(password, confirmPassword);
             if (result.success) {
                 toast.success(
                     result.message || "Password configured successfully! You can now log in.",
@@ -101,7 +101,7 @@ export function useAuth() {
     async function changePassword(currentPassword, newPassword, confirmPassword) {
         isLoading.value = true;
         try {
-            const result = await api.settings.changePassword(
+            const result = await api.auth.changePassword(
                 currentPassword,
                 newPassword,
                 confirmPassword,
