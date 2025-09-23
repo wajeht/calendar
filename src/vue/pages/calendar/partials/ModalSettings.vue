@@ -275,7 +275,7 @@ onMounted(() => {
             <!-- Content Area -->
             <div class="flex-1 overflow-hidden">
                 <!-- Calendars Tab -->
-                <div v-if="activeTab === 'calendars'" class="h-full flex flex-col p-6">
+                <div v-if="activeTab === 'calendars'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-medium text-gray-900">Calendar Management</h3>
                         <Button variant="primary" @click="showAddModal = true">
@@ -284,9 +284,9 @@ onMounted(() => {
                     </div>
 
                     <!-- Calendar List -->
-                    <div class="flex-1 min-h-0">
+                    <div class="space-y-4">
                         <div
-                            class="h-full max-h-[280px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
+                            class="h-[280px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
                         >
                             <div class="overflow-x-hidden">
                                 <table class="w-full table-fixed">
@@ -380,8 +380,8 @@ onMounted(() => {
                     </div>
 
                     <!-- Import/Export Section -->
-                    <div class="border-t border-gray-200 pt-4 mt-4">
-                        <h4 class="text-md font-medium text-gray-900 mb-3">Import/Export</h4>
+                    <div class="border-t border-gray-200 pt-4">
+                        <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button
                                 @click="exportCalendars"
