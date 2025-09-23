@@ -22,6 +22,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    bodyPadding: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits(["close"]);
@@ -124,7 +128,12 @@ const sizeClasses = computed(() => {
             </div>
 
             <!-- Modal Body -->
-            <div class="p-4 max-h-[calc(85vh-140px)] overflow-y-auto">
+            <div
+                :class="[
+                    props.bodyPadding ? 'p-4' : 'p-0',
+                    'max-h-[calc(85vh-140px)] overflow-y-auto',
+                ]"
+            >
                 <slot />
             </div>
 

@@ -325,17 +325,17 @@ watch(isAuthenticated, (newValue) => {
 </script>
 
 <template>
-    <Modal title="Calendar" size="large" @close="emit('close')">
+    <Modal title="Calendar" size="large" :body-padding="false" @close="emit('close')">
         <!-- Vertical Layout Container -->
         <div class="flex h-[500px]">
             <!-- Sidebar Navigation -->
-            <div class="w-36 border-r border-gray-200 bg-white">
-                <nav class="p-4 space-y-2">
+            <div class="w-36 border-r border-gray-300 bg-gray-100">
+                <nav class="py-4 pl-4 pr-3 space-y-2">
                     <Button
                         @click="handleTabClick('calendars')"
                         :variant="activeTab === 'calendars' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
-                        class="w-full !text-center"
+                        class="w-full justify-start !text-left !mr-0"
                     >
                         calendars
                     </Button>
@@ -343,7 +343,7 @@ watch(isAuthenticated, (newValue) => {
                         @click="handleTabClick('settings')"
                         :variant="activeTab === 'settings' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
-                        class="w-full !text-center"
+                        class="w-full justify-start !text-left !mr-0"
                     >
                         cron
                     </Button>
@@ -351,16 +351,33 @@ watch(isAuthenticated, (newValue) => {
                         @click="handleTabClick('account')"
                         :variant="activeTab === 'account' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
-                        class="w-full !text-center"
+                        class="w-full justify-start !text-left !mr-0"
                     >
                         account
                     </Button>
                     <Button
                         @click="handleTabClick('about')"
                         :variant="activeTab === 'about' ? 'primary' : 'default'"
-                        class="w-full !text-center"
+                        class="w-full justify-start !text-left !mr-0"
                     >
                         about
+                    </Button>
+                    <Button
+                        v-if="isAuthenticated"
+                        @click="logoutUser"
+                        variant="danger"
+                        :loading="isLoggingOut"
+                        class="w-full justify-start !text-left !mr-0"
+                    >
+                        logout
+                    </Button>
+                    <Button
+                        v-else
+                        @click="handleLogin"
+                        variant="primary"
+                        class="w-full justify-start !text-left !mr-0"
+                    >
+                        login
                     </Button>
                 </nav>
             </div>
@@ -683,21 +700,6 @@ watch(isAuthenticated, (newValue) => {
                 </div>
             </div>
         </div>
-
-        <template #footer>
-            <div class="flex justify-end items-center gap-2">
-                <Button
-                    v-if="isAuthenticated"
-                    @click="logoutUser"
-                    variant="danger"
-                    :loading="isLoggingOut"
-                >
-                    Logout
-                </Button>
-                <Button v-else @click="handleLogin" variant="primary"> Login </Button>
-                <Button @click="emit('close')" variant="default">Close</Button>
-            </div>
-        </template>
 
         <!-- Separate Modals with Higher Z-Index -->
         <AddCalendarModal
