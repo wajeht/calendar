@@ -19,11 +19,20 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    initialTab: {
+        type: String,
+        default: "calendars",
+    },
 });
 
-const emit = defineEmits(["close", "calendar-updated"]);
+const emit = defineEmits(["close", "calendar-updated", "show-password-modal"]);
 const toast = useToast();
-const { logout, verifySession, changePassword: changePasswordComposable } = useAuth();
+const {
+    logout,
+    verifySession,
+    changePassword: changePasswordComposable,
+    isAuthenticated,
+} = useAuth();
 const {
     importCalendars: importCalendarsAPI,
     exportCalendars: exportCalendarsAPI,
@@ -36,7 +45,7 @@ const {
     updateCronSettings,
 } = useSettings();
 
-const activeTab = ref("calendars");
+const activeTab = ref(isAuthenticated.value ? props.initialTab : "about");
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
@@ -200,318 +209,406 @@ async function copyToClipboard(url) {
     }
 }
 
+function openGitHubRepository() {
+    return window.open("https://github.com/wajeht/calendar", "_blank");
+}
+
+function handleTabClick(tabName) {
+    if (!isAuthenticated.value && tabName !== "about") {
+        return;
+    }
+    activeTab.value = tabName;
+}
+
+function handleLogin() {
+    emit("show-password-modal");
+}
+
 onMounted(() => {
     getCronSettings();
 });
 </script>
 
 <template>
-    <Modal title="Settings" size="large" @close="emit('close')">
-        <!-- Tab Navigation -->
-        <div class="border-b border-gray-200 mb-4">
-            <nav class="-mb-px flex space-x-8">
-                <button
-                    @click="activeTab = 'calendars'"
-                    :class="[
-                        'py-2 px-1 border-b-2 font-medium text-sm',
-                        activeTab === 'calendars'
-                            ? 'border-primary-500 text-primary-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                    ]"
-                >
-                    Calendars
-                </button>
-                <button
-                    @click="activeTab = 'settings'"
-                    :class="[
-                        'py-2 px-1 border-b-2 font-medium text-sm',
-                        activeTab === 'settings'
-                            ? 'border-primary-500 text-primary-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                    ]"
-                >
-                    Settings
-                </button>
-                <button
-                    @click="activeTab = 'account'"
-                    :class="[
-                        'py-2 px-1 border-b-2 font-medium text-sm',
-                        activeTab === 'account'
-                            ? 'border-primary-500 text-primary-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                    ]"
-                >
-                    Account
-                </button>
-            </nav>
-        </div>
-
-        <!-- Calendars Tab -->
-        <div v-if="activeTab === 'calendars'" class="h-[500px] flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Calendar Management</h3>
-                <Button variant="primary" @click="showAddModal = true"> Add Calendar </Button>
+    <Modal title="Calendar" size="large" @close="emit('close')">
+        <!-- Vertical Layout Container -->
+        <div class="flex h-[500px]">
+            <!-- Sidebar Navigation -->
+            <div class="w-48 border-r border-gray-200 bg-white">
+                <nav class="p-4 space-y-2">
+                    <Button
+                        @click="handleTabClick('calendars')"
+                        :variant="activeTab === 'calendars' ? 'primary' : 'default'"
+                        :disabled="!isAuthenticated"
+                        class="w-full !text-left"
+                    >
+                        calendars
+                    </Button>
+                    <Button
+                        @click="handleTabClick('settings')"
+                        :variant="activeTab === 'settings' ? 'primary' : 'default'"
+                        :disabled="!isAuthenticated"
+                        class="w-full !text-left"
+                    >
+                        settings
+                    </Button>
+                    <Button
+                        @click="handleTabClick('account')"
+                        :variant="activeTab === 'account' ? 'primary' : 'default'"
+                        :disabled="!isAuthenticated"
+                        class="w-full !text-left"
+                    >
+                        account
+                    </Button>
+                    <Button
+                        @click="handleTabClick('about')"
+                        :variant="activeTab === 'about' ? 'primary' : 'default'"
+                        class="w-full !text-left"
+                    >
+                        about
+                    </Button>
+                </nav>
             </div>
 
-            <!-- Calendar List -->
-            <div class="flex-1 min-h-0 mb-6">
-                <div class="h-full overflow-y-auto border border-gray-200 rounded-lg bg-white">
-                    <div class="overflow-x-hidden">
-                        <table class="w-full table-fixed">
-                            <thead class="bg-gray-50 sticky top-0 z-10">
-                                <tr>
-                                    <th
-                                        class="w-2/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Calendar
-                                    </th>
-                                    <th
-                                        class="w-1/3 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Status
-                                    </th>
-                                    <th
-                                        class="w-1/3 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr
-                                    v-for="calendar in calendars"
-                                    :key="calendar.id"
-                                    class="hover:bg-gray-50"
-                                >
-                                    <td class="px-4 py-4">
-                                        <div class="flex items-start space-x-3">
-                                            <div
-                                                class="w-4 h-4 rounded-full flex-shrink-0 mt-0.5"
-                                                :style="{ backgroundColor: calendar.color }"
-                                            ></div>
-                                            <div class="min-w-0 flex-1">
-                                                <div
-                                                    class="font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
-                                                    @click="copyToClipboard(calendar.url)"
-                                                    :title="'Click to copy URL: ' + calendar.url"
+            <!-- Content Area -->
+            <div class="flex-1 overflow-hidden">
+                <!-- Calendars Tab -->
+                <div v-if="activeTab === 'calendars'" class="h-full flex flex-col p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Calendar Management</h3>
+                        <Button variant="primary" @click="showAddModal = true">
+                            Add Calendar
+                        </Button>
+                    </div>
+
+                    <!-- Calendar List -->
+                    <div class="flex-1 min-h-0 mb-4">
+                        <div
+                            class="h-full max-h-[280px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
+                        >
+                            <div class="overflow-x-hidden">
+                                <table class="w-full table-fixed">
+                                    <thead class="bg-gray-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th
+                                                class="w-2/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Calendar
+                                            </th>
+                                            <th
+                                                class="w-1/3 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Status
+                                            </th>
+                                            <th
+                                                class="w-1/3 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                            >
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr
+                                            v-for="calendar in calendars"
+                                            :key="calendar.id"
+                                            class="hover:bg-gray-50"
+                                        >
+                                            <td class="px-4 py-4">
+                                                <div class="flex items-start space-x-3">
+                                                    <div
+                                                        class="w-4 h-4 rounded-full flex-shrink-0 mt-0.5"
+                                                        :style="{ backgroundColor: calendar.color }"
+                                                    ></div>
+                                                    <div class="min-w-0 flex-1">
+                                                        <div
+                                                            class="font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
+                                                            @click="copyToClipboard(calendar.url)"
+                                                            :title="
+                                                                'Click to copy URL: ' + calendar.url
+                                                            "
+                                                        >
+                                                            {{ calendar.name }}
+                                                        </div>
+                                                        <div
+                                                            class="text-xs text-gray-500 truncate mt-1"
+                                                        >
+                                                            {{ calendar.url }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-4">
+                                                <span
+                                                    v-if="!calendar.visible_to_public"
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
                                                 >
-                                                    {{ calendar.name }}
+                                                    Hidden from Public
+                                                </span>
+                                                <span
+                                                    v-else-if="!calendar.show_details_to_public"
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap"
+                                                >
+                                                    Details Hidden from Public
+                                                </span>
+                                                <span
+                                                    v-else
+                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
+                                                >
+                                                    Visible to Public
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-4 text-right">
+                                                <div class="flex gap-2 justify-end">
+                                                    <Button
+                                                        @click="editCalendar(calendar)"
+                                                        variant="primary"
+                                                        size="small"
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        @click="deleteCalendar(calendar)"
+                                                        variant="danger"
+                                                        size="small"
+                                                    >
+                                                        Delete
+                                                    </Button>
                                                 </div>
-                                                <div class="text-xs text-gray-500 truncate mt-1">
-                                                    {{ calendar.url }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4">
-                                        <span
-                                            v-if="!calendar.visible_to_public"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
-                                        >
-                                            Hidden from Public
-                                        </span>
-                                        <span
-                                            v-else-if="!calendar.show_details_to_public"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap"
-                                        >
-                                            Details Hidden from Public
-                                        </span>
-                                        <span
-                                            v-else
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
-                                        >
-                                            Visible to Public
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-4 text-right">
-                                        <div class="flex gap-2 justify-end">
-                                            <Button
-                                                @click="editCalendar(calendar)"
-                                                variant="primary"
-                                                size="small"
+                                            </td>
+                                        </tr>
+                                        <tr v-if="calendars.length === 0">
+                                            <td
+                                                colspan="3"
+                                                class="px-4 py-8 text-center text-gray-500"
                                             >
-                                                Edit
-                                            </Button>
-                                            <Button
-                                                @click="deleteCalendar(calendar)"
-                                                variant="danger"
-                                                size="small"
-                                            >
-                                                Delete
-                                            </Button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-if="calendars.length === 0">
-                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500">
-                                        No calendars configured. Click "Add Calendar" to get
-                                        started.
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Import/Export Section -->
-            <div class="border-t border-gray-200 pt-4">
-                <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button
-                        @click="exportCalendars"
-                        variant="primary"
-                        :disabled="isExporting"
-                        class="w-full"
-                    >
-                        {{ isExporting ? "Exporting..." : "Export Settings" }}
-                    </Button>
-                    <Button
-                        @click="triggerImport"
-                        variant="default"
-                        :disabled="isImporting"
-                        class="w-full"
-                    >
-                        {{ isImporting ? "Importing..." : "Import Settings" }}
-                    </Button>
-                    <input
-                        ref="importInput"
-                        type="file"
-                        accept=".json"
-                        @change="importCalendars"
-                        class="hidden"
-                    />
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Tab -->
-        <div v-if="activeTab === 'settings'" class="h-[500px] overflow-y-auto space-y-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Settings Management</h3>
-            </div>
-
-            <div class="space-y-6">
-                <!-- Auto Refresh Section -->
-                <div class="space-y-4">
-                    <div>
-                        <Checkbox
-                            v-model="cronSettings.enabled"
-                            label="Enable automatic calendar refresh"
-                            :disabled="isLoadingCron"
-                            @change="updateCronSettings"
-                        />
-                    </div>
-
-                    <div v-if="cronSettings.enabled" class="space-y-4">
-                        <FormGroup label="Refresh Schedule">
-                            <Select
-                                v-model="cronSettings.schedule"
-                                @change="updateCronSettings"
-                                :disabled="isLoadingCron"
-                            >
-                                <option value="0 */1 * * *">Every hour</option>
-                                <option value="0 */2 * * *">Every 2 hours</option>
-                                <option value="0 */4 * * *">Every 4 hours</option>
-                                <option value="0 */6 * * *">Every 6 hours</option>
-                                <option value="0 */12 * * *">Every 12 hours</option>
-                                <option value="0 0 * * *">Daily</option>
-                            </Select>
-                        </FormGroup>
-
-                        <FormGroup v-if="cronSettings.lastRun" label="Last Run">
-                            <div class="text-sm py-1.5 text-gray-600">
-                                {{ new Date(cronSettings.lastRun).toLocaleString() }}
+                                                No calendars configured. Click "Add Calendar" to get
+                                                started.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        </FormGroup>
+                        </div>
+                    </div>
+
+                    <!-- Import/Export Section -->
+                    <div class="border-t border-gray-200 pt-4 mt-4">
+                        <h4 class="text-md font-medium text-gray-900 mb-3">Import/Export</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Button
+                                @click="exportCalendars"
+                                variant="primary"
+                                :disabled="isExporting"
+                                class="w-full"
+                            >
+                                {{ isExporting ? "Exporting..." : "Export Settings" }}
+                            </Button>
+                            <Button
+                                @click="triggerImport"
+                                variant="default"
+                                :disabled="isImporting"
+                                class="w-full"
+                            >
+                                {{ isImporting ? "Importing..." : "Import Settings" }}
+                            </Button>
+                            <input
+                                ref="importInput"
+                                type="file"
+                                accept=".json"
+                                @change="importCalendars"
+                                class="hidden"
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <!-- Manual Refresh Section -->
-                <div class="border-t border-gray-200 pt-4">
-                    <h4 class="text-md font-medium text-gray-900 mb-4">Manual Refresh</h4>
-                    <Button @click="refreshAllCalendars" :disabled="isRefreshing" variant="primary">
-                        {{ isRefreshing ? "Refreshing..." : "Refresh All Calendars Now" }}
-                    </Button>
+                <!-- Settings Tab -->
+                <div v-if="activeTab === 'settings'" class="h-full overflow-y-auto space-y-6 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Settings Management</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Auto Refresh Section -->
+                        <div class="space-y-4">
+                            <div>
+                                <Checkbox
+                                    v-model="cronSettings.enabled"
+                                    label="Enable automatic calendar refresh"
+                                    :disabled="isLoadingCron"
+                                    @change="updateCronSettings"
+                                />
+                            </div>
+
+                            <div v-if="cronSettings.enabled" class="space-y-4">
+                                <FormGroup label="Refresh Schedule">
+                                    <Select
+                                        v-model="cronSettings.schedule"
+                                        @change="updateCronSettings"
+                                        :disabled="isLoadingCron"
+                                    >
+                                        <option value="0 */1 * * *">Every hour</option>
+                                        <option value="0 */2 * * *">Every 2 hours</option>
+                                        <option value="0 */4 * * *">Every 4 hours</option>
+                                        <option value="0 */6 * * *">Every 6 hours</option>
+                                        <option value="0 */12 * * *">Every 12 hours</option>
+                                        <option value="0 0 * * *">Daily</option>
+                                    </Select>
+                                </FormGroup>
+
+                                <FormGroup v-if="cronSettings.lastRun" label="Last Run">
+                                    <div class="text-sm py-1.5 text-gray-600">
+                                        {{ new Date(cronSettings.lastRun).toLocaleString() }}
+                                    </div>
+                                </FormGroup>
+                            </div>
+                        </div>
+
+                        <!-- Manual Refresh Section -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h4 class="text-md font-medium text-gray-900 mb-4">Manual Refresh</h4>
+                            <Button
+                                @click="refreshAllCalendars"
+                                :disabled="isRefreshing"
+                                variant="primary"
+                            >
+                                {{ isRefreshing ? "Refreshing..." : "Refresh All Calendars Now" }}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Account Tab -->
-        <div v-if="activeTab === 'account'" class="h-[500px] overflow-y-auto space-y-6">
-            <!-- Password Change Section -->
-            <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
-                <div class="space-y-4">
-                    <FormGroup
-                        label="Current Password"
-                        required
-                        input-id="currentPassword"
-                        :error="passwordErrors.currentPassword"
-                    >
-                        <Input
-                            id="currentPassword"
-                            v-model="passwordForm.currentPassword"
-                            type="password"
-                            placeholder="Enter current password"
-                            required
-                        />
-                    </FormGroup>
+                <!-- Account Tab -->
+                <div v-if="activeTab === 'account'" class="h-full overflow-y-auto space-y-6 p-6">
+                    <!-- Password Change Section -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
+                        <div class="space-y-4">
+                            <FormGroup
+                                label="Current Password"
+                                required
+                                input-id="currentPassword"
+                                :error="passwordErrors.currentPassword"
+                            >
+                                <Input
+                                    id="currentPassword"
+                                    v-model="passwordForm.currentPassword"
+                                    type="password"
+                                    placeholder="Enter current password"
+                                    required
+                                />
+                            </FormGroup>
 
-                    <FormGroup
-                        label="New Password"
-                        required
-                        input-id="newPassword"
-                        :error="passwordErrors.newPassword"
-                    >
-                        <Input
-                            id="newPassword"
-                            v-model="passwordForm.newPassword"
-                            type="password"
-                            placeholder="Enter new password (min 8 characters)"
-                            required
-                        />
-                    </FormGroup>
+                            <FormGroup
+                                label="New Password"
+                                required
+                                input-id="newPassword"
+                                :error="passwordErrors.newPassword"
+                            >
+                                <Input
+                                    id="newPassword"
+                                    v-model="passwordForm.newPassword"
+                                    type="password"
+                                    placeholder="Enter new password (min 8 characters)"
+                                    required
+                                />
+                            </FormGroup>
 
-                    <FormGroup
-                        label="Confirm New Password"
-                        required
-                        input-id="confirmNewPassword"
-                        :error="passwordErrors.confirmPassword"
-                    >
-                        <Input
-                            id="confirmNewPassword"
-                            v-model="passwordForm.confirmPassword"
-                            type="password"
-                            placeholder="Confirm new password"
-                            required
-                        />
-                    </FormGroup>
+                            <FormGroup
+                                label="Confirm New Password"
+                                required
+                                input-id="confirmNewPassword"
+                                :error="passwordErrors.confirmPassword"
+                            >
+                                <Input
+                                    id="confirmNewPassword"
+                                    v-model="passwordForm.confirmPassword"
+                                    type="password"
+                                    placeholder="Confirm new password"
+                                    required
+                                />
+                            </FormGroup>
 
-                    <Button
-                        @click="changePassword"
-                        :disabled="
-                            changingPassword ||
-                            !passwordForm.currentPassword ||
-                            !passwordForm.newPassword ||
-                            !passwordForm.confirmPassword
-                        "
-                        variant="primary"
-                    >
-                        {{ changingPassword ? "Changing..." : "Change Password" }}
-                    </Button>
+                            <Button
+                                @click="changePassword"
+                                :disabled="
+                                    changingPassword ||
+                                    !passwordForm.currentPassword ||
+                                    !passwordForm.newPassword ||
+                                    !passwordForm.confirmPassword
+                                "
+                                variant="primary"
+                            >
+                                {{ changingPassword ? "Changing..." : "Change Password" }}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Logout Section -->
-            <div class="pt-6 border-t border-gray-200">
-                <h4 class="text-md font-medium text-gray-900 mb-4">Account Actions</h4>
-                <Button @click="logoutUser" class="w-[134px]" variant="danger">Logout</Button>
+                <!-- About Tab -->
+                <div v-if="activeTab === 'about'" class="h-full overflow-y-auto space-y-6 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">About Calendar</h3>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="space-y-4">
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                A web-based calendar application with multiple calendar source
+                                support via iCal/WebCal URLs
+                            </p>
+
+                            <p class="text-sm text-gray-600">
+                                Made with ❤️ by
+                                <a
+                                    href="https://github.com/wajeht"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-gray-800 hover:text-gray-900 font-medium underline"
+                                >
+                                    @wajeht
+                                </a>
+                            </p>
+
+                            <p class="text-sm text-gray-600">
+                                Questions or feedback?
+                                <a
+                                    href="mailto:github@jaw.dev"
+                                    class="text-gray-800 hover:text-gray-900 underline"
+                                >
+                                    Drop me a line
+                                </a>
+                                or
+                                <a
+                                    href="https://github.com/wajeht/calendar/issues"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="text-gray-800 hover:text-gray-900 underline"
+                                >
+                                    create an issue
+                                </a>
+                                on GitHub
+                            </p>
+
+                            <div class="pt-2">
+                                <Button variant="primary" @click="openGitHubRepository">
+                                    View on GitHub
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <template #footer>
-            <Button @click="emit('close')">Close</Button>
+            <div class="flex justify-end items-center gap-2">
+                <Button v-if="isAuthenticated" @click="logoutUser" variant="danger">
+                    Logout
+                </Button>
+                <Button v-else @click="handleLogin" variant="primary"> Login </Button>
+                <Button @click="emit('close')" variant="default">Close</Button>
+            </div>
         </template>
 
         <!-- Separate Modals with Higher Z-Index -->

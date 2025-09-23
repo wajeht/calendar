@@ -12,7 +12,6 @@ import SettingsModal from "./partials/ModalSettings.vue";
 import EventModal from "./partials/ModalEvent.vue";
 import ConfirmModal from "./partials/ModalConfirm.vue";
 import SetupPasswordModal from "./partials/ModalSetupPassword.vue";
-import AboutModal from "./partials/ModalAbout.vue";
 
 import { useToast } from "../../composables/useToast";
 import { useAuth } from "../../composables/useAuth.js";
@@ -29,10 +28,10 @@ const showPasswordModal = ref(false);
 const showSettingsModal = ref(false);
 const showEventModal = ref(false);
 const showSetupPasswordModal = ref(false);
-const showAboutModal = ref(false);
 const selectedEvent = ref(null);
 const selectedEventCalendar = ref(null);
 const isPasswordConfigured = ref(null); // null = checking, true = configured, false = not configured
+const settingsInitialTab = ref("calendars");
 
 const confirmDialog = reactive({
     show: false,
@@ -63,18 +62,13 @@ const calendarOptions = ref({
     headerToolbar: {
         left: "prev,next today",
         center: "title",
-        right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton aboutButton",
+        right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth settingsButton",
     },
     customButtons: {
         settingsButton: {
             text: "settings",
             hint: "Manage Calendars",
             click: handleSettingsClick,
-        },
-        aboutButton: {
-            text: "about",
-            hint: "About this app",
-            click: handleAboutClick,
         },
     },
     height: "100%",
@@ -113,15 +107,17 @@ async function handleSettingsClick() {
         await verifySession();
 
         if (isAuthenticated.value) {
-            showSettingsModal.value = true;
+            settingsInitialTab.value = "calendars";
         } else {
-            showPasswordModal.value = true;
+            settingsInitialTab.value = "about";
         }
+        showSettingsModal.value = true;
     }
 }
 
-function handleAboutClick() {
-    showAboutModal.value = true;
+function handleShowPasswordModal() {
+    showSettingsModal.value = false;
+    showPasswordModal.value = true;
 }
 
 async function handlePasswordConfigurationCheck() {
@@ -256,7 +252,9 @@ onMounted(async () => {
             v-if="showSettingsModal"
             @close="showSettingsModal = false"
             :calendars="calendars"
+            :initial-tab="settingsInitialTab"
             @calendar-updated="loadCalendars"
+            @show-password-modal="handleShowPasswordModal"
         />
 
         <EventModal
@@ -281,8 +279,6 @@ onMounted(async () => {
             @close="showSetupPasswordModal = false"
             @password-configured="handlePasswordConfigured"
         />
-
-        <AboutModal v-if="showAboutModal" @close="showAboutModal = false" />
     </main>
 </template>
 
