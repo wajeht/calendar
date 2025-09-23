@@ -119,11 +119,9 @@ function handleShowPasswordModal() {
     showPasswordModal.value = true;
 }
 
-const {
-    data: passwordConfigResult,
-    loading: passwordConfigLoading,
-    refresh: fetchPasswordConfig,
-} = useAsyncData(() => api.auth.isPasswordConfigured(), { immediate: false });
+const { refresh: fetchPasswordConfig } = useAsyncData(() => api.auth.isPasswordConfigured(), {
+    immediate: false,
+});
 
 async function handlePasswordConfigurationCheck() {
     try {
@@ -191,11 +189,9 @@ function handleAuthenticated() {
     }
 }
 
-const {
-    data: verifyResult,
-    loading: verifyLoading,
-    refresh: runVerifySession,
-} = useAsyncData(() => api.auth.verify(), { immediate: false });
+const { refresh: runVerifySession } = useAsyncData(() => api.auth.verify(), {
+    immediate: false,
+});
 
 async function verifySession() {
     try {
@@ -206,11 +202,9 @@ async function verifySession() {
     }
 }
 
-const {
-    data: calendarsResult,
-    loading: calendarsLoading,
-    refresh: fetchCalendars,
-} = useAsyncData(() => api.calendar.get(), { immediate: false });
+const { refresh: fetchCalendars } = useAsyncData(() => api.calendar.get(), {
+    immediate: false,
+});
 
 async function loadCalendars() {
     const result = await fetchCalendars();

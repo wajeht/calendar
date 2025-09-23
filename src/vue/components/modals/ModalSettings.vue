@@ -39,11 +39,10 @@ const cronSettings = reactive({
     lastRun: "",
 });
 
-const {
-    data: cronResult,
-    loading: isLoadingCron,
-    refresh: fetchCronSettings,
-} = useAsyncData(() => api.settings.getCronSettings(), { immediate: false });
+const { loading: isLoadingCron, refresh: fetchCronSettings } = useAsyncData(
+    () => api.settings.getCronSettings(),
+    { immediate: false },
+);
 
 async function getCronSettings() {
     try {
@@ -106,11 +105,9 @@ const passwordErrors = reactive({
 });
 
 const isRefreshing = ref(false);
-const {
-    data: exportResult,
-    loading: isExporting,
-    refresh: runExport,
-} = useAsyncData(() => api.calendar.export(), { immediate: false });
+const { loading: isExporting, refresh: runExport } = useAsyncData(() => api.calendar.export(), {
+    immediate: false,
+});
 const isImporting = ref(false);
 
 const copyRightYear = computed(() => {
