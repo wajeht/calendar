@@ -66,9 +66,7 @@ onMounted(async () => {
         </FormGroup>
 
         <template #footer>
-            <Button variant="primary" @click="authenticate" :disabled="isLoading">
-                {{ isLoading ? "Logging in..." : "Login" }}
-            </Button>
+            <Button variant="primary" @click="authenticate" :loading="isLoading"> Login </Button>
             <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
         </template>
     </Modal>

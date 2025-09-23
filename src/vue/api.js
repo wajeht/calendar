@@ -1,32 +1,93 @@
-async function request(url, options = {}) {
-    const defaultOptions = {
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-            ...options.headers,
-        },
-    };
+const baseURL = import.meta?.env?.VITE_API_BASE || "";
 
-    if (
-        options.method === "DELETE" ||
-        (!options.body && options.method !== "POST" && options.method !== "PUT")
-    ) {
-        delete defaultOptions.headers["Content-Type"];
+function buildURL(input, params) {
+    const isAbsolute = /^https?:\/\//i.test(input);
+    const raw = isAbsolute ? input : `${baseURL}${input}`;
+    const url = new URL(raw, window.location.origin);
+    if (params && typeof params === "object") {
+        Object.entries(params).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+            url.searchParams.set(key, String(value));
+        });
+    }
+    return url.toString();
+}
+
+async function request(url, options = {}) {
+    const {
+        method = "GET",
+        body,
+        headers = {},
+        params,
+        signal,
+        timeoutMs = 15000,
+        credentials = "include",
+    } = options;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    if (signal) {
+        if (signal.aborted) controller.abort();
+        else signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
 
-    const response = await fetch(url, {
-        ...defaultOptions,
-        ...options,
+    const hasBody = body !== undefined && body !== null;
+    const shouldSendJSON = hasBody && /^(POST|PUT|PATCH)$/i.test(method);
+
+    const urlWithParams = buildURL(url, params);
+
+    const response = await fetch(urlWithParams, {
+        method,
+        credentials,
+        headers: {
+            ...(shouldSendJSON ? { "Content-Type": "application/json" } : {}),
+            ...headers,
+        },
+        body: shouldSendJSON ? body : undefined,
+        signal: controller.signal,
+    }).catch((err) => {
+        clearTimeout(timer);
+        throw err;
     });
 
-    const result = await response.json().catch(() => ({
-        success: false,
-        message: "Failed to parse response",
-        errors: null,
-        data: null,
-    }));
+    clearTimeout(timer);
 
-    return result;
+    const contentType = response.headers.get("content-type") || "";
+    const isJSON = contentType.includes("application/json");
+    const isNoContent = response.status === 204;
+
+    let parsed;
+    if (!isNoContent) {
+        try {
+            parsed = isJSON ? await response.json() : await response.text();
+        } catch (_e) {
+            parsed = null;
+        }
+    }
+
+    const normalized = (success, data, message = "", errors = null) => ({
+        success,
+        message,
+        errors,
+        data,
+        status: response.status,
+    });
+
+    if (response.ok) {
+        if (isJSON && parsed && typeof parsed === "object" && "success" in parsed) {
+            return { ...parsed, status: response.status };
+        }
+        return normalized(true, isNoContent ? null : (parsed ?? null));
+    }
+
+    if (isJSON && parsed && typeof parsed === "object") {
+        const message = parsed.message || response.statusText;
+        const errors = parsed.errors || null;
+        const data = parsed.data ?? null;
+        return normalized(false, data, message, errors);
+    }
+
+    return normalized(false, null, response.statusText || "Request failed", null);
 }
 
 export const api = {
@@ -72,8 +133,8 @@ export const api = {
     },
 
     calendar: {
-        async get() {
-            return request("/api/calendars");
+        async get(params) {
+            return request("/api/calendars", { params });
         },
 
         async create(calendarData) {

@@ -53,7 +53,7 @@ function handleClose() {
 
         <template #footer>
             <div class="flex gap-2 justify-end">
-                <Button variant="danger" @click="handleConfirm" :disabled="isLoading">
+                <Button variant="danger" @click="handleConfirm" :loading="isLoading">
                     Delete
                 </Button>
                 <Button @click="handleClose">Cancel</Button>

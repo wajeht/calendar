@@ -95,10 +95,11 @@ onMounted(async () => {
             <div class="flex gap-2 justify-end">
                 <Button
                     @click="handleSetupPassword"
-                    :disabled="isLoading || !password || !confirmPassword"
+                    :loading="isLoading"
+                    :disabled="!password || !confirmPassword"
                     variant="primary"
                 >
-                    {{ isLoading ? "Configuring..." : "Configure Password" }}
+                    Configure Password
                 </Button>
                 <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
             </div>

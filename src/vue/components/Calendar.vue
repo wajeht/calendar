@@ -14,6 +14,7 @@ import ConfirmModal from "./modals/ModalConfirm.vue";
 import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
 
 import { useToast } from "../composables/useToast";
+import { useAsyncData } from "../composables/useAsyncData.js";
 import { api } from "../api.js";
 
 const toast = useToast();
@@ -118,12 +119,18 @@ function handleShowPasswordModal() {
     showPasswordModal.value = true;
 }
 
+const {
+    data: passwordConfigResult,
+    loading: passwordConfigLoading,
+    refresh: fetchPasswordConfig,
+} = useAsyncData(() => api.auth.isPasswordConfigured(), { immediate: false });
+
 async function handlePasswordConfigurationCheck() {
     try {
-        const result = await api.auth.isPasswordConfigured();
-        if (result.success) {
+        const result = await fetchPasswordConfig();
+        if (result?.success) {
             isPasswordConfigured.value = result.data.configured;
-        } else {
+        } else if (result) {
             console.error("Failed to check password configuration:", result.message);
             isPasswordConfigured.value = true;
         }
@@ -184,20 +191,36 @@ function handleAuthenticated() {
     }
 }
 
+const {
+    data: verifyResult,
+    loading: verifyLoading,
+    refresh: runVerifySession,
+} = useAsyncData(() => api.auth.verify(), { immediate: false });
+
 async function verifySession() {
     try {
-        const result = await api.auth.verify();
+        const result = await runVerifySession();
         isAuthenticated.value = Boolean(result?.success);
     } catch (e) {
         isAuthenticated.value = false;
     }
 }
 
-async function loadCalendars() {
-    const result = await api.calendar.get();
+const {
+    data: calendarsResult,
+    loading: calendarsLoading,
+    refresh: fetchCalendars,
+} = useAsyncData(() => api.calendar.get(), { immediate: false });
 
-    if (!result.success || !result.data || result.data.length === 0) {
+async function loadCalendars() {
+    const result = await fetchCalendars();
+
+    if (!result?.success || !result.data || result.data.length === 0) {
         console.debug("No calendars to load");
+        calendars.value = [];
+        const calendar = calendarRef.value.getApi();
+        calendar.removeAllEventSources();
+        eventSources.value = [];
         return;
     }
 

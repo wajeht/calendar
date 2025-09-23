@@ -16,6 +16,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    loading: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const buttonClasses = computed(() => {
@@ -49,6 +53,8 @@ const buttonClasses = computed(() => {
 
     if (props.disabled) {
         classes.push("opacity-50 cursor-not-allowed");
+    } else if (props.loading) {
+        classes.push("cursor-not-allowed");
     }
 
     return classes.join(" ");
@@ -58,13 +64,39 @@ const buttonClasses = computed(() => {
 <template>
     <button
         :class="[
-            'relative inline-block px-3 py-1 ml-0 mr-1 leading-snug cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm transition-all duration-200',
+            'relative inline-flex items-center justify-center px-3 py-1 ml-0 mr-1 leading-snug cursor-pointer text-[13px] font-normal text-center align-middle whitespace-nowrap select-none rounded-sm transition-all duration-200',
             buttonClasses,
         ]"
-        :disabled="props.disabled"
+        :disabled="props.disabled || props.loading"
         style="font-family: inherit"
         v-bind="$attrs"
     >
-        <slot />
+        <span :class="props.loading ? 'invisible' : ''"><slot /></span>
+        <span
+            v-if="props.loading"
+            class="absolute inset-0 flex items-center justify-center"
+            aria-hidden="true"
+        >
+            <svg
+                class="animate-spin h-4 w-4 text-current"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+            >
+                <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                />
+                <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+            </svg>
+        </span>
     </button>
 </template>

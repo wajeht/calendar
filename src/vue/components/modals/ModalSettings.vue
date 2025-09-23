@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, useTemplateRef, onMounted, computed, watch, toRef } from "vue";
 import { useToast } from "../../composables/useToast";
+import { useAsyncData } from "../../composables/useAsyncData.js";
 import { api } from "../../api.js";
 import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
@@ -31,8 +32,6 @@ const emit = defineEmits(["close", "calendar-updated", "show-password-modal"]);
 const toast = useToast();
 const isAuthenticated = toRef(props, "isAuthenticated");
 
-// Local cron settings state
-const isLoadingCron = ref(false);
 const cronSettings = reactive({
     enabled: false,
     schedule: "0 */2 * * *",
@@ -40,27 +39,30 @@ const cronSettings = reactive({
     lastRun: "",
 });
 
+const {
+    data: cronResult,
+    loading: isLoadingCron,
+    refresh: fetchCronSettings,
+} = useAsyncData(() => api.settings.getCronSettings(), { immediate: false });
+
 async function getCronSettings() {
-    isLoadingCron.value = true;
     try {
-        const result = await api.settings.getCronSettings();
-        if (result.success) {
+        const result = await fetchCronSettings();
+        if (result && result.success) {
             Object.assign(cronSettings, result.data);
-            return result;
-        } else {
+        } else if (result) {
             toast.error(result.message || "Failed to load auto refresh settings");
-            return result;
         }
+        return result;
     } catch (error) {
         toast.error("Error loading auto refresh settings: " + error.message);
         return { success: false, message: error.message, errors: null, data: null };
-    } finally {
-        isLoadingCron.value = false;
     }
 }
 
+const isSavingCron = ref(false);
 async function updateCronSettings() {
-    isLoadingCron.value = true;
+    isSavingCron.value = true;
     try {
         const result = await api.settings.updateCronSettings(
             cronSettings.enabled,
@@ -78,7 +80,7 @@ async function updateCronSettings() {
         toast.error("Error updating auto refresh settings: " + error.message);
         return { success: false, message: error.message, errors: null, data: null };
     } finally {
-        isLoadingCron.value = false;
+        isSavingCron.value = false;
     }
 }
 
@@ -104,7 +106,11 @@ const passwordErrors = reactive({
 });
 
 const isRefreshing = ref(false);
-const isExporting = ref(false);
+const {
+    data: exportResult,
+    loading: isExporting,
+    refresh: runExport,
+} = useAsyncData(() => api.calendar.export(), { immediate: false });
 const isImporting = ref(false);
 
 const copyRightYear = computed(() => {
@@ -139,10 +145,9 @@ function handleCalendarDeleted() {
 }
 
 async function exportCalendars() {
-    isExporting.value = true;
     try {
-        const result = await api.calendar.export();
-        if (result.success) {
+        const result = await runExport();
+        if (result?.success) {
             const blob = new Blob([JSON.stringify(result.data, null, 2)], {
                 type: "application/json",
             });
@@ -155,13 +160,11 @@ async function exportCalendars() {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             toast.success(result.message || "Settings exported successfully");
-        } else {
+        } else if (result) {
             toast.error(result.message || "Failed to export settings");
         }
     } catch (error) {
         toast.error("Error exporting settings: " + error.message);
-    } finally {
-        isExporting.value = false;
     }
 }
 
@@ -209,7 +212,9 @@ async function importCalendars(event) {
     }
 }
 
+const isLoggingOut = ref(false);
 async function logoutUser() {
+    isLoggingOut.value = true;
     try {
         const result = await api.auth.logout();
         if (result.success) {
@@ -220,6 +225,8 @@ async function logoutUser() {
         }
     } catch (error) {
         toast.error("Logout error: " + error.message);
+    } finally {
+        isLoggingOut.value = false;
     }
 }
 
@@ -244,6 +251,10 @@ async function refreshAllCalendars() {
     }
 }
 
+const { refresh: runVerifyAfterChange } = useAsyncData(() => api.auth.verify(), {
+    immediate: false,
+});
+
 async function changePassword() {
     passwordErrors.currentPassword = "";
     passwordErrors.newPassword = "";
@@ -262,7 +273,7 @@ async function changePassword() {
             passwordForm.currentPassword = "";
             passwordForm.newPassword = "";
             passwordForm.confirmPassword = "";
-            await api.auth.verify().catch(() => {});
+            await runVerifyAfterChange().catch(() => {});
             toast.success(result.message || "Password changed successfully");
         } else {
             toast.error(result.message || "Failed to change password");
@@ -471,18 +482,18 @@ watch(isAuthenticated, (newValue) => {
                             <Button
                                 @click="exportCalendars"
                                 variant="primary"
-                                :disabled="isExporting"
+                                :loading="isExporting"
                                 class="w-full"
                             >
-                                {{ isExporting ? "Exporting..." : "Export Settings" }}
+                                Export Settings
                             </Button>
                             <Button
                                 @click="triggerImport"
                                 variant="default"
-                                :disabled="isImporting"
+                                :loading="isImporting"
                                 class="w-full"
                             >
-                                {{ isImporting ? "Importing..." : "Import Settings" }}
+                                Import Settings
                             </Button>
                             <input
                                 ref="importInput"
@@ -508,7 +519,7 @@ watch(isAuthenticated, (newValue) => {
                                 <Checkbox
                                     v-model="cronSettings.enabled"
                                     label="Enable automatic calendar refresh"
-                                    :disabled="isLoadingCron"
+                                    :disabled="isLoadingCron || isSavingCron"
                                     @change="updateCronSettings"
                                 />
                             </div>
@@ -518,7 +529,7 @@ watch(isAuthenticated, (newValue) => {
                                     <Select
                                         v-model="cronSettings.schedule"
                                         @change="updateCronSettings"
-                                        :disabled="isLoadingCron"
+                                        :disabled="isLoadingCron || isSavingCron"
                                     >
                                         <option value="0 */1 * * *">Every hour</option>
                                         <option value="0 */2 * * *">Every 2 hours</option>
@@ -542,10 +553,10 @@ watch(isAuthenticated, (newValue) => {
                             <h4 class="text-md font-medium text-gray-900 mb-4">Manual Refresh</h4>
                             <Button
                                 @click="refreshAllCalendars"
-                                :disabled="isRefreshing"
+                                :loading="isRefreshing"
                                 variant="primary"
                             >
-                                {{ isRefreshing ? "Refreshing..." : "Refresh All Calendars Now" }}
+                                Refresh All Calendars Now
                             </Button>
                         </div>
                     </div>
@@ -604,15 +615,15 @@ watch(isAuthenticated, (newValue) => {
 
                             <Button
                                 @click="changePassword"
+                                :loading="changingPassword"
                                 :disabled="
-                                    changingPassword ||
                                     !passwordForm.currentPassword ||
                                     !passwordForm.newPassword ||
                                     !passwordForm.confirmPassword
                                 "
                                 variant="primary"
                             >
-                                {{ changingPassword ? "Changing..." : "Change Password" }}
+                                Change Password
                             </Button>
                         </div>
                     </div>
@@ -678,7 +689,12 @@ watch(isAuthenticated, (newValue) => {
 
         <template #footer>
             <div class="flex justify-end items-center gap-2">
-                <Button v-if="isAuthenticated" @click="logoutUser" variant="danger">
+                <Button
+                    v-if="isAuthenticated"
+                    @click="logoutUser"
+                    variant="danger"
+                    :loading="isLoggingOut"
+                >
                     Logout
                 </Button>
                 <Button v-else @click="handleLogin" variant="primary"> Login </Button>
