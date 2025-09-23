@@ -46,12 +46,7 @@ export function createContext(customConfig = {}) {
     };
 
     const middleware = {
-        auth: createAuthMiddleware({
-            utils,
-            logger,
-            errors,
-            config: finalConfig,
-        }),
+        auth: createAuthMiddleware({ utils, errors }),
     };
 
     const services = {

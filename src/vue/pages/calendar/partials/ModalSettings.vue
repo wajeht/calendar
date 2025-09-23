@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch, useTemplateRef, onMounted } from "vue";
+import { ref, reactive, useTemplateRef, onMounted } from "vue";
 import { useToast } from "../../../composables/useToast";
 import { useAuth } from "../../../composables/useAuth.js";
 import { useCalendar } from "../../../composables/useCalendar.js";

@@ -29,7 +29,7 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.get("/export", requireAuth, async (req, res) => {
+    router.get("/export", requireAuth, async (_req, res) => {
         const exportData = await services.calendar.exportCalendars();
 
         res.json({

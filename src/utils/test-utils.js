@@ -86,7 +86,7 @@ export function setupTestServer() {
     return new Proxy(
         {},
         {
-            get(target, prop) {
+            get(_target, prop) {
                 if (!testServer) {
                     throw new Error(
                         "Test server not initialized. Make sure setupTestServer() is called within a describe block.",

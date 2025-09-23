@@ -121,10 +121,8 @@ describe("Settings", () => {
         let testServer;
 
         beforeAll(async () => {
-            // Create a fresh server for password setup tests
             const { createTestServer } = await import("../../utils/test-utils.js");
             testServer = await createTestServer();
-            // Clear any existing password
             await testServer.ctx.models.settings.set("app_password", null);
         });
 
