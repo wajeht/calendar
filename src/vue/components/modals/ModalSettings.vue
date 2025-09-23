@@ -1,9 +1,7 @@
 <script setup>
-import { ref, reactive, useTemplateRef, onMounted, computed, watch } from "vue";
+import { ref, reactive, useTemplateRef, onMounted, computed, watch, toRef } from "vue";
 import { useToast } from "../../composables/useToast";
-import { useAuth } from "../../composables/useAuth.js";
-import { useCalendar } from "../../composables/useCalendar.js";
-import { useSettings } from "../../composables/useSettings.js";
+import { api } from "../../api.js";
 import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
 import Input from "../../components/Input.vue";
@@ -23,27 +21,66 @@ const props = defineProps({
         type: String,
         default: "calendars",
     },
+    isAuthenticated: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["close", "calendar-updated", "show-password-modal"]);
 const toast = useToast();
-const {
-    logout,
-    verifySession,
-    changePassword: changePasswordComposable,
-    isAuthenticated,
-} = useAuth();
-const {
-    importCalendars: importCalendarsAPI,
-    exportCalendars: exportCalendarsAPI,
-    refreshCalendars,
-} = useCalendar();
-const {
-    cronSettings,
-    isLoading: isLoadingCron,
-    getCronSettings,
-    updateCronSettings,
-} = useSettings();
+const isAuthenticated = toRef(props, "isAuthenticated");
+
+// Local cron settings state
+const isLoadingCron = ref(false);
+const cronSettings = reactive({
+    enabled: false,
+    schedule: "0 */2 * * *",
+    status: "",
+    lastRun: "",
+});
+
+async function getCronSettings() {
+    isLoadingCron.value = true;
+    try {
+        const result = await api.settings.getCronSettings();
+        if (result.success) {
+            Object.assign(cronSettings, result.data);
+            return result;
+        } else {
+            toast.error(result.message || "Failed to load auto refresh settings");
+            return result;
+        }
+    } catch (error) {
+        toast.error("Error loading auto refresh settings: " + error.message);
+        return { success: false, message: error.message, errors: null, data: null };
+    } finally {
+        isLoadingCron.value = false;
+    }
+}
+
+async function updateCronSettings() {
+    isLoadingCron.value = true;
+    try {
+        const result = await api.settings.updateCronSettings(
+            cronSettings.enabled,
+            cronSettings.schedule,
+        );
+        if (result.success) {
+            toast.success(result.message || "Auto refresh settings updated");
+            Object.assign(cronSettings, result.data);
+            return result;
+        } else {
+            toast.error(result.message || "Failed to update auto refresh settings");
+            return result;
+        }
+    } catch (error) {
+        toast.error("Error updating auto refresh settings: " + error.message);
+        return { success: false, message: error.message, errors: null, data: null };
+    } finally {
+        isLoadingCron.value = false;
+    }
+}
 
 const activeTab = ref(isAuthenticated.value ? props.initialTab : "about");
 const showAddModal = ref(false);
@@ -104,7 +141,25 @@ function handleCalendarDeleted() {
 async function exportCalendars() {
     isExporting.value = true;
     try {
-        await exportCalendarsAPI();
+        const result = await api.calendar.export();
+        if (result.success) {
+            const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+                type: "application/json",
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `calendar-settings-${new Date().toISOString().split("T")[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success(result.message || "Settings exported successfully");
+        } else {
+            toast.error(result.message || "Failed to export settings");
+        }
+    } catch (error) {
+        toast.error("Error exporting settings: " + error.message);
     } finally {
         isExporting.value = false;
     }
@@ -135,7 +190,7 @@ async function importCalendars(event) {
             throw new Error("Invalid settings file format. Expected a 'calendars' array");
         }
 
-        const result = await importCalendarsAPI(settings.calendars);
+        const result = await api.calendar.import(settings.calendars);
         if (result.success) {
             emit("calendar-updated");
             toast.success("Settings imported successfully");
@@ -155,17 +210,35 @@ async function importCalendars(event) {
 }
 
 async function logoutUser() {
-    await logout();
+    try {
+        const result = await api.auth.logout();
+        if (result.success) {
+            toast.success(result.message || "Logged out successfully");
+            window.location.reload();
+        } else {
+            toast.error(result.message || "Failed to logout");
+        }
+    } catch (error) {
+        toast.error("Logout error: " + error.message);
+    }
 }
 
 async function refreshAllCalendars() {
     isRefreshing.value = true;
     try {
-        const result = await refreshCalendars();
+        const result = await api.calendar.refresh();
         if (result.success) {
+            const data = result.data;
+            toast.success(
+                `Calendars refreshed: ${data.successful} successful, ${data.failed} failed`,
+            );
             emit("calendar-updated");
             await getCronSettings(); // Reload to get updated last run time
+        } else {
+            toast.error(result.message || "Failed to refresh calendars");
         }
+    } catch (error) {
+        toast.error("Error refreshing calendars: " + error.message);
     } finally {
         isRefreshing.value = false;
     }
@@ -179,7 +252,7 @@ async function changePassword() {
     changingPassword.value = true;
 
     try {
-        const result = await changePasswordComposable(
+        const result = await api.auth.changePassword(
             passwordForm.currentPassword,
             passwordForm.newPassword,
             passwordForm.confirmPassword,
@@ -189,8 +262,10 @@ async function changePassword() {
             passwordForm.currentPassword = "";
             passwordForm.newPassword = "";
             passwordForm.confirmPassword = "";
-            await verifySession();
+            await api.auth.verify().catch(() => {});
+            toast.success(result.message || "Password changed successfully");
         } else {
+            toast.error(result.message || "Failed to change password");
             if (result.errors) {
                 Object.keys(result.errors).forEach((field) => {
                     if (passwordErrors.hasOwnProperty(field)) {

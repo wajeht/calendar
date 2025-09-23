@@ -1,6 +1,7 @@
 <script setup>
-import { reactive, watch } from "vue";
-import { useCalendar } from "../../composables/useCalendar.js";
+import { reactive, watch, ref } from "vue";
+import { api } from "../../api.js";
+import { useToast } from "../../composables/useToast";
 import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
 import Input from "../../components/Input.vue";
@@ -20,7 +21,8 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "calendar-updated"]);
 
-const { updateCalendar: updateCalendarAPI, isLoading } = useCalendar();
+const toast = useToast();
+const isLoading = ref(false);
 
 const editForm = reactive({
     name: "",
@@ -54,20 +56,31 @@ watch(
 );
 
 async function handleSubmit() {
+    isLoading.value = true;
     errors.name = "";
     errors.url = "";
     errors.color = "";
 
-    const result = await updateCalendarAPI(props.calendar.id, editForm);
-    if (result.success) {
-        emit("calendar-updated");
-        emit("close");
-    } else if (result.errors) {
-        Object.keys(result.errors).forEach((field) => {
-            if (errors.hasOwnProperty(field)) {
-                errors[field] = result.errors[field];
+    try {
+        const result = await api.calendar.update(props.calendar.id, editForm);
+        if (result.success) {
+            toast.success(result.message || "Calendar updated successfully");
+            emit("calendar-updated");
+            emit("close");
+        } else {
+            toast.error(result.message || "Failed to update calendar");
+            if (result.errors) {
+                Object.keys(result.errors).forEach((field) => {
+                    if (errors.hasOwnProperty(field)) {
+                        errors[field] = result.errors[field];
+                    }
+                });
             }
-        });
+        }
+    } catch (error) {
+        toast.error("Error updating calendar: " + error.message);
+    } finally {
+        isLoading.value = false;
     }
 }
 

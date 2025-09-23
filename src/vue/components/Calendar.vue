@@ -14,12 +14,11 @@ import ConfirmModal from "./modals/ModalConfirm.vue";
 import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
 
 import { useToast } from "../composables/useToast";
-import { useAuth } from "../composables/useAuth.js";
-import { useCalendar } from "../composables/useCalendar.js";
+import { api } from "../api.js";
 
 const toast = useToast();
-const { isAuthenticated, verifySession, checkPasswordConfiguration } = useAuth();
-const { calendars, getCalendars } = useCalendar();
+const calendars = ref([]);
+const isAuthenticated = ref(false);
 
 const calendarRef = useTemplateRef("calendarRef");
 const eventSources = ref([]);
@@ -120,11 +119,16 @@ function handleShowPasswordModal() {
 }
 
 async function handlePasswordConfigurationCheck() {
-    const result = await checkPasswordConfiguration();
-    if (result.success) {
-        isPasswordConfigured.value = result.data.configured;
-    } else {
-        console.error("Failed to check password configuration:", result.message);
+    try {
+        const result = await api.auth.isPasswordConfigured();
+        if (result.success) {
+            isPasswordConfigured.value = result.data.configured;
+        } else {
+            console.error("Failed to check password configuration:", result.message);
+            isPasswordConfigured.value = true;
+        }
+    } catch (error) {
+        console.error("Error checking password configuration:", error);
         isPasswordConfigured.value = true;
     }
 }
@@ -171,6 +175,7 @@ function handleEventSourceFailure(error) {
 
 function handleAuthenticated() {
     showPasswordModal.value = false;
+    isAuthenticated.value = true;
     loadCalendars();
 
     // Keep settings modal open and refresh it to enable all tabs
@@ -179,8 +184,17 @@ function handleAuthenticated() {
     }
 }
 
+async function verifySession() {
+    try {
+        const result = await api.auth.verify();
+        isAuthenticated.value = Boolean(result?.success);
+    } catch (e) {
+        isAuthenticated.value = false;
+    }
+}
+
 async function loadCalendars() {
-    const result = await getCalendars();
+    const result = await api.calendar.get();
 
     if (!result.success || !result.data || result.data.length === 0) {
         console.debug("No calendars to load");
@@ -190,6 +204,8 @@ async function loadCalendars() {
     const calendar = calendarRef.value.getApi();
     calendar.removeAllEventSources();
     eventSources.value = [];
+
+    calendars.value = result.data;
 
     for (const cal of result.data) {
         if (!cal || !cal.id) continue;
@@ -257,6 +273,7 @@ onMounted(async () => {
             @close="showSettingsModal = false"
             :calendars="calendars"
             :initial-tab="settingsInitialTab"
+            :is-authenticated="isAuthenticated"
             @calendar-updated="loadCalendars"
             @show-password-modal="handleShowPasswordModal"
         />

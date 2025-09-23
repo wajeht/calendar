@@ -4,10 +4,12 @@ import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
 import Input from "../../components/Input.vue";
 import Button from "../../components/Button.vue";
-import { useAuth } from "../../composables/useAuth.js";
+import { api } from "../../api.js";
+import { useToast } from "../../composables/useToast";
 
 const emit = defineEmits(["close", "authenticated"]);
-const { login, isLoading } = useAuth();
+const toast = useToast();
+const isLoading = ref(false);
 
 const password = ref("");
 const passwordInput = useTemplateRef("passwordInput");
@@ -18,18 +20,28 @@ const errors = reactive({
 
 async function authenticate() {
     errors.password = "";
-
-    const result = await login(password.value);
-    if (result.success) {
-        setTimeout(() => {
-            emit("authenticated");
-        }, 100);
-    } else if (result.errors) {
-        Object.keys(result.errors).forEach((field) => {
-            if (errors.hasOwnProperty(field)) {
-                errors[field] = result.errors[field];
+    isLoading.value = true;
+    try {
+        const result = await api.auth.login(password.value);
+        if (result.success) {
+            toast.success(result.message || "Logged in successfully");
+            setTimeout(() => {
+                emit("authenticated");
+            }, 100);
+        } else {
+            toast.error(result.message || "Invalid password");
+            if (result.errors) {
+                Object.keys(result.errors).forEach((field) => {
+                    if (errors.hasOwnProperty(field)) {
+                        errors[field] = result.errors[field];
+                    }
+                });
             }
-        });
+        }
+    } catch (error) {
+        toast.error("Authentication error: " + error.message);
+    } finally {
+        isLoading.value = false;
     }
 }
 

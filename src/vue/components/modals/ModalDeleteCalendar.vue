@@ -1,5 +1,7 @@
 <script setup>
-import { useCalendar } from "../../composables/useCalendar.js";
+import { api } from "../../api.js";
+import { ref } from "vue";
+import { useToast } from "../../composables/useToast";
 import Modal from "../../components/Modal.vue";
 import Button from "../../components/Button.vue";
 
@@ -16,13 +18,24 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "calendar-deleted"]);
 
-const { deleteCalendar: deleteCalendarAPI, isLoading } = useCalendar();
+const isLoading = ref(false);
+const toast = useToast();
 
 async function handleConfirm() {
-    const result = await deleteCalendarAPI(props.calendar.id);
-    if (result.success) {
-        emit("calendar-deleted");
-        emit("close");
+    isLoading.value = true;
+    try {
+        const result = await api.calendar.delete(props.calendar.id);
+        if (result.success) {
+            toast.success(result.message || "Calendar deleted successfully");
+            emit("calendar-deleted");
+            emit("close");
+        } else {
+            toast.error(result.message || "Failed to delete calendar");
+        }
+    } catch (error) {
+        toast.error("Error deleting calendar: " + error.message);
+    } finally {
+        isLoading.value = false;
     }
 }
 

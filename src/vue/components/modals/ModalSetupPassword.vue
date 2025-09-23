@@ -4,10 +4,12 @@ import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
 import Input from "../../components/Input.vue";
 import Button from "../../components/Button.vue";
-import { useAuth } from "../../composables/useAuth.js";
+import { api } from "../../api.js";
+import { useToast } from "../../composables/useToast";
 
 const emit = defineEmits(["close", "password-configured"]);
-const { setupPassword, isLoading } = useAuth();
+const toast = useToast();
+const isLoading = ref(false);
 
 const password = ref("");
 const confirmPassword = ref("");
@@ -21,16 +23,28 @@ const errors = reactive({
 async function handleSetupPassword() {
     errors.password = "";
     errors.confirmPassword = "";
-
-    const result = await setupPassword(password.value, confirmPassword.value);
-    if (result.success) {
-        emit("password-configured");
-    } else if (result.errors) {
-        Object.keys(result.errors).forEach((field) => {
-            if (errors.hasOwnProperty(field)) {
-                errors[field] = result.errors[field];
+    isLoading.value = true;
+    try {
+        const result = await api.auth.setupPassword(password.value, confirmPassword.value);
+        if (result.success) {
+            toast.success(
+                result.message || "Password configured successfully! You can now log in.",
+            );
+            emit("password-configured");
+        } else {
+            toast.error(result.message || "Failed to configure password");
+            if (result.errors) {
+                Object.keys(result.errors).forEach((field) => {
+                    if (errors.hasOwnProperty(field)) {
+                        errors[field] = result.errors[field];
+                    }
+                });
             }
-        });
+        }
+    } catch (error) {
+        toast.error("Failed to configure password: " + error.message);
+    } finally {
+        isLoading.value = false;
     }
 }
 
