@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, useTemplateRef, onMounted, computed } from "vue";
+import { ref, reactive, useTemplateRef, onMounted, computed, watch } from "vue";
 import { useToast } from "../../composables/useToast";
 import { useAuth } from "../../composables/useAuth.js";
 import { useCalendar } from "../../composables/useCalendar.js";
@@ -233,6 +233,12 @@ onMounted(() => {
         void getCronSettings();
     }
 });
+
+watch(isAuthenticated, (newValue) => {
+    if (newValue) {
+        void getCronSettings();
+    }
+});
 </script>
 
 <template>
@@ -240,13 +246,13 @@ onMounted(() => {
         <!-- Vertical Layout Container -->
         <div class="flex h-[500px]">
             <!-- Sidebar Navigation -->
-            <div class="w-48 border-r border-gray-200 bg-white">
+            <div class="w-36 border-r border-gray-200 bg-white">
                 <nav class="p-4 space-y-2">
                     <Button
                         @click="handleTabClick('calendars')"
                         :variant="activeTab === 'calendars' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
-                        class="w-full !text-left"
+                        class="w-full !text-center"
                     >
                         calendars
                     </Button>
@@ -254,7 +260,7 @@ onMounted(() => {
                         @click="handleTabClick('settings')"
                         :variant="activeTab === 'settings' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
-                        class="w-full !text-left"
+                        class="w-full !text-center"
                     >
                         cron
                     </Button>
@@ -262,14 +268,14 @@ onMounted(() => {
                         @click="handleTabClick('account')"
                         :variant="activeTab === 'account' ? 'primary' : 'default'"
                         :disabled="!isAuthenticated"
-                        class="w-full !text-left"
+                        class="w-full !text-center"
                     >
                         account
                     </Button>
                     <Button
                         @click="handleTabClick('about')"
                         :variant="activeTab === 'about' ? 'primary' : 'default'"
-                        class="w-full !text-left"
+                        class="w-full !text-center"
                     >
                         about
                     </Button>
