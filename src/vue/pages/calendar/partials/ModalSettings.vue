@@ -225,7 +225,9 @@ function handleLogin() {
 }
 
 onMounted(() => {
-    getCronSettings();
+    if (isAuthenticated.value) {
+        void getCronSettings();
+    }
 });
 </script>
 
