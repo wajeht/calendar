@@ -129,10 +129,6 @@ export const api = {
     },
 
     calendar: {
-        async get(params) {
-            return request("/api/calendars", { params });
-        },
-
         async create(calendarData) {
             return request("/api/calendars", {
                 method: "POST",

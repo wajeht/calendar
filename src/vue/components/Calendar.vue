@@ -14,9 +14,7 @@ import ConfirmModal from "./modals/ModalConfirm.vue";
 import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
 
 import { useToast } from "../composables/useToast";
-import { useAsyncData } from "../composables/useAsyncData.js";
 import { useAuthStore } from "../composables/useAuthStore.js";
-import { api } from "../api.js";
 
 const toast = useToast();
 const auth = useAuthStore();
@@ -144,7 +142,7 @@ function closeEventModal() {
 
 function handleLoading(isLoading) {
     if (isLoading) {
-        console.debug("Loading calendar...");
+        // Calendar is loading - UI will show loading indicator
     }
 }
 
@@ -164,10 +162,6 @@ async function handleAuthenticated() {
     }
     if (showSettingsModal.value) settingsInitialTab.value = "calendars";
 }
-
-const { refresh: fetchCalendars } = useAsyncData(() => api.calendar.get(), {
-    immediate: false,
-});
 
 function updateCalendarSources(calendarData) {
     const calendar = calendarRef.value.getApi();
@@ -196,19 +190,17 @@ function updateCalendarSources(calendarData) {
 }
 
 async function loadCalendars() {
-    const result = await fetchCalendars();
-
-    if (!result?.success || !result.data || result.data.length === 0) {
-        console.debug("No calendars to load");
+    const data = await auth.initialize();
+    if (data.length) {
+        calendars.value = data;
+        updateCalendarSources(data);
+    } else {
+        toast.info("No calendars to load");
         calendars.value = [];
         const calendar = calendarRef.value.getApi();
         calendar.removeAllEventSources();
         eventSources.value = [];
-        return;
     }
-
-    calendars.value = result.data;
-    updateCalendarSources(result.data);
 }
 
 function updateURL() {
