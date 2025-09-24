@@ -39,35 +39,47 @@ describe("Auth", () => {
         });
     });
 
-    describe("GET /api/auth/verify", () => {
-        beforeAll(async () => {
+    describe("GET /api/auth/me", () => {
+        it("should return user context when authenticated", async () => {
             await server.login();
-        });
 
-        it("should verify valid session token", async () => {
-            const response = await server.get("/api/auth/verify");
+            const response = await server.get("/api/auth/me");
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.message).toBe("Session is valid");
+            expect(response.body.message).toBe("User context retrieved successfully");
+            expect(response.body.data).toBeDefined();
+            expect(response.body.data.isAuthenticated).toBe(true);
+            expect(response.body.data.isPasswordConfigured).toBe(true);
+            expect(response.body.data.calendars).toBeDefined();
+            expect(Array.isArray(response.body.data.calendars)).toBe(true);
+            expect(response.body.data.cronSettings).toBeDefined();
         });
 
-        it("should reject invalid session token", async () => {
+        it("should return user context when not authenticated", async () => {
             await server.logout();
 
-            const response = await server
-                .request("get", "/api/auth/verify")
-                .set("Cookie", "session_token=invalid-token");
+            const response = await server.get("/api/auth/me");
 
-            expect(response.status).toBe(401);
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.isAuthenticated).toBe(false);
+            expect(response.body.data.isPasswordConfigured).toBe(true);
+            expect(response.body.data.calendars).toBeDefined();
+            expect(Array.isArray(response.body.data.calendars)).toBe(true);
+            expect(response.body.data.cronSettings).toBeUndefined();
+
             await server.login();
         });
 
-        it("should reject missing session token", async () => {
-            await server.logout();
+        it("should include cron settings only when authenticated", async () => {
+            await server.login();
+            const authResponse = await server.get("/api/auth/me");
+            expect(authResponse.body.data.cronSettings).toBeDefined();
 
-            const response = await server.get("/api/auth/verify");
-            expect(response.status).toBe(401);
+            await server.logout();
+            const unauthResponse = await server.get("/api/auth/me");
+            expect(unauthResponse.body.data.cronSettings).toBeUndefined();
 
             await server.login();
         });
@@ -88,41 +100,23 @@ describe("Auth", () => {
     });
 
     describe("Full Auth Flow", () => {
-        it("should complete login -> verify -> logout flow", async () => {
+        it("should complete login -> me -> logout flow", async () => {
             const sessionToken = await server.login();
             expect(sessionToken).toBeTruthy();
 
-            const verifyResponse = await server.get("/api/auth/verify");
-            expect(verifyResponse.status).toBe(200);
+            const meResponse = await server.get("/api/auth/me");
+            expect(meResponse.status).toBe(200);
+            expect(meResponse.body.data.isAuthenticated).toBe(true);
 
             await server.logout();
 
-            const invalidVerifyResponse = await server.get("/api/auth/verify");
-            expect(invalidVerifyResponse.status).toBe(401);
+            const loggedOutMeResponse = await server.get("/api/auth/me");
+            expect(loggedOutMeResponse.status).toBe(200);
+            expect(loggedOutMeResponse.body.data.isAuthenticated).toBe(false);
         });
     });
 
-    describe("GET /api/auth/password-configured", () => {
-        it("should check password configuration status", async () => {
-            const response = await server.get("/api/auth/password-configured");
-
-            expect(response.status).toBe(200);
-            expect(response.body.success).toBe(true);
-            expect(response.body.message).toBe(
-                "Password configuration status retrieved successfully",
-            );
-            expect(response.body.errors).toBe(null);
-            expect(typeof response.body.data.configured).toBe("boolean");
-        });
-
-        it("should not require authentication", async () => {
-            const response = await server.get("/api/auth/password-configured");
-
-            expect(response.status).toBe(200);
-        });
-    });
-
-    describe("POST /api/auth/setup-password", () => {
+    describe("POST /api/auth/password", () => {
         let testServer;
 
         beforeAll(async () => {
@@ -137,7 +131,7 @@ describe("Auth", () => {
                 confirmPassword: "test-password-123",
             };
 
-            const response = await testServer.post("/api/auth/setup-password", passwordData);
+            const response = await testServer.post("/api/auth/password", passwordData);
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
@@ -150,7 +144,7 @@ describe("Auth", () => {
                 confirmPassword: "another-password",
             };
 
-            const response = await testServer.post("/api/auth/setup-password", passwordData);
+            const response = await testServer.post("/api/auth/password", passwordData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -163,7 +157,7 @@ describe("Auth", () => {
                 confirmPassword: "test-password",
             };
 
-            const response = await testServer.post("/api/auth/setup-password", passwordData);
+            const response = await testServer.post("/api/auth/password", passwordData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -174,7 +168,7 @@ describe("Auth", () => {
                 password: "test-password",
             };
 
-            const response = await testServer.post("/api/auth/setup-password", passwordData);
+            const response = await testServer.post("/api/auth/password", passwordData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -186,7 +180,7 @@ describe("Auth", () => {
                 confirmPassword: "different-password",
             };
 
-            const response = await testServer.post("/api/auth/setup-password", passwordData);
+            const response = await testServer.post("/api/auth/password", passwordData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();
@@ -198,7 +192,7 @@ describe("Auth", () => {
                 confirmPassword: "short",
             };
 
-            const response = await testServer.post("/api/auth/setup-password", passwordData);
+            const response = await testServer.post("/api/auth/password", passwordData);
 
             expect(response.status).toBe(400);
             expect(response.body.message).toBeTruthy();

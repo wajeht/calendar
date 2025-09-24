@@ -2,6 +2,7 @@
 import { ref, reactive, useTemplateRef, onMounted, computed, watch, toRef } from "vue";
 import { useToast } from "../../composables/useToast";
 import { useAsyncData } from "../../composables/useAsyncData.js";
+import { useAuthStore } from "../../composables/useAuthStore.js";
 import { api } from "../../api.js";
 import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
@@ -30,6 +31,7 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "calendar-updated", "show-password-modal"]);
 const toast = useToast();
+const auth = useAuthStore();
 const isAuthenticated = toRef(props, "isAuthenticated");
 
 const cronSettings = reactive({
@@ -248,10 +250,6 @@ async function refreshAllCalendars() {
     }
 }
 
-const { refresh: runVerifyAfterChange } = useAsyncData(() => api.auth.verify(), {
-    immediate: false,
-});
-
 async function changePassword() {
     passwordErrors.currentPassword = "";
     passwordErrors.newPassword = "";
@@ -270,7 +268,7 @@ async function changePassword() {
             passwordForm.currentPassword = "";
             passwordForm.newPassword = "";
             passwordForm.confirmPassword = "";
-            await runVerifyAfterChange().catch(() => {});
+            await auth.initialize();
             toast.success(result.message || "Password changed successfully");
         } else {
             toast.error(result.message || "Failed to change password");
@@ -287,19 +285,6 @@ async function changePassword() {
     }
 }
 
-async function copyToClipboard(url) {
-    try {
-        await navigator.clipboard.writeText(url);
-        toast.success("URL copied to clipboard");
-    } catch (error) {
-        toast.error("Failed to copy URL to clipboard");
-    }
-}
-
-function openGitHubRepository() {
-    return window.open("https://github.com/wajeht/calendar", "_blank");
-}
-
 function handleTabClick(tabName) {
     if (!isAuthenticated.value && tabName !== "about") {
         return;
@@ -313,13 +298,21 @@ function handleLogin() {
 
 onMounted(() => {
     if (isAuthenticated.value) {
-        void getCronSettings();
+        if (auth.cronSettings.value) {
+            Object.assign(cronSettings, auth.cronSettings.value);
+        } else {
+            void getCronSettings();
+        }
     }
 });
 
 watch(isAuthenticated, (newValue) => {
     if (newValue) {
-        void getCronSettings();
+        if (auth.cronSettings.value) {
+            Object.assign(cronSettings, auth.cronSettings.value);
+        } else {
+            void getCronSettings();
+        }
     }
 });
 </script>

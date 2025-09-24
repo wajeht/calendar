@@ -1,7 +1,8 @@
 import express from "express";
 
 export function createAuthRouter(dependencies = {}) {
-    const { middleware, utils, logger, config, errors, validators, models } = dependencies;
+    const { middleware, utils, logger, config, errors, validators, models, services } =
+        dependencies;
 
     if (!middleware) throw new Error("Middleware required for auth router");
     if (!utils) throw new Error("Utils required for auth router");
@@ -10,6 +11,7 @@ export function createAuthRouter(dependencies = {}) {
     if (!errors) throw new Error("Errors required for auth router");
     if (!validators) throw new Error("Validators required for auth router");
     if (!models) throw new Error("Models required for auth router");
+    if (!services) throw new Error("Services required for auth router");
 
     const { ValidationError } = errors;
 
@@ -80,14 +82,19 @@ export function createAuthRouter(dependencies = {}) {
         const random = Math.random().toString(36).substring(2);
         const sessionToken = `${timestamp}.${random}`;
 
-        res.cookie("session_token", sessionToken, {
+        const cookieOptions = {
             httpOnly: true,
             secure: config.app.env === "production", // Only require HTTPS in production
             sameSite: "strict", // Stricter CSRF protection
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
             path: "/", // Explicit path
-            domain: config.auth.cookieDomain,
-        });
+        };
+
+        if (config.auth.cookieDomain) {
+            cookieOptions.domain = config.auth.cookieDomain;
+        }
+
+        res.cookie("session_token", sessionToken, cookieOptions);
 
         logger.info("Successful login");
         res.json({
@@ -99,13 +106,18 @@ export function createAuthRouter(dependencies = {}) {
     });
 
     router.post("/logout", (_req, res) => {
-        res.clearCookie("session_token", {
+        const cookieOptions = {
             httpOnly: true,
             secure: config.app.env === "production",
             sameSite: "strict",
             path: "/",
-            domain: config.auth.cookieDomain,
-        });
+        };
+
+        if (config.auth.cookieDomain) {
+            cookieOptions.domain = config.auth.cookieDomain;
+        }
+
+        res.clearCookie("session_token", cookieOptions);
 
         logger.info("User logged out");
         res.json({
@@ -116,28 +128,30 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.get("/verify", requireAuth, (_req, res) => {
-        res.json({
-            success: true,
-            message: "Session is valid",
-            errors: null,
-            data: null,
-        });
-    });
-
-    router.get("/password-configured", async (_req, res) => {
+    router.get("/me", async (req, res) => {
+        const isAuthenticated = utils.isAuthenticated(req);
         const existingPassword = await models.settings.get("app_password");
+        const calendars = await models.calendar.getAllForAccess(isAuthenticated);
+
+        const data = {
+            isAuthenticated,
+            isPasswordConfigured: !!existingPassword,
+            calendars,
+        };
+
+        if (isAuthenticated) {
+            data.cronSettings = services.cron.getStatus();
+        }
+
         res.json({
             success: true,
-            message: "Password configuration status retrieved successfully",
+            message: "User context retrieved successfully",
             errors: null,
-            data: {
-                configured: !!existingPassword,
-            },
+            data,
         });
     });
 
-    router.post("/setup-password", async (req, res) => {
+    router.post("/password", async (req, res) => {
         validators.validateBody(req.body);
 
         const { password, confirmPassword } = req.body;

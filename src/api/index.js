@@ -210,6 +210,7 @@ export function createRouter(dependencies = {}) {
             errors,
             validators,
             models,
+            services,
         }),
     );
 

@@ -92,6 +92,10 @@ async function request(url, options = {}) {
 
 export const api = {
     auth: {
+        async me() {
+            return request("/api/auth/me");
+        },
+
         async login(password) {
             return request("/api/auth", {
                 method: "POST",
@@ -105,16 +109,8 @@ export const api = {
             });
         },
 
-        async verify() {
-            return request("/api/auth/verify");
-        },
-
-        async isPasswordConfigured() {
-            return request("/api/auth/password-configured");
-        },
-
         async setupPassword(password, confirmPassword) {
-            return request("/api/auth/setup-password", {
+            return request("/api/auth/password", {
                 method: "POST",
                 body: JSON.stringify({ password, confirmPassword }),
             });
