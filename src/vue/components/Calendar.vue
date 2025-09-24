@@ -82,7 +82,6 @@ const calendarOptions = ref({
     },
     eventSources: [],
     eventClick: handleEventClick,
-    loading: handleLoading,
     eventSourceFailure: handleEventSourceFailure,
     datesSet: updateURL,
 });
@@ -140,12 +139,6 @@ function closeEventModal() {
     selectedEventCalendar.value = null;
 }
 
-function handleLoading(isLoading) {
-    if (isLoading) {
-        // Calendar is loading - UI will show loading indicator
-    }
-}
-
 function handleEventSourceFailure(error) {
     console.error("Calendar load failed:", error);
     toast.error("Failed to load calendar events");
@@ -164,22 +157,20 @@ async function handleAuthenticated() {
 }
 
 function updateCalendarSources(calendarData) {
-    const calendar = calendarRef.value.getApi();
+    const calendar = calendarRef.value?.getApi();
+    if (!calendar) return;
+
     calendar.removeAllEventSources();
     eventSources.value = [];
 
     for (const cal of calendarData) {
-        if (!cal || !cal.id) continue;
+        if (!cal?.id) continue;
 
-        const events = cal.events || [];
-
-        const source = {
+        calendar.addEventSource({
             id: cal.id,
-            events: events,
+            events: cal.events || [],
             color: cal.color,
-        };
-
-        calendar.addEventSource(source);
+        });
 
         eventSources.value.push({
             id: cal.id,
@@ -187,19 +178,17 @@ function updateCalendarSources(calendarData) {
             color: cal.color,
         });
     }
+
+    calendar.render();
 }
 
 async function loadCalendars() {
-    const data = await auth.initialize();
-    if (data.length) {
+    try {
+        const data = await auth.initialize();
         calendars.value = data;
         updateCalendarSources(data);
-    } else {
-        toast.info("No calendars to load");
-        calendars.value = [];
-        const calendar = calendarRef.value.getApi();
-        calendar.removeAllEventSources();
-        eventSources.value = [];
+    } catch (error) {
+        toast.error("Failed to load calendars");
     }
 }
 
