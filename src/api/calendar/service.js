@@ -327,9 +327,6 @@ export function createCalendarService(dependencies = {}) {
                 title: event.title || (shouldHideDetails ? "" : "Untitled Event"),
                 start: event.start,
                 allDay: event.allDay || false,
-                backgroundColor: calendar.color,
-                borderColor: calendar.color,
-                textColor: "white",
                 extendedProps: {
                     ...buildExtendedProps(event),
                     show_details_to_public: !shouldHideDetails,
