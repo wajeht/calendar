@@ -687,7 +687,7 @@ watch(isAuthenticated, (newValue) => {
                                     href="https://github.com/wajeht"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="text-gray-800 hover:text-gray-900 font-medium underline"
+                                    class="text-gray-800 hover:text-gray-900 underline"
                                 >
                                     @wajeht
                                 </a>

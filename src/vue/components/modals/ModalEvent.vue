@@ -54,7 +54,7 @@ function linkify(text) {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (emailRegex.test(potentialContact)) {
             resultWords[i] =
-                `<a href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
+                `<a class="hover:underline" href="mailto:${potentialContact}">${potentialContact}</a>${trailingPunctuation}`;
             continue;
         }
 
@@ -64,7 +64,7 @@ function linkify(text) {
         if (phoneMatch) {
             const cleanPhone = potentialContact.replace(/[^\d+]/g, "");
             resultWords[i] =
-                `<a href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
+                `<a class="hover:underline" href="tel:${cleanPhone}">${potentialContact}</a>${trailingPunctuation}`;
             continue;
         }
 
@@ -73,7 +73,7 @@ function linkify(text) {
             const url = new URL(potentialContact);
             if (url.protocol === "http:" || url.protocol === "https:") {
                 resultWords[i] =
-                    `<a href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
+                    `<a class="hover:underline" href="${url.href}" target="_blank" rel="noopener noreferrer">${potentialContact}</a>${trailingPunctuation}`;
                 continue;
             }
         } catch (e) {}
@@ -237,7 +237,12 @@ const linkedLocation = computed(() => {
                     <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
                         >Names:</span
                     >
-                    <span>{{ props.event.extendedProps.attendeeNames }}</span>
+                    <span>{{
+                        props.event.extendedProps.attendeeNames
+                            .split(",")
+                            .map((m) => m.split("@")[0])
+                            .join(",")
+                    }}</span>
                 </div>
 
                 <!-- Attendee emails -->
@@ -247,7 +252,7 @@ const linkedLocation = computed(() => {
                     >
                     <span>
                         <template v-for="(email, index) in attendeeEmails" :key="email">
-                            <a :href="`mailto:${email}`">{{ email }}</a>
+                            <a class="hover:underline" :href="`mailto:${email}`">{{ email }}</a>
                             <span v-if="index < attendeeEmails.length - 1">, </span>
                         </template>
                     </span>
