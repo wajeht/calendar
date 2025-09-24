@@ -74,3 +74,9 @@ clean:
 	@docker system prune -a -f
 	@docker volume prune -f
 	@docker network prune -f
+
+kill-eighty:
+	kill -9 $(sudo lsof -t -i :80)
+
+kill-three-thousand:
+	kill -9 $(sudo lsof -t -i :3000)
