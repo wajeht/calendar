@@ -245,6 +245,7 @@ onMounted(async () => {
             :is-authenticated="auth.isAuthenticated.value"
             @calendar-updated="loadCalendars"
             @show-password-modal="handleShowPasswordModal"
+            @auth-changed="loadCalendars"
         />
 
         <EventModal

@@ -29,7 +29,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["close", "calendar-updated", "show-password-modal"]);
+const emit = defineEmits(["close", "calendar-updated", "show-password-modal", "auth-changed"]);
 const toast = useToast();
 const auth = useAuthStore();
 const isAuthenticated = toRef(props, "isAuthenticated");
@@ -215,12 +215,10 @@ const isLoggingOut = ref(false);
 async function logoutUser() {
     isLoggingOut.value = true;
     try {
-        const result = await api.auth.logout();
-        if (result.success) {
-            toast.success(result.message || "Logged out successfully");
-            window.location.reload();
-        } else {
-            toast.error(result.message || "Failed to logout");
+        const success = await auth.logout();
+        if (success) {
+            emit("auth-changed");
+            emit("close");
         }
     } catch (error) {
         toast.error("Logout error: " + error.message);
