@@ -1,8 +1,10 @@
 export function createSettings(dependencies = {}) {
     const { db, errors } = dependencies;
 
-    if (!db) throw new Error("Database required for settings model");
     if (!errors) throw new Error("Errors required for settings model");
+    const { ConfigurationError } = errors;
+
+    if (!db) throw new ConfigurationError("Database required for settings model");
 
     const { DatabaseError } = errors;
 

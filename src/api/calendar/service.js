@@ -1,9 +1,19 @@
 export function createCalendarService(dependencies = {}) {
-    const { ICAL, logger, models } = dependencies;
+    const { ICAL, logger, models, errors } = dependencies;
 
-    if (!ICAL) throw new Error("ICAL required for calendar service");
-    if (!models) throw new Error("Models required for calendar service");
-    if (!logger) throw new Error("Logger required for calendar service");
+    if (!errors) throw new Error("Errors required for calendar service");
+    const {
+        TimeoutError,
+        NotFoundError,
+        ICalParseError,
+        ValidationError,
+        CalendarFetchError,
+        ConfigurationError,
+    } = errors;
+
+    if (!ICAL) throw new ConfigurationError("ICAL required for calendar service");
+    if (!models) throw new ConfigurationError("Models required for calendar service");
+    if (!logger) throw new ConfigurationError("Logger required for calendar service");
 
     function formatDateForCalendar(icalTime) {
         if (icalTime.isDate) {
@@ -42,7 +52,11 @@ export function createCalendarService(dependencies = {}) {
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                throw new CalendarFetchError(`HTTP ${response.status}: ${response.statusText}`, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url,
+                });
             }
 
             const contentType = response.headers.get("content-type");
@@ -54,9 +68,12 @@ export function createCalendarService(dependencies = {}) {
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === "AbortError") {
-                throw new Error(`Request timeout after 30s for ${url}`);
+                throw new TimeoutError(`Request timeout after 30s for ${url}`, 30000);
             }
-            throw new Error(`Failed to fetch iCal data from ${url}: ${error.message}`);
+            throw new CalendarFetchError(
+                `Failed to fetch iCal data from ${url}: ${error.message}`,
+                { url, originalError: error },
+            );
         }
     }
 
@@ -121,7 +138,7 @@ export function createCalendarService(dependencies = {}) {
             return events;
         } catch (error) {
             logger.error("Error parsing iCal data:", error);
-            throw new Error(`Failed to parse iCal data: ${error.message}`);
+            throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, error);
         }
     }
 
@@ -406,7 +423,7 @@ export function createCalendarService(dependencies = {}) {
 
             const calendar = await models.calendar.getById(calendarId);
             if (!calendar) {
-                throw new Error(`Calendar ${calendarId} not found`);
+                throw new NotFoundError(`Calendar ${calendarId}`);
             }
 
             const { publicEvents, authenticatedEvents } = processEventsForViews(events, calendar);
@@ -519,7 +536,7 @@ export function createCalendarService(dependencies = {}) {
     async function importCalendars(calendarsData, utils) {
         try {
             if (!Array.isArray(calendarsData)) {
-                throw new Error("Calendars must be an array");
+                throw new ValidationError({ calendarsData: "Calendars must be an array" });
             }
 
             const results = {
@@ -591,9 +608,9 @@ export function createCalendarService(dependencies = {}) {
     }
 
     return {
-        fetchAndProcessCalendar,
-        refetchAllCalendars,
         exportCalendars,
         importCalendars,
+        refetchAllCalendars,
+        fetchAndProcessCalendar,
     };
 }

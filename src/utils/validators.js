@@ -2,7 +2,9 @@ export function createValidators(dependencies = {}) {
     const { errors, utils } = dependencies;
 
     if (!errors) throw new Error("Errors required for validators");
-    if (!utils) throw new Error("Utils required for validators");
+    const { ConfigurationError } = errors;
+
+    if (!utils) throw new ConfigurationError("Utils required for validators");
 
     const { ValidationError } = errors;
 

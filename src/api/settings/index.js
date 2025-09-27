@@ -3,13 +3,15 @@ import express from "express";
 export function createSettingsRouter(dependencies = {}) {
     const { services, middleware, utils, logger, errors, validators, models } = dependencies;
 
-    if (!services) throw new Error("Services required for settings router");
-    if (!middleware) throw new Error("Middleware required for settings router");
-    if (!utils) throw new Error("Utils required for settings router");
-    if (!logger) throw new Error("Logger required for settings router");
     if (!errors) throw new Error("Errors required for settings router");
-    if (!validators) throw new Error("Validators required for settings router");
-    if (!models) throw new Error("Models required for settings router");
+    const { ConfigurationError } = errors;
+
+    if (!services) throw new ConfigurationError("Services required for settings router");
+    if (!middleware) throw new ConfigurationError("Middleware required for settings router");
+    if (!utils) throw new ConfigurationError("Utils required for settings router");
+    if (!logger) throw new ConfigurationError("Logger required for settings router");
+    if (!validators) throw new ConfigurationError("Validators required for settings router");
+    if (!models) throw new ConfigurationError("Models required for settings router");
 
     const { ValidationError } = errors;
 

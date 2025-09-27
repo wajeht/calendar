@@ -1,8 +1,10 @@
 export function createAuthMiddleware(dependencies = {}) {
     const { utils, errors } = dependencies;
 
-    if (!utils) throw new Error("Utils required for auth middleware");
     if (!errors) throw new Error("Errors required for auth middleware");
+    const { ConfigurationError } = errors;
+
+    if (!utils) throw new ConfigurationError("Utils required for auth middleware");
 
     const { AuthenticationError } = errors;
 

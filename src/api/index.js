@@ -4,7 +4,13 @@ import { createSettingsRouter } from "./settings/index.js";
 import { createCalendarRouter } from "./calendar/index.js";
 
 export function createGeneralRouter(dependencies = {}) {
-    const { utils, db } = dependencies;
+    const { utils, db, errors } = dependencies;
+
+    if (!errors) throw new Error("Errors required for general router");
+    const { ConfigurationError } = errors;
+
+    if (!utils) throw new ConfigurationError("Utils required for general router");
+    if (!db) throw new ConfigurationError("Database required for general router");
 
     const router = express.Router();
 
@@ -40,10 +46,13 @@ export function createGeneralRouter(dependencies = {}) {
 }
 
 export function notFoundHandler(dependencies = {}) {
-    const { logger, utils } = dependencies;
+    const { logger, utils, errors } = dependencies;
 
-    if (!logger) throw new Error("Logger required for notFoundHandler");
-    if (!utils) throw new Error("Utils required for notFoundHandler");
+    if (!errors) throw new Error("Errors required for notFoundHandler");
+    const { ConfigurationError } = errors;
+
+    if (!logger) throw new ConfigurationError("Logger required for notFoundHandler");
+    if (!utils) throw new ConfigurationError("Utils required for notFoundHandler");
 
     return (req, res, _next) => {
         logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
@@ -67,18 +76,23 @@ export function notFoundHandler(dependencies = {}) {
 export function errorHandler(dependencies = {}) {
     const { logger, utils, config, errors } = dependencies;
 
-    if (!logger) throw new Error("Logger required for errorHandler");
-    if (!utils) throw new Error("Utils required for errorHandler");
-    if (!config) throw new Error("Config required for errorHandler");
     if (!errors) throw new Error("Errors required for errorHandler");
 
     const {
-        ValidationError,
-        NotFoundError,
-        CalendarFetchError,
+        ParseError,
+        TimeoutError,
         DatabaseError,
+        NotFoundError,
+        ICalParseError,
+        ValidationError,
+        CalendarFetchError,
+        ConfigurationError,
         AuthenticationError,
     } = errors;
+
+    if (!logger) throw new ConfigurationError("Logger required for errorHandler");
+    if (!utils) throw new ConfigurationError("Utils required for errorHandler");
+    if (!config) throw new ConfigurationError("Config required for errorHandler");
 
     return (err, req, res, _next) => {
         if (err instanceof ValidationError) {
@@ -166,6 +180,75 @@ export function errorHandler(dependencies = {}) {
             });
         }
 
+        if (err instanceof TimeoutError) {
+            logger.error("Timeout error:", err);
+            if (utils.isApiRequest(req)) {
+                return res.status(408).json({
+                    success: false,
+                    message: err.message,
+                    errors: null,
+                    data: null,
+                });
+            }
+            return res.status(408).render("general/error.html", {
+                title: "408 - Request Timeout",
+                error: "Request timed out",
+                statusCode: 408,
+            });
+        }
+
+        if (err instanceof ICalParseError) {
+            logger.error("iCal parse error:", err);
+            if (utils.isApiRequest(req)) {
+                return res.status(422).json({
+                    success: false,
+                    message: err.message,
+                    errors: null,
+                    data: null,
+                });
+            }
+            return res.status(422).render("general/error.html", {
+                title: "422 - Calendar Parse Error",
+                error: "Invalid calendar data format",
+                statusCode: 422,
+            });
+        }
+
+        if (err instanceof ParseError) {
+            logger.error("Parse error:", err);
+            if (utils.isApiRequest(req)) {
+                return res.status(422).json({
+                    success: false,
+                    message: err.message,
+                    errors: null,
+                    data: null,
+                });
+            }
+            return res.status(422).render("general/error.html", {
+                title: "422 - Parse Error",
+                error: "Invalid data format",
+                statusCode: 422,
+            });
+        }
+
+        if (err instanceof ConfigurationError) {
+            logger.error("Configuration error:", err);
+            if (utils.isApiRequest(req)) {
+                return res.status(500).json({
+                    success: false,
+                    message: config.app.env === "development" ? err.message : "Configuration error",
+                    errors: null,
+                    data: null,
+                });
+            }
+            return res.status(500).render("general/error.html", {
+                title: "500 - Configuration Error",
+                error:
+                    config.app.env === "development" ? err.message : "Service configuration error",
+                statusCode: 500,
+            });
+        }
+
         logger.error("Unhandled error:", err);
         const statusCode = err.statusCode || err.status || 500;
         const message = err.message || "Internal server error";
@@ -191,12 +274,15 @@ export function createRouter(dependencies = {}) {
     const { models, services, middleware, utils, logger, config, errors, validators, db } =
         dependencies;
 
-    if (!models) throw new Error("Models required for router");
-    if (!services) throw new Error("Services required for router");
-    if (!middleware) throw new Error("Middleware required for router");
-    if (!utils) throw new Error("Utils required for router");
-    if (!logger) throw new Error("Logger required for router");
-    if (!config) throw new Error("Config required for router");
+    if (!errors) throw new Error("Errors required for router");
+    const { ConfigurationError } = errors;
+
+    if (!models) throw new ConfigurationError("Models required for router");
+    if (!services) throw new ConfigurationError("Services required for router");
+    if (!middleware) throw new ConfigurationError("Middleware required for router");
+    if (!utils) throw new ConfigurationError("Utils required for router");
+    if (!logger) throw new ConfigurationError("Logger required for router");
+    if (!config) throw new ConfigurationError("Config required for router");
 
     const router = express.Router();
 
@@ -240,9 +326,9 @@ export function createRouter(dependencies = {}) {
         }),
     );
 
-    router.use("/", createGeneralRouter({ utils, db }));
+    router.use("/", createGeneralRouter({ utils, db, errors }));
 
-    router.use(notFoundHandler({ logger, utils }));
+    router.use(notFoundHandler({ logger, utils, errors }));
 
     router.use(errorHandler({ logger, utils, config, errors }));
 

@@ -3,12 +3,14 @@ import express from "express";
 export function createCalendarRouter(dependencies = {}) {
     const { models, services, middleware, utils, logger, errors, validators } = dependencies;
 
-    if (!models) throw new Error("Models required for calendar router");
-    if (!services) throw new Error("Services required for calendar router");
-    if (!middleware) throw new Error("Middleware required for calendar router");
-    if (!utils) throw new Error("Utils required for calendar router");
-    if (!logger) throw new Error("Logger required for calendar router");
     if (!errors) throw new Error("Errors required for calendar router");
+    const { ConfigurationError } = errors;
+
+    if (!models) throw new ConfigurationError("Models required for calendar router");
+    if (!services) throw new ConfigurationError("Services required for calendar router");
+    if (!middleware) throw new ConfigurationError("Middleware required for calendar router");
+    if (!utils) throw new ConfigurationError("Utils required for calendar router");
+    if (!logger) throw new ConfigurationError("Logger required for calendar router");
 
     const { ValidationError, NotFoundError } = errors;
 

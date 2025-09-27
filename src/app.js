@@ -224,7 +224,7 @@ export async function closeServer({ server, ctx }) {
                     ctx.logger.error(
                         "Could not close connections in time, forcefully shutting down",
                     );
-                    reject(new Error("Server close timeout"));
+                    reject(new ctx.errors.TimeoutError("Server close timeout", 10000));
                 }, 10000);
 
                 server.close((error) => {

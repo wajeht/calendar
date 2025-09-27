@@ -1,9 +1,11 @@
 export function createCalendar(dependencies = {}) {
     const { db, errors, utils } = dependencies;
 
-    if (!db) throw new Error("Database required for calendar model");
     if (!errors) throw new Error("Errors required for calendar model");
-    if (!utils) throw new Error("Utils required for calendar model");
+    const { ConfigurationError } = errors;
+
+    if (!db) throw new ConfigurationError("Database required for calendar model");
+    if (!utils) throw new ConfigurationError("Utils required for calendar model");
 
     const { ValidationError, DatabaseError } = errors;
 

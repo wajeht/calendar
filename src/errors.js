@@ -41,3 +41,38 @@ export class AuthenticationError extends Error {
         this.statusCode = 401;
     }
 }
+
+export class ConfigurationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "ConfigurationError";
+        this.statusCode = 500;
+    }
+}
+
+export class TimeoutError extends Error {
+    constructor(message, timeout = null) {
+        super(message);
+        this.name = "TimeoutError";
+        this.statusCode = 408;
+        this.timeout = timeout;
+    }
+}
+
+export class ParseError extends Error {
+    constructor(message, originalError = null) {
+        super(message);
+        this.name = "ParseError";
+        this.statusCode = 422;
+        this.originalError = originalError;
+    }
+}
+
+export class ICalParseError extends Error {
+    constructor(message, originalError = null) {
+        super(message);
+        this.name = "ICalParseError";
+        this.statusCode = 422;
+        this.originalError = originalError;
+    }
+}

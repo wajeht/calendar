@@ -1,11 +1,15 @@
 import cron from "node-cron";
 
 export function createCronService(dependencies = {}) {
-    const { logger, services, models } = dependencies;
+    const { logger, services, models, errors } = dependencies;
 
-    if (!logger) throw new Error("Logger required for cron service");
-    if (!services?.calendar) throw new Error("Calendar service required for cron service");
-    if (!models?.settings) throw new Error("Settings model required for cron service");
+    if (!errors) throw new Error("Errors required for cron service");
+    const { ConfigurationError, ValidationError } = errors;
+
+    if (!logger) throw new ConfigurationError("Logger required for cron service");
+    if (!services?.calendar)
+        throw new ConfigurationError("Calendar service required for cron service");
+    if (!models?.settings) throw new ConfigurationError("Settings model required for cron service");
 
     let cronJobs = [];
     let isRefetchRunning = false;
@@ -83,7 +87,7 @@ export function createCronService(dependencies = {}) {
         const schedule = currentSchedule;
 
         if (!cron.validate(schedule)) {
-            throw new Error(`Invalid cron schedule: ${schedule}`);
+            throw new ValidationError({ schedule: `Invalid cron schedule: ${schedule}` });
         }
 
         const calendarJob = cron.schedule(schedule, refetchCalendarsTask, {
@@ -129,7 +133,7 @@ export function createCronService(dependencies = {}) {
 
         if (schedule && schedule !== currentSchedule) {
             if (!cron.validate(schedule)) {
-                throw new Error(`Invalid cron schedule: ${schedule}`);
+                throw new ValidationError({ schedule: `Invalid cron schedule: ${schedule}` });
             }
 
             currentSchedule = schedule;
@@ -176,8 +180,8 @@ export function createCronService(dependencies = {}) {
     }
 
     return {
-        start,
         stop,
+        start,
         getStatus,
         updateSettings,
         updateLastRun,

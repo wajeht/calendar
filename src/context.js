@@ -1,8 +1,12 @@
 import {
+    ParseError,
+    TimeoutError,
     NotFoundError,
     DatabaseError,
+    ICalParseError,
     ValidationError,
     CalendarFetchError,
+    ConfigurationError,
     AuthenticationError,
 } from "./errors.js";
 import ICAL from "ical.js";
@@ -19,7 +23,7 @@ import { createCalendarService } from "./api/calendar/service.js";
 
 export function createContext(customConfig = {}) {
     if (customConfig && typeof customConfig !== "object") {
-        throw new Error("customConfig must be an object");
+        throw new ConfigurationError("customConfig must be an object");
     }
 
     const finalConfig = {
@@ -32,13 +36,17 @@ export function createContext(customConfig = {}) {
     const logger = createLogger(finalConfig.logger);
     const db = finalConfig.database?.instance || createDatabase(finalConfig.db);
     const errors = {
-        ValidationError,
+        ParseError,
+        TimeoutError,
         NotFoundError,
-        CalendarFetchError,
         DatabaseError,
+        ICalParseError,
+        ValidationError,
+        CalendarFetchError,
+        ConfigurationError,
         AuthenticationError,
     };
-    const utils = createUtils({ logger, config: finalConfig });
+    const utils = createUtils({ logger, config: finalConfig, errors });
     const validators = createValidators({ errors, utils });
     const models = {
         calendar: createCalendar({ db, errors, utils }),
@@ -51,29 +59,30 @@ export function createContext(customConfig = {}) {
 
     const services = {
         calendar: createCalendarService({
-            ICAL: icalLibrary,
             logger,
             models,
             errors,
+            ICAL: icalLibrary,
         }),
     };
 
     services.cron = createCronService({
         logger,
-        services,
         models,
+        errors,
+        services,
     });
 
     const context = {
         config: finalConfig,
         db,
+        utils,
         logger,
         errors,
-        utils,
-        validators,
         models,
-        middleware,
         services,
+        middleware,
+        validators,
     };
 
     return config.app.env === "test" ? context : Object.freeze(context);

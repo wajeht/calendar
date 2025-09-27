@@ -1,10 +1,13 @@
 import bcrypt from "bcryptjs";
 
 export function createUtils(dependencies = {}) {
-    const { logger, config } = dependencies;
+    const { logger, config, errors } = dependencies;
 
-    if (!logger) throw new Error("Logger required for utils");
-    if (!config) throw new Error("Config required for utils");
+    if (!errors) throw new Error("Errors required for utils");
+    const { ConfigurationError, ValidationError } = errors;
+
+    if (!logger) throw new ConfigurationError("Logger required for utils");
+    if (!config) throw new ConfigurationError("Config required for utils");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
@@ -222,11 +225,13 @@ export function createUtils(dependencies = {}) {
          */
         async hashPassword(password) {
             if (!password || typeof password !== "string") {
-                throw new Error("Password must be a non-empty string");
+                throw new ValidationError({ password: "Password must be a non-empty string" });
             }
 
             if (bcrypt.truncates(password)) {
-                throw new Error("Password is too long (maximum 72 bytes when UTF-8 encoded)");
+                throw new ValidationError({
+                    password: "Password is too long (maximum 72 bytes when UTF-8 encoded)",
+                });
             }
 
             const saltRounds = 12;
@@ -234,7 +239,7 @@ export function createUtils(dependencies = {}) {
                 return await bcrypt.hash(password, saltRounds);
             } catch (error) {
                 logger.error("Password hashing error:", error);
-                throw new Error("Failed to hash password");
+                throw new ConfigurationError("Failed to hash password");
             }
         },
 
