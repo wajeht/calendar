@@ -51,6 +51,10 @@ export async function createTestServer() {
         ctx: {
             db: ctx.db,
             models: ctx.models,
+            utils: ctx.utils,
+            logger: ctx.logger,
+            errors: ctx.errors,
+            ICAL: ctx.ICAL,
         },
         login,
         logout,
