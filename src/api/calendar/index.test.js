@@ -328,7 +328,9 @@ describe("Calendar", () => {
 
             const response = await server.post("/api/calendars/import", importData);
 
-            expect(response.status).toBe(500);
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
+            expect(response.body.message).toContain("Calendars must be an array");
         });
 
         it("should require authentication", async () => {
