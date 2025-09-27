@@ -8,6 +8,9 @@ export function createValidators(dependencies = {}) {
 
     const { ValidationError } = errors;
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+
     return {
         /**
          * Validate and parse ID, throwing ValidationError on failure
@@ -42,7 +45,7 @@ export function createValidators(dependencies = {}) {
          * @param {string} field - Field name for error
          */
         validateColor(color, field = "color") {
-            if (color && !utils.validateHexColor(color)) {
+            if (color && !this.validateHexColor(color)) {
                 throw new ValidationError({
                     [field]: "Color must be a valid hex color (e.g., #447dfc)",
                 });
@@ -80,7 +83,7 @@ export function createValidators(dependencies = {}) {
                     [field]: "Calendar URL is required",
                 });
             }
-            if (url !== undefined && !utils.validateCalendarUrl(url)) {
+            if (url !== undefined && !this.isValidCalendarUrl(url)) {
                 throw new ValidationError({
                     [field]: "Invalid calendar URL format",
                 });
@@ -181,6 +184,74 @@ export function createValidators(dependencies = {}) {
 
             if (details !== undefined) {
                 this.validateBoolean(details, "details");
+            }
+        },
+
+        /**
+         * Validate URL format for business logic (user input validation)
+         * @param {string} value - The URL string to validate
+         * @param {string} [field="url"] - Field name for error messages
+         * @throws {ValidationError} If URL is invalid
+         */
+        validateUrl(value, field = "url") {
+            if (typeof value !== "string") {
+                throw new ValidationError({
+                    [field]: "URL must be a string",
+                });
+            }
+
+            try {
+                new URL(value);
+            } catch {
+                throw new ValidationError({
+                    [field]: "Must be a valid URL format",
+                });
+            }
+        },
+
+        /**
+         * Validate email format for business logic (user input validation)
+         * @param {string} value - The email string to validate
+         * @param {string} [field="email"] - Field name for error messages
+         * @throws {ValidationError} If email is invalid
+         */
+        validateEmail(value, field = "email") {
+            if (typeof value !== "string") {
+                throw new ValidationError({
+                    [field]: "Email must be a string",
+                });
+            }
+
+            if (!emailRegex.test(value)) {
+                throw new ValidationError({
+                    [field]: "Must be a valid email address",
+                });
+            }
+        },
+
+        /**
+         * Validate hex color format (helper function)
+         * @param {string} color - Color string to validate
+         * @returns {boolean}
+         */
+        validateHexColor(color) {
+            if (!color || typeof color !== "string") return false;
+            return hexColorRegex.test(color);
+        },
+
+        /**
+         * Check if URL is a valid iCal/WebCal URL (helper function)
+         * @param {string} url
+         * @returns {boolean}
+         */
+        isValidCalendarUrl(url) {
+            try {
+                new URL(url);
+                const urlObj = new URL(url);
+                const validProtocols = ["http:", "https:", "webcal:"];
+                return validProtocols.includes(urlObj.protocol);
+            } catch {
+                return false;
             }
         },
     };

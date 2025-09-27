@@ -9,9 +9,6 @@ export function createUtils(dependencies = {}) {
     if (!logger) throw new ConfigurationError("Logger required for utils");
     if (!config) throw new ConfigurationError("Config required for utils");
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
-
     return {
         /**
          * Check if a request is an API request
@@ -42,44 +39,6 @@ export function createUtils(dependencies = {}) {
             }
 
             return false;
-        },
-
-        /**
-         * Validate email format
-         * @param {string} email
-         * @returns {boolean}
-         */
-        validateEmail(email) {
-            if (typeof email !== "string") return false;
-            return emailRegex.test(email);
-        },
-
-        /**
-         * Validate URL format
-         * @param {string} url
-         * @returns {boolean}
-         */
-        validateUrl(url) {
-            try {
-                new URL(url);
-                return true;
-            } catch {
-                return false;
-            }
-        },
-
-        /**
-         * Validate iCal/WebCal URL
-         * @param {string} url
-         * @returns {boolean}
-         */
-        validateCalendarUrl(url) {
-            if (!this.validateUrl(url)) return false;
-
-            const validProtocols = ["http:", "https:", "webcal:"];
-            const urlObj = new URL(url);
-
-            return validProtocols.includes(urlObj.protocol);
         },
 
         /**
@@ -165,16 +124,6 @@ export function createUtils(dependencies = {}) {
                 return null;
             }
             return id;
-        },
-
-        /**
-         * Validate hex color format
-         * @param {string} color - Color string to validate
-         * @returns {boolean}
-         */
-        validateHexColor(color) {
-            if (!color || typeof color !== "string") return false;
-            return hexColorRegex.test(color);
         },
 
         /**
