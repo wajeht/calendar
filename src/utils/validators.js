@@ -85,7 +85,8 @@ export function createValidators(dependencies = {}) {
             }
             if (url !== undefined && !this.isValidCalendarUrl(url)) {
                 throw new ValidationError({
-                    [field]: "Invalid calendar URL format",
+                    [field]:
+                        "Invalid calendar URL format. Supported protocols: http://, https://, webcal://",
                 });
             }
         },

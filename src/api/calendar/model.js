@@ -42,7 +42,7 @@ export function createCalendar(dependencies = {}) {
 
                 return await query;
             } catch (error) {
-                throw new DatabaseError("Failed to fetch calendars", error);
+                throw new DatabaseError("Failed to fetch calendars", error, { cause: error });
             }
         },
 
@@ -135,7 +135,9 @@ export function createCalendar(dependencies = {}) {
 
                 return result;
             } catch (error) {
-                throw new DatabaseError("Failed to fetch calendars for access level", error);
+                throw new DatabaseError("Failed to fetch calendars for access level", error, {
+                    cause: error,
+                });
             }
         },
 
@@ -155,7 +157,7 @@ export function createCalendar(dependencies = {}) {
                 const calendar = await db("calendars").where("id", id).first();
                 return calendar || null;
             } catch (error) {
-                throw new DatabaseError(`Failed to fetch calendar ${id}`, error);
+                throw new DatabaseError(`Failed to fetch calendar ${id}`, error, { cause: error });
             }
         },
 
@@ -175,7 +177,7 @@ export function createCalendar(dependencies = {}) {
                 const calendar = await db("calendars").where("url", url).first();
                 return calendar || null;
             } catch (error) {
-                throw new DatabaseError("Failed to fetch calendar by URL", error);
+                throw new DatabaseError("Failed to fetch calendar by URL", error, { cause: error });
             }
         },
 
@@ -214,7 +216,7 @@ export function createCalendar(dependencies = {}) {
                         url: "Calendar with this URL already exists",
                     });
                 }
-                throw new DatabaseError("Failed to create calendar", error);
+                throw new DatabaseError("Failed to create calendar", error, { cause: error });
             }
         },
 
@@ -299,7 +301,7 @@ export function createCalendar(dependencies = {}) {
                         url: "Calendar with this URL already exists",
                     });
                 }
-                throw new DatabaseError(`Failed to update calendar ${id}`, error);
+                throw new DatabaseError(`Failed to update calendar ${id}`, error, { cause: error });
             }
         },
 
@@ -324,7 +326,7 @@ export function createCalendar(dependencies = {}) {
                 await db("calendars").where("id", id).del();
                 return calendar;
             } catch (error) {
-                throw new DatabaseError(`Failed to delete calendar ${id}`, error);
+                throw new DatabaseError(`Failed to delete calendar ${id}`, error, { cause: error });
             }
         },
     };

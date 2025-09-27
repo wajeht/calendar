@@ -28,7 +28,9 @@ export function createSettings(dependencies = {}) {
                     return setting.value;
                 }
             } catch (error) {
-                throw new DatabaseError(`Failed to get setting ${key}: ${error.message}`);
+                throw new DatabaseError(`Failed to get setting ${key}: ${error.message}`, error, {
+                    cause: error,
+                });
             }
         },
 
@@ -56,7 +58,9 @@ export function createSettings(dependencies = {}) {
                         updated_at: new Date(),
                     });
             } catch (error) {
-                throw new DatabaseError(`Failed to set setting ${key}: ${error.message}`);
+                throw new DatabaseError(`Failed to set setting ${key}: ${error.message}`, error, {
+                    cause: error,
+                });
             }
         },
 
@@ -79,7 +83,9 @@ export function createSettings(dependencies = {}) {
 
                 return result;
             } catch (error) {
-                throw new DatabaseError(`Failed to get all settings: ${error.message}`);
+                throw new DatabaseError(`Failed to get all settings: ${error.message}`, error, {
+                    cause: error,
+                });
             }
         },
 
@@ -93,7 +99,11 @@ export function createSettings(dependencies = {}) {
                 const deletedCount = await db("settings").where("key", key).del();
                 return deletedCount > 0;
             } catch (error) {
-                throw new DatabaseError(`Failed to delete setting ${key}: ${error.message}`);
+                throw new DatabaseError(
+                    `Failed to delete setting ${key}: ${error.message}`,
+                    error,
+                    { cause: error },
+                );
             }
         },
     };

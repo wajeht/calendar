@@ -62,6 +62,7 @@ export function createContext(customConfig = {}) {
             logger,
             models,
             errors,
+            utils,
             ICAL: icalLibrary,
         }),
     };

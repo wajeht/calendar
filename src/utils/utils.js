@@ -188,7 +188,7 @@ export function createUtils(dependencies = {}) {
                 return await bcrypt.hash(password, saltRounds);
             } catch (error) {
                 logger.error("Password hashing error:", error);
-                throw new ConfigurationError("Failed to hash password");
+                throw new ConfigurationError("Failed to hash password", { cause: error });
             }
         },
 
@@ -213,6 +213,19 @@ export function createUtils(dependencies = {}) {
                 logger.error("Password verification error:", error);
                 return false;
             }
+        },
+
+        /**
+         * Normalize calendar URL by converting webcal:// to https://
+         * @param {string} url - The URL to normalize
+         * @returns {string} - The normalized URL
+         */
+        normalizeCalendarUrl(url) {
+            if (typeof url !== "string") {
+                return url;
+            }
+
+            return url.replace(/^webcal:\/\//, "https://");
         },
     };
 }
