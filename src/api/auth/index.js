@@ -7,13 +7,13 @@ export function createAuthRouter(dependencies = {}) {
     if (!errors) throw new Error("Errors required for auth router");
     const { ConfigurationError } = errors;
 
-    if (!middleware) throw new ConfigurationError("Middleware required for auth router");
     if (!utils) throw new ConfigurationError("Utils required for auth router");
     if (!logger) throw new ConfigurationError("Logger required for auth router");
     if (!config) throw new ConfigurationError("Config required for auth router");
-    if (!validators) throw new ConfigurationError("Validators required for auth router");
     if (!models) throw new ConfigurationError("Models required for auth router");
     if (!services) throw new ConfigurationError("Services required for auth router");
+    if (!validators) throw new ConfigurationError("Validators required for auth router");
+    if (!middleware) throw new ConfigurationError("Middleware required for auth router");
 
     const { ValidationError } = errors;
 

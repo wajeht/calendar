@@ -277,38 +277,38 @@ export function createRouter(dependencies = {}) {
     if (!errors) throw new Error("Errors required for router");
     const { ConfigurationError } = errors;
 
-    if (!models) throw new ConfigurationError("Models required for router");
-    if (!services) throw new ConfigurationError("Services required for router");
-    if (!middleware) throw new ConfigurationError("Middleware required for router");
     if (!utils) throw new ConfigurationError("Utils required for router");
     if (!logger) throw new ConfigurationError("Logger required for router");
     if (!config) throw new ConfigurationError("Config required for router");
+    if (!models) throw new ConfigurationError("Models required for router");
+    if (!services) throw new ConfigurationError("Services required for router");
+    if (!middleware) throw new ConfigurationError("Middleware required for router");
 
     const router = express.Router();
 
     router.use(
         "/api/auth",
         createAuthRouter({
-            middleware,
             utils,
             logger,
             config,
             errors,
-            validators,
             models,
             services,
+            validators,
+            middleware,
         }),
     );
 
     router.use(
         "/api/calendars",
         createCalendarRouter({
-            models,
-            services,
-            middleware,
             utils,
             logger,
             errors,
+            models,
+            services,
+            middleware,
             validators,
         }),
     );
@@ -316,13 +316,13 @@ export function createRouter(dependencies = {}) {
     router.use(
         "/api/settings",
         createSettingsRouter({
-            services,
-            middleware,
             utils,
             logger,
             errors,
-            validators,
             models,
+            services,
+            middleware,
+            validators,
         }),
     );
 

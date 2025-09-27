@@ -6,11 +6,11 @@ export function createCalendarRouter(dependencies = {}) {
     if (!errors) throw new Error("Errors required for calendar router");
     const { ConfigurationError } = errors;
 
+    if (!utils) throw new ConfigurationError("Utils required for calendar router");
+    if (!logger) throw new ConfigurationError("Logger required for calendar router");
     if (!models) throw new ConfigurationError("Models required for calendar router");
     if (!services) throw new ConfigurationError("Services required for calendar router");
     if (!middleware) throw new ConfigurationError("Middleware required for calendar router");
-    if (!utils) throw new ConfigurationError("Utils required for calendar router");
-    if (!logger) throw new ConfigurationError("Logger required for calendar router");
 
     const { ValidationError, NotFoundError } = errors;
 
