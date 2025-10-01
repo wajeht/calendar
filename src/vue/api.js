@@ -144,6 +144,10 @@ export const api = {
                         calendarData.show_details_to_public !== undefined
                             ? calendarData.show_details_to_public
                             : true,
+                    enable_notifications:
+                        calendarData.enable_notifications !== undefined
+                            ? calendarData.enable_notifications
+                            : true,
                 }),
             });
         },
@@ -157,6 +161,7 @@ export const api = {
                     color: calendarData.color,
                     visible_to_public: calendarData.visible_to_public,
                     show_details_to_public: calendarData.show_details_to_public,
+                    enable_notifications: calendarData.enable_notifications,
                 }),
             });
         },
@@ -194,6 +199,17 @@ export const api = {
             return request("/api/settings/cron", {
                 method: "PUT",
                 body: JSON.stringify({ enabled, schedule }),
+            });
+        },
+
+        async getNotificationSettings() {
+            return request("/api/settings/notifications");
+        },
+
+        async updateNotificationSettings(enabled, leadTime) {
+            return request("/api/settings/notifications", {
+                method: "PUT",
+                body: JSON.stringify({ enabled, leadTime }),
             });
         },
     },
