@@ -143,6 +143,14 @@ export function createAuthRouter(dependencies = {}) {
 
         if (isAuthenticated) {
             data.cronSettings = services.cron.getStatus();
+
+            const notificationsEnabled =
+                (await models.settings.get("notifications_enabled")) || false;
+            const notificationLeadTime = (await models.settings.get("notification_lead_time")) || 5;
+            data.notificationSettings = {
+                enabled: notificationsEnabled,
+                leadTime: notificationLeadTime,
+            };
         }
 
         res.json({
