@@ -4,7 +4,7 @@
  */
 export function up(knex) {
     return knex.schema.table("calendars", function (table) {
-        table.boolean("enable_notifications").notNullable().defaultTo(true);
+        table.boolean("enable_notifications").notNullable().defaultTo(false);
         table.index("enable_notifications");
     });
 }
