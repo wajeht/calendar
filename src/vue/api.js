@@ -147,7 +147,7 @@ export const api = {
                     enable_notifications:
                         calendarData.enable_notifications !== undefined
                             ? calendarData.enable_notifications
-                            : true,
+                            : false,
                 }),
             });
         },
