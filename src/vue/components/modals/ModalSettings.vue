@@ -3,6 +3,7 @@ import { ref, reactive, useTemplateRef, onMounted, computed, watch, toRef } from
 import { useToast } from "../../composables/useToast";
 import { useAsyncData } from "../../composables/useAsyncData.js";
 import { useAuthStore } from "../../composables/useAuthStore.js";
+import { useNotifications } from "../../composables/useNotifications.js";
 import { api } from "../../api.js";
 import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
@@ -32,6 +33,7 @@ const props = defineProps({
 const emit = defineEmits(["close", "calendar-updated", "show-password-modal", "auth-changed"]);
 const toast = useToast();
 const auth = useAuthStore();
+const notifications = useNotifications();
 const isAuthenticated = toRef(props, "isAuthenticated");
 
 const cronSettings = reactive({
@@ -39,6 +41,11 @@ const cronSettings = reactive({
     schedule: "0 */2 * * *",
     status: "",
     lastRun: "",
+});
+
+const notificationSettings = reactive({
+    enabled: false,
+    leadTime: 5,
 });
 
 const { loading: isLoadingCron, refresh: fetchCronSettings } = useAsyncData(
@@ -57,6 +64,26 @@ async function getCronSettings() {
         return result;
     } catch (error) {
         toast.error("Error loading auto refresh settings: " + error.message);
+        return { success: false, message: error.message, errors: null, data: null };
+    }
+}
+
+const { loading: isLoadingNotifications, refresh: fetchNotificationSettings } = useAsyncData(
+    () => api.settings.getNotificationSettings(),
+    { immediate: false },
+);
+
+async function getNotificationSettings() {
+    try {
+        const result = await fetchNotificationSettings();
+        if (result && result.success) {
+            Object.assign(notificationSettings, result.data);
+        } else if (result) {
+            toast.error(result.message || "Failed to load notification settings");
+        }
+        return result;
+    } catch (error) {
+        toast.error("Error loading notification settings: " + error.message);
         return { success: false, message: error.message, errors: null, data: null };
     }
 }
@@ -82,6 +109,39 @@ async function updateCronSettings() {
         return { success: false, message: error.message, errors: null, data: null };
     } finally {
         isSavingCron.value = false;
+    }
+}
+
+const isSavingNotifications = ref(false);
+async function updateNotificationSettings() {
+    isSavingNotifications.value = true;
+    try {
+        const result = await api.settings.updateNotificationSettings(
+            notificationSettings.enabled,
+            notificationSettings.leadTime,
+        );
+        if (result.success) {
+            toast.success(result.message || "Notification settings updated");
+            Object.assign(notificationSettings, result.data);
+            return result;
+        } else {
+            toast.error(result.message || "Failed to update notification settings");
+            return result;
+        }
+    } catch (error) {
+        toast.error("Error updating notification settings: " + error.message);
+        return { success: false, message: error.message, errors: null, data: null };
+    } finally {
+        isSavingNotifications.value = false;
+    }
+}
+
+async function requestNotificationPermission() {
+    const granted = await notifications.requestPermission();
+    if (granted) {
+        toast.success("Notification permission granted");
+    } else {
+        toast.error("Notification permission denied");
     }
 }
 
@@ -301,6 +361,11 @@ onMounted(() => {
         } else {
             void getCronSettings();
         }
+        if (auth.notificationSettings.value) {
+            Object.assign(notificationSettings, auth.notificationSettings.value);
+        } else {
+            void getNotificationSettings();
+        }
     }
 });
 
@@ -310,6 +375,11 @@ watch(isAuthenticated, (newValue) => {
             Object.assign(cronSettings, auth.cronSettings.value);
         } else {
             void getCronSettings();
+        }
+        if (auth.notificationSettings.value) {
+            Object.assign(notificationSettings, auth.notificationSettings.value);
+        } else {
+            void getNotificationSettings();
         }
     }
 });
@@ -491,8 +561,66 @@ watch(isAuthenticated, (newValue) => {
                     </div>
 
                     <div class="space-y-6">
-                        <!-- Auto Refresh Section -->
+                        <!-- Notifications Section -->
                         <div class="space-y-4">
+                            <h4 class="text-md font-medium text-gray-900">Notifications</h4>
+                            <div>
+                                <Checkbox
+                                    v-model="notificationSettings.enabled"
+                                    label="Enable event notifications"
+                                    :disabled="isSavingNotifications"
+                                    @change="updateNotificationSettings"
+                                />
+                            </div>
+
+                            <div v-if="notifications.isSupported" class="space-y-2">
+                                <div class="text-sm text-gray-600">
+                                    Browser permission:
+                                    <span
+                                        v-if="notifications.isGranted"
+                                        class="font-medium text-green-600"
+                                    >
+                                        Granted
+                                    </span>
+                                    <span
+                                        v-else-if="notifications.isDenied"
+                                        class="font-medium text-red-600"
+                                    >
+                                        Denied
+                                    </span>
+                                    <span v-else class="font-medium text-yellow-600">
+                                        Not asked
+                                    </span>
+                                </div>
+                                <Button
+                                    v-if="!notifications.isGranted"
+                                    @click="requestNotificationPermission"
+                                    variant="default"
+                                    size="small"
+                                >
+                                    Request Permission
+                                </Button>
+                            </div>
+
+                            <div v-if="notificationSettings.enabled" class="space-y-4">
+                                <FormGroup label="Notification Lead Time">
+                                    <Input
+                                        v-model.number="notificationSettings.leadTime"
+                                        type="number"
+                                        min="1"
+                                        max="60"
+                                        :disabled="isSavingNotifications"
+                                        @blur="updateNotificationSettings"
+                                    />
+                                    <template #help>
+                                        Notify this many minutes before an event starts (1-60)
+                                    </template>
+                                </FormGroup>
+                            </div>
+                        </div>
+
+                        <!-- Auto Refresh Section -->
+                        <div class="border-t border-gray-200 pt-4 space-y-4">
                             <h4 class="text-md font-medium text-gray-900">Auto Refresh</h4>
                             <div>
                                 <Checkbox

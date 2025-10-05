@@ -6,9 +6,15 @@ export function useNotifications() {
     );
 
     const isSupported = computed(() => typeof Notification !== "undefined");
-    const isGranted = computed(() => permissionState.value === "granted");
-    const isDenied = computed(() => permissionState.value === "denied");
-    const isDefault = computed(() => permissionState.value === "default");
+    const isGranted = computed(() => {
+        return typeof Notification !== "undefined" && Notification.permission === "granted";
+    });
+    const isDenied = computed(() => {
+        return typeof Notification !== "undefined" && Notification.permission === "denied";
+    });
+    const isDefault = computed(() => {
+        return typeof Notification !== "undefined" && Notification.permission === "default";
+    });
 
     async function requestPermission() {
         if (!isSupported.value) {
