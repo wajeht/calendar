@@ -35,7 +35,6 @@ export function createCalendar(dependencies = {}) {
                         "color",
                         "visible_to_public",
                         "show_details_to_public",
-                        "enable_notifications",
                         "created_at",
                         "updated_at",
                     );
@@ -62,7 +61,6 @@ export function createCalendar(dependencies = {}) {
                           "color",
                           "visible_to_public",
                           "show_details_to_public",
-                          "enable_notifications",
                           "events_private",
                           "events_processed",
                           "created_at",
@@ -117,7 +115,6 @@ export function createCalendar(dependencies = {}) {
                             color: calendar.color,
                             visible_to_public: calendar.visible_to_public,
                             show_details_to_public: calendar.show_details_to_public,
-                            enable_notifications: calendar.enable_notifications,
                             events: parseEvents(calendar.events_private, calendar.events_processed),
                             created_at: calendar.created_at,
                             updated_at: calendar.updated_at,
@@ -197,7 +194,6 @@ export function createCalendar(dependencies = {}) {
                 color = "#447dfc",
                 visible_to_public = true,
                 show_details_to_public = true,
-                enable_notifications = false,
                 ical_data: calendarData = null,
                 events_processed = null,
             } = data;
@@ -209,7 +205,6 @@ export function createCalendar(dependencies = {}) {
                     color,
                     visible_to_public,
                     show_details_to_public,
-                    enable_notifications,
                     ical_data: calendarData,
                     events_processed,
                 });
@@ -252,7 +247,6 @@ export function createCalendar(dependencies = {}) {
                 "color",
                 "visible_to_public",
                 "show_details_to_public",
-                "enable_notifications",
                 "ical_data",
                 "events_processed",
                 "events_public",
@@ -290,17 +284,6 @@ export function createCalendar(dependencies = {}) {
             ) {
                 throw new ValidationError({
                     show_details_to_public: "Show details to public must be a boolean value or 0/1",
-                });
-            }
-
-            if (
-                updateData.enable_notifications !== undefined &&
-                typeof updateData.enable_notifications !== "boolean" &&
-                updateData.enable_notifications !== 0 &&
-                updateData.enable_notifications !== 1
-            ) {
-                throw new ValidationError({
-                    enable_notifications: "Enable notifications must be a boolean value or 0/1",
                 });
             }
 

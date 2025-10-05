@@ -6,10 +6,6 @@ const state = reactive({
     isAuthenticated: false,
     isPasswordConfigured: null,
     cronSettings: null,
-    notificationSettings: {
-        enabled: false,
-        leadTime: 5,
-    },
 });
 
 export function useAuthStore() {
@@ -22,10 +18,6 @@ export function useAuthStore() {
                 state.isAuthenticated = Boolean(result.data.isAuthenticated);
                 state.isPasswordConfigured = Boolean(result.data.isPasswordConfigured);
                 state.cronSettings = result.data.cronSettings || null;
-                state.notificationSettings = result.data.notificationSettings || {
-                    enabled: false,
-                    leadTime: 5,
-                };
                 return result.data.calendars || [];
             }
             return [];
@@ -42,7 +34,6 @@ export function useAuthStore() {
                 state.isAuthenticated = false;
                 state.isPasswordConfigured = null;
                 state.cronSettings = null;
-                state.notificationSettings = { enabled: false, leadTime: 5 };
 
                 toast.success(result.message || "Logged out successfully");
                 return true;
@@ -60,7 +51,6 @@ export function useAuthStore() {
         isAuthenticated: toRef(state, "isAuthenticated"),
         isPasswordConfigured: toRef(state, "isPasswordConfigured"),
         cronSettings: toRef(state, "cronSettings"),
-        notificationSettings: toRef(state, "notificationSettings"),
         initialize,
         logout,
         setAuth: (value) => (state.isAuthenticated = value),

@@ -30,7 +30,6 @@ const editForm = reactive({
     color: "#3b82f6",
     visible_to_public: true,
     show_details_to_public: true,
-    enable_notifications: false,
 });
 
 const errors = reactive({
@@ -48,10 +47,6 @@ watch(
             editForm.color = calendar.color || "#3b82f6";
             editForm.visible_to_public = Boolean(calendar.visible_to_public);
             editForm.show_details_to_public = Boolean(calendar.show_details_to_public);
-            editForm.enable_notifications =
-                calendar.enable_notifications !== undefined
-                    ? Boolean(calendar.enable_notifications)
-                    : false;
             errors.name = "";
             errors.url = "";
             errors.color = "";
@@ -117,10 +112,6 @@ function handleClose() {
                         :model-value="!editForm.show_details_to_public"
                         @update:model-value="editForm.show_details_to_public = !$event"
                         label="Hide event details for public view (show as time blocks only)"
-                    />
-                    <Checkbox
-                        v-model="editForm.enable_notifications"
-                        label="Enable notifications for this calendar"
                     />
                 </div>
             </div>
