@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, reactive, useTemplateRef } from "vue";
+import { ref, onMounted, onUnmounted, reactive, useTemplateRef } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -15,10 +15,14 @@ import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
 
 import { useToast } from "../composables/useToast";
 import { useAuthStore } from "../composables/useAuthStore.js";
+import { useNotifications } from "../composables/useNotifications.js";
 
 const toast = useToast();
 const auth = useAuthStore();
+const notifications = useNotifications();
 const calendars = ref([]);
+const notifiedEvents = ref(new Set());
+let notificationInterval = null;
 
 const calendarRef = useTemplateRef("calendarRef");
 const eventSources = ref([]);
@@ -154,6 +158,10 @@ async function handleAuthenticated() {
         await loadCalendars();
     }
     if (showSettingsModal.value) settingsInitialTab.value = "calendars";
+
+    // Clear notified events and restart notification checker
+    notifiedEvents.value.clear();
+    startNotificationChecker();
 }
 
 function updateCalendarSources(calendarData) {
@@ -187,6 +195,10 @@ async function loadCalendars() {
         const data = await auth.initialize();
         calendars.value = data;
         updateCalendarSources(data);
+
+        // Clear notified events and restart notification checker
+        notifiedEvents.value.clear();
+        startNotificationChecker();
     } catch (error) {
         toast.error("Failed to load calendars");
     }
@@ -216,6 +228,117 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
+function checkEventNotifications() {
+    // Only check if authenticated and notifications are enabled
+    if (!auth.isAuthenticated.value || !auth.notificationSettings.value?.enabled) {
+        return;
+    }
+
+    const now = new Date();
+    const leadTimeMs = (auth.notificationSettings.value.leadTime || 5) * 60 * 1000; // Convert minutes to ms
+
+    for (const calendar of calendars.value) {
+        // Skip if calendar doesn't have notifications enabled
+        if (!calendar.enable_notifications) {
+            continue;
+        }
+
+        // Skip if no events
+        if (!calendar.events || !Array.isArray(calendar.events)) {
+            continue;
+        }
+
+        for (const event of calendar.events) {
+            // Skip if no start time or already notified
+            if (!event.start || notifiedEvents.value.has(event.uid || event.id)) {
+                continue;
+            }
+
+            const eventStart = new Date(event.start);
+            const timeUntilEvent = eventStart.getTime() - now.getTime();
+
+            // Check if event is starting soon (within lead time window)
+            if (timeUntilEvent > 0 && timeUntilEvent <= leadTimeMs) {
+                const minutesUntil = Math.ceil(timeUntilEvent / 60000);
+                const message = `Starting in ${minutesUntil} min: ${event.title || "Untitled Event"}`;
+                toast.info(message);
+
+                // Show browser notification if permission granted
+                if (notifications.isGranted.value) {
+                    notifications.showBrowserNotification(event.title || "Untitled Event", {
+                        body: `Starting in ${minutesUntil} minute${minutesUntil !== 1 ? "s" : ""}`,
+                        tag: event.uid || event.id,
+                    });
+                }
+
+                notifiedEvents.value.add(event.uid || event.id);
+                continue;
+            }
+
+            // Check if event is starting now (within 1 minute window)
+            if (timeUntilEvent >= -30000 && timeUntilEvent <= 30000) {
+                const message = `Starting now: ${event.title || "Untitled Event"}`;
+                toast.info(message);
+
+                // Show browser notification if permission granted
+                if (notifications.isGranted.value) {
+                    notifications.showBrowserNotification(event.title || "Untitled Event", {
+                        body: "Starting now",
+                        tag: event.uid || event.id,
+                    });
+                }
+
+                notifiedEvents.value.add(event.uid || event.id);
+                continue;
+            }
+
+            // Check if event is currently happening
+            const eventEnd = event.end ? new Date(event.end) : null;
+            if (eventEnd && now >= eventStart && now < eventEnd) {
+                // Only notify once when entering the event
+                if (timeUntilEvent >= -60000) {
+                    // Within 1 minute of start
+                    const message = `Happening now: ${event.title || "Untitled Event"}`;
+                    toast.info(message);
+
+                    // Show browser notification if permission granted
+                    if (notifications.isGranted.value) {
+                        notifications.showBrowserNotification(event.title || "Untitled Event", {
+                            body: "Happening now",
+                            tag: event.uid || event.id,
+                        });
+                    }
+
+                    notifiedEvents.value.add(event.uid || event.id);
+                }
+            }
+        }
+    }
+}
+
+function startNotificationChecker() {
+    // Clear any existing interval
+    stopNotificationChecker();
+
+    // Only start if authenticated and notifications enabled
+    if (!auth.isAuthenticated.value || !auth.notificationSettings.value?.enabled) {
+        return;
+    }
+
+    // Run immediately
+    checkEventNotifications();
+
+    // Then run every 60 seconds
+    notificationInterval = setInterval(checkEventNotifications, 60000);
+}
+
+function stopNotificationChecker() {
+    if (notificationInterval) {
+        clearInterval(notificationInterval);
+        notificationInterval = null;
+    }
+}
+
 onMounted(async () => {
     const data = await auth.initialize();
     if (data.length) {
@@ -224,6 +347,13 @@ onMounted(async () => {
     } else {
         await loadCalendars();
     }
+
+    // Start notification checker if authenticated and enabled
+    startNotificationChecker();
+});
+
+onUnmounted(() => {
+    stopNotificationChecker();
 });
 </script>
 
