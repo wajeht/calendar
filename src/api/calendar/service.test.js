@@ -260,10 +260,7 @@ describe("Calendar Service", () => {
                 show_details_to_public: true,
             });
 
-            const result = await calendarService.fetchAndProcessCalendar(
-                publicCalendar.id,
-                sampleCalendar.url,
-            );
+            await calendarService.fetchAndProcessCalendar(publicCalendar.id, sampleCalendar.url);
 
             const updatedCalendar = await testServer.ctx.models.calendar.getById(publicCalendar.id);
             const publicEvents = JSON.parse(updatedCalendar.events_public);
