@@ -147,12 +147,8 @@ function handleEventSourceFailure(error) {
 async function handleAuthenticated() {
     showPasswordModal.value = false;
     const data = await auth.initialize();
-    if (data.length) {
-        calendars.value = data;
-        updateCalendarSources(data);
-    } else {
-        await loadCalendars();
-    }
+    calendars.value = data;
+    updateCalendarSources(data);
     if (showSettingsModal.value) settingsInitialTab.value = "calendars";
 }
 
@@ -182,7 +178,7 @@ function updateCalendarSources(calendarData) {
     calendar.render();
 }
 
-async function loadCalendars() {
+async function reloadCalendars() {
     try {
         const data = await auth.initialize();
         calendars.value = data;
@@ -218,12 +214,8 @@ function updateURL() {
 
 onMounted(async () => {
     const data = await auth.initialize();
-    if (data.length) {
-        calendars.value = data;
-        updateCalendarSources(data);
-    } else {
-        await loadCalendars();
-    }
+    calendars.value = data;
+    updateCalendarSources(data);
 });
 </script>
 
@@ -243,9 +235,9 @@ onMounted(async () => {
             :calendars="calendars"
             :initial-tab="settingsInitialTab"
             :is-authenticated="auth.isAuthenticated.value"
-            @calendar-updated="loadCalendars"
+            @calendar-updated="reloadCalendars"
             @show-password-modal="handleShowPasswordModal"
-            @auth-changed="loadCalendars"
+            @auth-changed="reloadCalendars"
         />
 
         <EventModal

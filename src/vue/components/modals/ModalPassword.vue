@@ -19,6 +19,8 @@ const errors = reactive({
 });
 
 async function authenticate() {
+    if (isLoading.value) return;
+
     errors.password = "";
     isLoading.value = true;
     try {

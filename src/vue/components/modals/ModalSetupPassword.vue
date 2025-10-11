@@ -21,6 +21,8 @@ const errors = reactive({
 });
 
 async function handleSetupPassword() {
+    if (isLoading.value) return;
+
     errors.password = "";
     errors.confirmPassword = "";
     isLoading.value = true;
