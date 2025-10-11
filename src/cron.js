@@ -14,7 +14,7 @@ export function createCronService(dependencies = {}) {
     let cronJobs = [];
     let isRefetchRunning = false;
     let isEnabled = false;
-    let currentSchedule = "0 * * * *"; // Default: every hour
+    let currentSchedule = "0 */1 * * *"; // Default: every hour
     let lastRun = null;
 
     async function loadSettings() {
@@ -22,7 +22,7 @@ export function createCronService(dependencies = {}) {
             const cronSettings = await models.settings.get("cron_settings");
             if (cronSettings) {
                 isEnabled = cronSettings.enabled !== false; // Default to true if not set
-                currentSchedule = cronSettings.schedule || "0 * * * *";
+                currentSchedule = cronSettings.schedule || "0 */1 * * *";
                 lastRun = cronSettings.lastRun || null;
                 logger.info(
                     `Loaded cron settings: enabled=${isEnabled}, schedule=${currentSchedule}`,

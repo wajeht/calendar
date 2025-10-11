@@ -36,7 +36,7 @@ const isAuthenticated = toRef(props, "isAuthenticated");
 
 const cronSettings = reactive({
     enabled: false,
-    schedule: "0 */2 * * *",
+    schedule: "0 */1 * * *",
     status: "",
     lastRun: "",
 });
@@ -50,7 +50,10 @@ async function getCronSettings() {
     try {
         const result = await fetchCronSettings();
         if (result && result.success) {
-            Object.assign(cronSettings, result.data);
+            Object.assign(cronSettings, {
+                ...result.data,
+                schedule: result.data.schedule || "0 */1 * * *",
+            });
         } else if (result) {
             toast.error(result.message || "Failed to load auto refresh settings");
         }
@@ -297,7 +300,10 @@ function handleLogin() {
 onMounted(() => {
     if (isAuthenticated.value) {
         if (auth.cronSettings.value) {
-            Object.assign(cronSettings, auth.cronSettings.value);
+            Object.assign(cronSettings, {
+                ...auth.cronSettings.value,
+                schedule: auth.cronSettings.value.schedule || "0 */1 * * *",
+            });
         } else {
             void getCronSettings();
         }
@@ -307,7 +313,10 @@ onMounted(() => {
 watch(isAuthenticated, (newValue) => {
     if (newValue) {
         if (auth.cronSettings.value) {
-            Object.assign(cronSettings, auth.cronSettings.value);
+            Object.assign(cronSettings, {
+                ...auth.cronSettings.value,
+                schedule: auth.cronSettings.value.schedule || "0 */1 * * *",
+            });
         } else {
             void getCronSettings();
         }
