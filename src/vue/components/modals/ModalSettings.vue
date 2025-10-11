@@ -322,6 +322,15 @@ watch(isAuthenticated, (newValue) => {
         }
     }
 });
+
+watch(
+    () => [cronSettings.enabled, cronSettings.schedule],
+    () => {
+        if (isAuthenticated.value) {
+            void updateCronSettings();
+        }
+    },
+);
 </script>
 
 <template>
@@ -508,7 +517,6 @@ watch(isAuthenticated, (newValue) => {
                                     v-model="cronSettings.enabled"
                                     label="Enable automatic calendar refresh"
                                     :disabled="isLoadingCron || isSavingCron"
-                                    @change="updateCronSettings"
                                 />
                             </div>
 
@@ -516,7 +524,6 @@ watch(isAuthenticated, (newValue) => {
                                 <FormGroup label="Refresh Schedule">
                                     <Select
                                         v-model="cronSettings.schedule"
-                                        @change="updateCronSettings"
                                         :disabled="isLoadingCron || isSavingCron"
                                     >
                                         <option value="0 */1 * * *">Every hour</option>
