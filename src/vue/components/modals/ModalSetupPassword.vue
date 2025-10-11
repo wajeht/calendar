@@ -71,6 +71,7 @@ onMounted(async () => {
                 placeholder="Enter admin password (min 8 characters)"
                 required
                 ref="passwordInput"
+                :disabled="isLoading"
                 @keyup.enter="handleSetupPassword"
             />
         </FormGroup>
@@ -87,6 +88,7 @@ onMounted(async () => {
                 type="password"
                 placeholder="Confirm admin password"
                 required
+                :disabled="isLoading"
                 @keyup.enter="handleSetupPassword"
             />
         </FormGroup>

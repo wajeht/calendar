@@ -61,6 +61,7 @@ onMounted(async () => {
                 placeholder="Enter password"
                 required
                 ref="passwordInput"
+                :disabled="isLoading"
                 @keyup.enter="authenticate"
             />
         </FormGroup>
