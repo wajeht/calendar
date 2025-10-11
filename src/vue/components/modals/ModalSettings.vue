@@ -66,6 +66,10 @@ async function getCronSettings() {
 
 const isSavingCron = ref(false);
 async function updateCronSettings() {
+    if (isSavingCron.value) {
+        return;
+    }
+
     isSavingCron.value = true;
     try {
         const result = await api.settings.updateCronSettings(
@@ -322,15 +326,6 @@ watch(isAuthenticated, (newValue) => {
         }
     }
 });
-
-watch(
-    () => [cronSettings.enabled, cronSettings.schedule],
-    () => {
-        if (isAuthenticated.value) {
-            void updateCronSettings();
-        }
-    },
-);
 </script>
 
 <template>
@@ -517,6 +512,7 @@ watch(
                                     v-model="cronSettings.enabled"
                                     label="Enable automatic calendar refresh"
                                     :disabled="isLoadingCron || isSavingCron"
+                                    @update:modelValue="updateCronSettings"
                                 />
                             </div>
 
@@ -525,6 +521,7 @@ watch(
                                     <Select
                                         v-model="cronSettings.schedule"
                                         :disabled="isLoadingCron || isSavingCron"
+                                        @update:modelValue="updateCronSettings"
                                     >
                                         <option value="0 */1 * * *">Every hour</option>
                                         <option value="0 */2 * * *">Every 2 hours</option>
