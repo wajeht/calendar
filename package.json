@@ -75,7 +75,7 @@
         "prettier": "3.6.2",
         "supertest": "^7.1.4",
         "vite": "7.1.12",
-        "vitest": "4.0.3"
+        "vitest": "4.0.5"
     },
     "engines": {
         "node": ">=22.18.0",
