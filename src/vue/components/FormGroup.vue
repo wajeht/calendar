@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from "vue";
+
 const props = defineProps({
     label: {
         type: String,
@@ -21,20 +23,23 @@ const props = defineProps({
         default: "",
     },
 });
+
+const labelComponent = computed(() => (props.inputId ? "label" : "div"));
 </script>
 
 <template>
     <div class="mb-4">
-        <label
+        <component
+            :is="labelComponent"
             v-if="props.label || $slots.label"
-            :for="props.inputId"
+            :for="props.inputId ? props.inputId : undefined"
             class="block mb-1 font-bold text-gray-800 text-[13px]"
         >
             <slot name="label">
                 {{ props.label }}
                 <span v-if="props.required" class="text-red-500 ml-0.5 font-bold">*</span>
             </slot>
-        </label>
+        </component>
         <slot />
         <div v-if="props.error" class="text-red-500 text-xs mt-1">
             {{ props.error }}
