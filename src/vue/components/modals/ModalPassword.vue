@@ -55,21 +55,37 @@ onMounted(async () => {
 
 <template>
     <Modal title="Authentication Required" high-z-index @close="emit('close')">
-        <FormGroup label="Password" required input-id="password" :error="errors.password">
-            <Input
-                id="password"
-                v-model="password"
-                type="password"
-                placeholder="Enter password"
-                required
-                ref="passwordInput"
-                :disabled="isLoading"
-                @keyup.enter="authenticate"
+        <form @submit.prevent="authenticate">
+            <!-- Hidden username field for password managers -->
+            <input
+                type="text"
+                name="username"
+                autocomplete="username"
+                value="admin"
+                readonly
+                aria-hidden="true"
+                tabindex="-1"
+                style="position: absolute; left: -9999px; width: 1px; height: 1px"
             />
-        </FormGroup>
+
+            <FormGroup label="Password" required input-id="password" :error="errors.password">
+                <Input
+                    id="password"
+                    v-model="password"
+                    type="password"
+                    placeholder="Enter password"
+                    required
+                    ref="passwordInput"
+                    :disabled="isLoading"
+                    autocomplete="current-password"
+                />
+            </FormGroup>
+        </form>
 
         <template #footer>
-            <Button variant="primary" @click="authenticate" :loading="isLoading"> Login </Button>
+            <Button variant="primary" type="submit" @click="authenticate" :loading="isLoading">
+                Login
+            </Button>
             <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
         </template>
     </Modal>
