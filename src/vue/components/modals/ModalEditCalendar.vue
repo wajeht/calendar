@@ -93,22 +93,24 @@ function handleClose() {
     <Modal title="Edit Calendar" :high-z-index="props.highZIndex" @close="handleClose">
         <form @submit.prevent="handleSubmit">
             <div class="space-y-4">
-                <FormGroup label="Name" required :error="errors.name">
-                    <Input v-model="editForm.name" type="text" required />
+                <FormGroup label="Name" required input-id="edit-calendar-name" :error="errors.name">
+                    <Input id="edit-calendar-name" v-model="editForm.name" type="text" required />
                 </FormGroup>
-                <FormGroup label="URL" required :error="errors.url">
-                    <Input v-model="editForm.url" type="url" required />
+                <FormGroup label="URL" required input-id="edit-calendar-url" :error="errors.url">
+                    <Input id="edit-calendar-url" v-model="editForm.url" type="url" required />
                 </FormGroup>
-                <FormGroup label="Color" :error="errors.color">
-                    <Input v-model="editForm.color" type="color" />
+                <FormGroup label="Color" input-id="edit-calendar-color" :error="errors.color">
+                    <Input id="edit-calendar-color" v-model="editForm.color" type="color" />
                 </FormGroup>
                 <div class="flex flex-col gap-3">
                     <Checkbox
+                        id="edit-hide-from-public"
                         :model-value="!editForm.visible_to_public"
                         @update:model-value="editForm.visible_to_public = !$event"
                         label="Hide calendar from public view"
                     />
                     <Checkbox
+                        id="edit-hide-details-from-public"
                         :model-value="!editForm.show_details_to_public"
                         @update:model-value="editForm.show_details_to_public = !$event"
                         label="Hide event details for public view (show as time blocks only)"
