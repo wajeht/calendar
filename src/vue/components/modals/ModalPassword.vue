@@ -39,12 +39,23 @@ async function authenticate() {
                     }
                 });
             }
+            isLoading.value = false;
+
+            password.value = "";
+            await nextTick();
+            passwordInput.value?.focus();
+            return;
         }
     } catch (error) {
         toast.error("Authentication error: " + error.message);
-    } finally {
         isLoading.value = false;
+
+        password.value = "";
+        await nextTick();
+        passwordInput.value?.focus();
+        return;
     }
+    isLoading.value = false;
 }
 
 onMounted(async () => {
@@ -78,14 +89,13 @@ onMounted(async () => {
                     ref="passwordInput"
                     :disabled="isLoading"
                     autocomplete="current-password"
+                    @keyup.enter="authenticate"
                 />
             </FormGroup>
         </form>
 
         <template #footer>
-            <Button variant="primary" type="submit" @click="authenticate" :loading="isLoading">
-                Login
-            </Button>
+            <Button variant="primary" @click="authenticate" :loading="isLoading"> Login </Button>
             <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
         </template>
     </Modal>
