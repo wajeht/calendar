@@ -517,8 +517,9 @@ watch(isAuthenticated, (newValue) => {
                             </div>
 
                             <div v-if="cronSettings.enabled" class="space-y-4">
-                                <FormGroup label="Refresh Schedule">
+                                <FormGroup label="Refresh Schedule" input-id="refresh-schedule">
                                     <Select
+                                        id="refresh-schedule"
                                         v-model="cronSettings.schedule"
                                         :disabled="isLoadingCron || isSavingCron"
                                         @update:modelValue="updateCronSettings"
