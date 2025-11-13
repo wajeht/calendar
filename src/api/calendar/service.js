@@ -393,7 +393,7 @@ export function createCalendarService(dependencies = {}) {
                 const event = events[i];
                 strippedEvents[i] = {
                     uid: event.uid,
-                    title: "", // Hide title completely
+                    title: "Private", // Hide title completely
                     description: "", // Hide description completely
                     location: "", // Hide location completely
                     start: event.start,
@@ -413,8 +413,19 @@ export function createCalendarService(dependencies = {}) {
             }
             publicEvents = buildFullCalendarEvents(calendar, strippedEvents, false);
         } else {
-            // Show everything for public view
-            publicEvents = buildFullCalendarEvents(calendar, events, false);
+            const strippedEvents = [];
+            for (let i = 0; i < events.length; i++) {
+                const event = events[i];
+                strippedEvents[i] = {
+                    ...event,
+                    description: "", // Hide description completely
+                    location: "", // Hide location completely
+                    url: null, // Hide URL as well
+                    organizer: null,
+                    attendees: null,
+                };
+            }
+            publicEvents = buildFullCalendarEvents(calendar, strippedEvents, false);
         }
 
         return { publicEvents, authenticatedEvents };
