@@ -270,10 +270,8 @@ describe("Calendar Service", () => {
             expect(authenticatedEvents).toHaveLength(4);
 
             expect(publicEvents[0]).toHaveProperty("title", "Test Event 1");
-            expect(publicEvents[0].extendedProps).toHaveProperty(
-                "description",
-                "This is a test event",
-            );
+            expect(publicEvents[0].extendedProps).toHaveProperty("description", "");
+            expect(publicEvents[0].extendedProps).toHaveProperty("location", "");
             expect(authenticatedEvents[0]).toHaveProperty("title", "Test Event 1");
             expect(authenticatedEvents[0].extendedProps).toHaveProperty(
                 "description",
@@ -308,7 +306,7 @@ describe("Calendar Service", () => {
             expect(publicEvents).toHaveLength(4);
             expect(authenticatedEvents).toHaveLength(4);
 
-            expect(publicEvents[0]).toHaveProperty("title", "");
+            expect(publicEvents[0]).toHaveProperty("title", "Private");
             expect(publicEvents[0].extendedProps).toHaveProperty("description", "");
             expect(publicEvents[0].extendedProps).toHaveProperty("location", "");
 
@@ -834,25 +832,25 @@ END:VCALENDAR`;
                 start: "2025-10-05T02:00:00.000Z",
                 end: "2025-10-05T05:00:00.000Z",
                 allDay: false,
-                url: "https://example.com/event",
             });
+            expect(fcEvent).not.toHaveProperty("url");
 
             expect(fcEvent.extendedProps).toMatchObject({
-                description: "Complex event with all fields",
-                location: "Complex Location",
+                description: "",
+                location: "",
                 uid: "complex-event@example.com",
                 status: "CONFIRMED",
                 transparency: "OPAQUE",
                 sequence: "1",
-                organizerEmail: "john@example.com",
-                attendeeNames: "Jane Attendee, Bob Attendee",
-                attendeeEmails: "jane@example.com, bob@example.com",
-                attendeeCount: "2",
                 created: "2024-01-01T12:00:00.000Z",
                 lastModified: "2024-01-02T12:00:00.000Z",
                 dtStamp: "2024-01-03T12:00:00.000Z",
                 show_details_to_public: true,
             });
+            expect(fcEvent.extendedProps).not.toHaveProperty("organizerEmail");
+            expect(fcEvent.extendedProps).not.toHaveProperty("attendeeNames");
+            expect(fcEvent.extendedProps).not.toHaveProperty("attendeeEmails");
+            expect(fcEvent.extendedProps).not.toHaveProperty("attendeeCount");
         });
 
         it("should strip sensitive data for public view when show_details_to_public is false", async () => {
@@ -897,7 +895,7 @@ END:VCALENDAR`;
             const authEvent = authenticatedEvents[0];
 
             expect(publicEvent).toMatchObject({
-                title: "",
+                title: "Private",
                 start: "2025-10-05T02:00:00.000Z",
                 end: "2025-10-05T05:00:00.000Z",
                 allDay: false,
@@ -1106,9 +1104,8 @@ END:VCALENDAR`;
             });
 
             expect(publicEvent.extendedProps).toMatchObject({
-                description:
-                    "Main Card\n--------------------\n• Magomed Ankalaev (C) vs. Alex Pereira (#1) @205",
-                location: "T-Mobile Arena, Las Vegas, United States",
+                description: "",
+                location: "",
                 uid: "https://www.ufc.com/event/ufc-320",
                 duration: "",
                 status: "",
@@ -1117,8 +1114,22 @@ END:VCALENDAR`;
                 dtStamp: "2025-09-27T20:15:56.000Z",
                 show_details_to_public: true,
             });
+            expect(publicEvent.extendedProps).not.toHaveProperty("organizerEmail");
+            expect(publicEvent.extendedProps).not.toHaveProperty("attendeeNames");
 
-            expect(result.authenticatedEvents[0]).toMatchObject(publicEvent);
+            const authEvent = result.authenticatedEvents[0];
+            expect(authEvent).toMatchObject({
+                title: "UFC 320: Ankalaev vs Pereira 2",
+                start: "2025-10-05T02:00:00.000Z",
+                allDay: false,
+            });
+            expect(authEvent.extendedProps).toMatchObject({
+                description:
+                    "Main Card\n--------------------\n• Magomed Ankalaev (C) vs. Alex Pereira (#1) @205",
+                location: "T-Mobile Arena, Las Vegas, United States",
+                uid: "https://www.ufc.com/event/ufc-320",
+                show_details_to_public: true,
+            });
         });
     });
 });
