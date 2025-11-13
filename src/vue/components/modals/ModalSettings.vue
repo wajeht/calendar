@@ -509,6 +509,7 @@ watch(isAuthenticated, (newValue) => {
                             <h4 class="text-md font-medium text-gray-900">Auto Refresh</h4>
                             <div>
                                 <Checkbox
+                                    id="enable-auto-refresh"
                                     v-model="cronSettings.enabled"
                                     label="Enable automatic calendar refresh"
                                     :disabled="isLoadingCron || isSavingCron"
@@ -590,7 +591,19 @@ watch(isAuthenticated, (newValue) => {
                     <!-- Password Change Section -->
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Account</h3>
-                        <div class="space-y-4">
+                        <form @submit.prevent="changePassword" class="space-y-4">
+                            <!-- Hidden username field for password managers -->
+                            <input
+                                type="text"
+                                name="username"
+                                autocomplete="username"
+                                value="admin"
+                                readonly
+                                aria-hidden="true"
+                                tabindex="-1"
+                                style="position: absolute; left: -9999px; width: 1px; height: 1px"
+                            />
+
                             <FormGroup
                                 label="Current Password"
                                 required
@@ -603,6 +616,7 @@ watch(isAuthenticated, (newValue) => {
                                     type="password"
                                     placeholder="Enter current password"
                                     required
+                                    autocomplete="current-password"
                                 />
                             </FormGroup>
 
@@ -618,6 +632,7 @@ watch(isAuthenticated, (newValue) => {
                                     type="password"
                                     placeholder="Enter new password (min 8 characters)"
                                     required
+                                    autocomplete="new-password"
                                 />
                             </FormGroup>
 
@@ -633,11 +648,12 @@ watch(isAuthenticated, (newValue) => {
                                     type="password"
                                     placeholder="Confirm new password"
                                     required
+                                    autocomplete="new-password"
                                 />
                             </FormGroup>
 
                             <Button
-                                @click="changePassword"
+                                type="submit"
                                 :loading="changingPassword"
                                 :disabled="
                                     !passwordForm.currentPassword ||
@@ -648,7 +664,7 @@ watch(isAuthenticated, (newValue) => {
                             >
                                 Change Password
                             </Button>
-                        </div>
+                        </form>
                     </div>
                 </div>
 
