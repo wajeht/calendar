@@ -1,6 +1,10 @@
 <script setup>
 import { computed, ref, useTemplateRef } from "vue";
 
+defineOptions({
+    inheritAttrs: false,
+});
+
 const inputRef = useTemplateRef("inputRef");
 const showPassword = ref(false);
 
