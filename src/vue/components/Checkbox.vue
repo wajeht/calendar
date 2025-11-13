@@ -1,4 +1,10 @@
 <script setup>
+import { computed } from "vue";
+
+defineOptions({
+    inheritAttrs: false,
+});
+
 const model = defineModel({
     type: [Boolean, Number],
     default: false,
@@ -13,20 +19,30 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    id: {
+        type: String,
+        default: "",
+    },
+});
+
+const generatedId = `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+const checkboxId = computed(() => {
+    return props.id || generatedId;
 });
 </script>
 
 <template>
     <label
+        :for="checkboxId"
         class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 flex items-center"
     >
         <div class="relative flex items-center mr-2">
             <input
+                :id="checkboxId"
                 type="checkbox"
                 v-model="model"
                 :disabled="props.disabled"
                 class="sr-only"
-                v-bind="$attrs"
             />
             <div
                 :class="[
