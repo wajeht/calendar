@@ -65,39 +65,54 @@ onMounted(async () => {
             </p>
         </div>
 
-        <FormGroup label="Admin Password" required input-id="password" :error="errors.password">
-            <Input
-                id="password"
-                v-model="password"
-                type="password"
-                placeholder="Enter admin password (min 8 characters)"
-                required
-                ref="passwordInput"
-                :disabled="isLoading"
-                @keyup.enter="handleSetupPassword"
+        <form @submit.prevent="handleSetupPassword">
+            <!-- Hidden username field for password managers -->
+            <input
+                type="text"
+                name="username"
+                autocomplete="username"
+                value="admin"
+                readonly
+                aria-hidden="true"
+                tabindex="-1"
+                style="position: absolute; left: -9999px; width: 1px; height: 1px"
             />
-        </FormGroup>
 
-        <FormGroup
-            label="Confirm Password"
-            required
-            input-id="confirmPassword"
-            :error="errors.confirmPassword"
-        >
-            <Input
-                id="confirmPassword"
-                v-model="confirmPassword"
-                type="password"
-                placeholder="Confirm admin password"
+            <FormGroup label="Admin Password" required input-id="password" :error="errors.password">
+                <Input
+                    id="password"
+                    v-model="password"
+                    type="password"
+                    placeholder="Enter admin password (min 8 characters)"
+                    required
+                    ref="passwordInput"
+                    :disabled="isLoading"
+                    autocomplete="new-password"
+                />
+            </FormGroup>
+
+            <FormGroup
+                label="Confirm Password"
                 required
-                :disabled="isLoading"
-                @keyup.enter="handleSetupPassword"
-            />
-        </FormGroup>
+                input-id="confirmPassword"
+                :error="errors.confirmPassword"
+            >
+                <Input
+                    id="confirmPassword"
+                    v-model="confirmPassword"
+                    type="password"
+                    placeholder="Confirm admin password"
+                    required
+                    :disabled="isLoading"
+                    autocomplete="new-password"
+                />
+            </FormGroup>
+        </form>
 
         <template #footer>
             <div class="flex gap-2 justify-end">
                 <Button
+                    type="submit"
                     @click="handleSetupPassword"
                     :loading="isLoading"
                     :disabled="!password || !confirmPassword"
