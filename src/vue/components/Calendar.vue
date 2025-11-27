@@ -212,17 +212,10 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
-let lastVisibleDate = new Date().toISOString().split("T")[0];
+let lastKnownDate = new Date().toISOString().split("T")[0];
+let midnightTimeout = null;
 
-function handleVisibilityChange() {
-    if (document.visibilityState !== "visible") return;
-
-    const currentDate = new Date().toISOString().split("T")[0];
-    if (currentDate === lastVisibleDate) return;
-
-    const previousDate = lastVisibleDate;
-    lastVisibleDate = currentDate;
-
+function navigateToTodayIfNeeded(previousDate) {
     const calendar = calendarRef.value?.getApi();
     if (!calendar) return;
 
@@ -245,16 +238,47 @@ function handleVisibilityChange() {
     }
 }
 
+function handleDateChange() {
+    const currentDate = new Date().toISOString().split("T")[0];
+    if (currentDate === lastKnownDate) return;
+
+    const previousDate = lastKnownDate;
+    lastKnownDate = currentDate;
+
+    navigateToTodayIfNeeded(previousDate);
+    scheduleMidnightUpdate();
+}
+
+function handleVisibilityChange() {
+    if (document.visibilityState === "visible") {
+        handleDateChange();
+    }
+}
+
+function scheduleMidnightUpdate() {
+    if (midnightTimeout) clearTimeout(midnightTimeout);
+
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setDate(midnight.getDate() + 1);
+    midnight.setHours(0, 0, 0, 100); // 100ms after midnight
+
+    const msUntilMidnight = midnight - now;
+    midnightTimeout = setTimeout(handleDateChange, msUntilMidnight);
+}
+
 onMounted(async () => {
     const data = await auth.initialize();
     calendars.value = data;
     updateCalendarSources(data);
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    scheduleMidnightUpdate();
 });
 
 onUnmounted(() => {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
+    if (midnightTimeout) clearTimeout(midnightTimeout);
 });
 </script>
 
