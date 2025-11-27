@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, reactive, useTemplateRef } from "vue";
+import { ref, onMounted, onUnmounted, reactive, useTemplateRef } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -212,10 +212,55 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
+let lastKnownDate = new Date().toISOString().split("T")[0];
+let dateCheckInterval = null;
+
+function checkDateChange() {
+    const currentDate = new Date().toISOString().split("T")[0];
+
+    if (currentDate !== lastKnownDate) {
+        lastKnownDate = currentDate;
+
+        const calendar = calendarRef.value?.getApi();
+        if (!calendar) return;
+
+        // Only auto-navigate if user is viewing dates that include yesterday
+        // (the previous "today") and no modals are open
+        const isIdle =
+            !showPasswordModal.value &&
+            !showSettingsModal.value &&
+            !showEventModal.value &&
+            !showSetupPasswordModal.value &&
+            !confirmDialog.show;
+
+        if (isIdle) {
+            const calendarDate = calendar.getDate().toISOString().split("T")[0];
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+            // If calendar was showing yesterday (the old "today"), navigate to new today
+            if (calendarDate === yesterdayStr) {
+                calendar.today();
+                updateURL();
+            }
+        }
+    }
+}
+
 onMounted(async () => {
     const data = await auth.initialize();
     calendars.value = data;
     updateCalendarSources(data);
+
+    dateCheckInterval = setInterval(checkDateChange, 60 * 1000);
+});
+
+onUnmounted(() => {
+    if (dateCheckInterval) {
+        clearInterval(dateCheckInterval);
+        dateCheckInterval = null;
+    }
 });
 </script>
 
