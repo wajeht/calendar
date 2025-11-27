@@ -212,38 +212,35 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
-let lastKnownDate = new Date().toISOString().split("T")[0];
-let dateCheckInterval = null;
+let lastVisibleDate = new Date().toISOString().split("T")[0];
 
-function checkDateChange() {
+function handleVisibilityChange() {
+    if (document.visibilityState !== "visible") return;
+
     const currentDate = new Date().toISOString().split("T")[0];
+    if (currentDate === lastVisibleDate) return;
 
-    if (currentDate !== lastKnownDate) {
-        lastKnownDate = currentDate;
+    const previousDate = lastVisibleDate;
+    lastVisibleDate = currentDate;
 
-        const calendar = calendarRef.value?.getApi();
-        if (!calendar) return;
+    const calendar = calendarRef.value?.getApi();
+    if (!calendar) return;
 
-        // Only auto-navigate if user is viewing dates that include yesterday
-        // (the previous "today") and no modals are open
-        const isIdle =
-            !showPasswordModal.value &&
-            !showSettingsModal.value &&
-            !showEventModal.value &&
-            !showSetupPasswordModal.value &&
-            !confirmDialog.show;
+    // Only auto-navigate if no modals are open
+    const isIdle =
+        !showPasswordModal.value &&
+        !showSettingsModal.value &&
+        !showEventModal.value &&
+        !showSetupPasswordModal.value &&
+        !confirmDialog.show;
 
-        if (isIdle) {
-            const calendarDate = calendar.getDate().toISOString().split("T")[0];
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split("T")[0];
+    if (isIdle) {
+        const calendarDate = calendar.getDate().toISOString().split("T")[0];
 
-            // If calendar was showing yesterday (the old "today"), navigate to new today
-            if (calendarDate === yesterdayStr) {
-                calendar.today();
-                updateURL();
-            }
+        // If calendar was showing the previous date, navigate to new today
+        if (calendarDate === previousDate) {
+            calendar.today();
+            updateURL();
         }
     }
 }
@@ -253,14 +250,11 @@ onMounted(async () => {
     calendars.value = data;
     updateCalendarSources(data);
 
-    dateCheckInterval = setInterval(checkDateChange, 60 * 1000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 onUnmounted(() => {
-    if (dateCheckInterval) {
-        clearInterval(dateCheckInterval);
-        dateCheckInterval = null;
-    }
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 </script>
 
