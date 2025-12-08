@@ -122,14 +122,8 @@ const { loading: isExporting, refresh: runExport } = useAsyncData(() => api.cale
 });
 const isImporting = ref(false);
 
-const feedToken = reactive({
-    token: "",
-    feedUrl: "",
-    loading: false,
-    regenerating: false,
-    selectedCalendars: [],
-    showCalendarPicker: false,
-});
+const feedTokenRegenerating = ref(false);
+const showCalendarPicker = ref(false);
 
 const copyRightYear = computed(() => {
     return new Date().getFullYear();
@@ -302,33 +296,18 @@ async function changePassword() {
     }
 }
 
-async function loadFeedToken() {
-    feedToken.loading = true;
-    try {
-        const result = await api.settings.getFeedToken();
-        if (result.success) {
-            feedToken.token = result.data.token;
-            feedToken.feedUrl = window.location.origin + result.data.feedUrl;
-            feedToken.selectedCalendars = result.data.calendars || [];
-        } else {
-            toast.error(result.message || "Failed to load feed URL");
-        }
-    } catch (error) {
-        toast.error("Error loading feed URL: " + error.message);
-    } finally {
-        feedToken.loading = false;
-    }
-}
-
 async function regenerateFeedToken() {
-    if (feedToken.regenerating) return;
+    if (feedTokenRegenerating.value) return;
 
-    feedToken.regenerating = true;
+    feedTokenRegenerating.value = true;
     try {
         const result = await api.settings.regenerateFeedToken();
         if (result.success) {
-            feedToken.token = result.data.token;
-            feedToken.feedUrl = window.location.origin + result.data.feedUrl;
+            auth.setFeedToken({
+                token: result.data.token,
+                feedUrl: result.data.feedUrl,
+                calendars: result.data.calendars || [],
+            });
             toast.success("Feed URL regenerated successfully");
         } else {
             toast.error(result.message || "Failed to regenerate feed URL");
@@ -336,25 +315,32 @@ async function regenerateFeedToken() {
     } catch (error) {
         toast.error("Error regenerating feed URL: " + error.message);
     } finally {
-        feedToken.regenerating = false;
+        feedTokenRegenerating.value = false;
     }
 }
 
 function copyFeedUrl() {
-    navigator.clipboard.writeText(feedToken.feedUrl);
+    const feedUrl = window.location.origin + auth.feedToken.value?.feedUrl;
+    navigator.clipboard.writeText(feedUrl);
     toast.success("Feed URL copied to clipboard");
 }
 
 function handleFeedCalendarsUpdated(selectedIds) {
-    feedToken.selectedCalendars = selectedIds;
-    feedToken.showCalendarPicker = false;
+    auth.setFeedCalendars(selectedIds);
+    showCalendarPicker.value = false;
 }
 
 const feedCalendarCount = computed(() => {
-    if (feedToken.selectedCalendars.length === 0) {
+    const calendars = auth.feedToken.value?.calendars || [];
+    if (calendars.length === 0) {
         return "All calendars";
     }
-    return `${feedToken.selectedCalendars.length} calendar${feedToken.selectedCalendars.length === 1 ? "" : "s"}`;
+    return `${calendars.length} calendar${calendars.length === 1 ? "" : "s"}`;
+});
+
+const feedUrl = computed(() => {
+    if (!auth.feedToken.value?.feedUrl) return "";
+    return window.location.origin + auth.feedToken.value.feedUrl;
 });
 
 function handleTabClick(tabName) {
@@ -378,7 +364,6 @@ onMounted(() => {
         } else {
             void getCronSettings();
         }
-        void loadFeedToken();
     }
 });
 
@@ -392,7 +377,6 @@ watch(isAuthenticated, (newValue) => {
         } else {
             void getCronSettings();
         }
-        void loadFeedToken();
     }
 });
 </script>
@@ -697,11 +681,7 @@ watch(isAuthenticated, (newValue) => {
                                 calendars combined.
                             </p>
 
-                            <div v-if="feedToken.loading" class="text-gray-500 dark:text-gray-400">
-                                Loading feed URL...
-                            </div>
-
-                            <div v-else class="space-y-4">
+                            <div class="space-y-4">
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -713,9 +693,9 @@ watch(isAuthenticated, (newValue) => {
                                     >
                                         <code
                                             class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 truncate select-all"
-                                            :title="feedToken.feedUrl"
+                                            :title="feedUrl"
                                         >
-                                            {{ feedToken.feedUrl }}
+                                            {{ feedUrl }}
                                         </code>
                                         <Button
                                             @click="copyFeedUrl"
@@ -742,7 +722,7 @@ watch(isAuthenticated, (newValue) => {
                                         </p>
                                     </div>
                                     <Button
-                                        @click="feedToken.showCalendarPicker = true"
+                                        @click="showCalendarPicker = true"
                                         variant="default"
                                         size="small"
                                     >
@@ -766,7 +746,7 @@ watch(isAuthenticated, (newValue) => {
                                         </div>
                                         <Button
                                             @click="regenerateFeedToken"
-                                            :loading="feedToken.regenerating"
+                                            :loading="feedTokenRegenerating"
                                             variant="danger"
                                             size="small"
                                         >
@@ -952,11 +932,11 @@ watch(isAuthenticated, (newValue) => {
         />
 
         <FeedCalendarsModal
-            v-if="feedToken.showCalendarPicker"
+            v-if="showCalendarPicker"
             :calendars="calendars"
-            :selected-calendars="feedToken.selectedCalendars"
+            :selected-calendars="auth.feedToken.value?.calendars || []"
             high-z-index
-            @close="feedToken.showCalendarPicker = false"
+            @close="showCalendarPicker = false"
             @calendars-updated="handleFeedCalendarsUpdated"
         />
     </Modal>
