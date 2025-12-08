@@ -14,6 +14,7 @@ import Checkbox from "../../components/Checkbox.vue";
 import AddCalendarModal from "./ModalAddCalendar.vue";
 import EditCalendarModal from "./ModalEditCalendar.vue";
 import DeleteCalendarModal from "./ModalDeleteCalendar.vue";
+import FeedCalendarsModal from "./ModalFeedCalendars.vue";
 
 const props = defineProps({
     calendars: {
@@ -120,6 +121,15 @@ const { loading: isExporting, refresh: runExport } = useAsyncData(() => api.cale
     immediate: false,
 });
 const isImporting = ref(false);
+
+const feedToken = reactive({
+    token: "",
+    feedUrl: "",
+    loading: false,
+    regenerating: false,
+    selectedCalendars: [],
+    showCalendarPicker: false,
+});
 
 const copyRightYear = computed(() => {
     return new Date().getFullYear();
@@ -292,6 +302,61 @@ async function changePassword() {
     }
 }
 
+async function loadFeedToken() {
+    feedToken.loading = true;
+    try {
+        const result = await api.settings.getFeedToken();
+        if (result.success) {
+            feedToken.token = result.data.token;
+            feedToken.feedUrl = window.location.origin + result.data.feedUrl;
+            feedToken.selectedCalendars = result.data.calendars || [];
+        } else {
+            toast.error(result.message || "Failed to load feed URL");
+        }
+    } catch (error) {
+        toast.error("Error loading feed URL: " + error.message);
+    } finally {
+        feedToken.loading = false;
+    }
+}
+
+async function regenerateFeedToken() {
+    if (feedToken.regenerating) return;
+
+    feedToken.regenerating = true;
+    try {
+        const result = await api.settings.regenerateFeedToken();
+        if (result.success) {
+            feedToken.token = result.data.token;
+            feedToken.feedUrl = window.location.origin + result.data.feedUrl;
+            toast.success("Feed URL regenerated successfully");
+        } else {
+            toast.error(result.message || "Failed to regenerate feed URL");
+        }
+    } catch (error) {
+        toast.error("Error regenerating feed URL: " + error.message);
+    } finally {
+        feedToken.regenerating = false;
+    }
+}
+
+function copyFeedUrl() {
+    navigator.clipboard.writeText(feedToken.feedUrl);
+    toast.success("Feed URL copied to clipboard");
+}
+
+function handleFeedCalendarsUpdated(selectedIds) {
+    feedToken.selectedCalendars = selectedIds;
+    feedToken.showCalendarPicker = false;
+}
+
+const feedCalendarCount = computed(() => {
+    if (feedToken.selectedCalendars.length === 0) {
+        return "All calendars";
+    }
+    return `${feedToken.selectedCalendars.length} calendar${feedToken.selectedCalendars.length === 1 ? "" : "s"}`;
+});
+
 function handleTabClick(tabName) {
     if (!isAuthenticated.value && tabName !== "about") {
         return;
@@ -313,6 +378,7 @@ onMounted(() => {
         } else {
             void getCronSettings();
         }
+        void loadFeedToken();
     }
 });
 
@@ -326,6 +392,7 @@ watch(isAuthenticated, (newValue) => {
         } else {
             void getCronSettings();
         }
+        void loadFeedToken();
     }
 });
 </script>
@@ -619,6 +686,96 @@ watch(isAuthenticated, (newValue) => {
                                 />
                             </div>
                         </div>
+
+                        <!-- Calendar Feed Section -->
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                            <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-2">
+                                Calendar Feed
+                            </h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Subscribe to this URL in any calendar app to see your selected
+                                calendars combined.
+                            </p>
+
+                            <div v-if="feedToken.loading" class="text-gray-500 dark:text-gray-400">
+                                Loading feed URL...
+                            </div>
+
+                            <div v-else class="space-y-4">
+                                <div>
+                                    <label
+                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >
+                                        Feed URL
+                                    </label>
+                                    <div
+                                        class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                    >
+                                        <code
+                                            class="flex-1 text-xs font-mono text-gray-700 dark:text-gray-300 truncate select-all"
+                                            :title="feedToken.feedUrl"
+                                        >
+                                            {{ feedToken.feedUrl }}
+                                        </code>
+                                        <Button
+                                            @click="copyFeedUrl"
+                                            variant="primary"
+                                            size="small"
+                                            class="flex-shrink-0"
+                                        >
+                                            Copy
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                                >
+                                    <div>
+                                        <span
+                                            class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        >
+                                            Included Calendars
+                                        </span>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ feedCalendarCount }}
+                                        </p>
+                                    </div>
+                                    <Button
+                                        @click="feedToken.showCalendarPicker = true"
+                                        variant="default"
+                                        size="small"
+                                    >
+                                        Select
+                                    </Button>
+                                </div>
+
+                                <div
+                                    class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                                >
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <span
+                                                class="text-sm font-medium text-red-700 dark:text-red-400"
+                                            >
+                                                Regenerate URL
+                                            </span>
+                                            <p class="text-xs text-red-600 dark:text-red-400">
+                                                This will invalidate the current URL
+                                            </p>
+                                        </div>
+                                        <Button
+                                            @click="regenerateFeedToken"
+                                            :loading="feedToken.regenerating"
+                                            variant="danger"
+                                            size="small"
+                                        >
+                                            Regenerate
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -792,6 +949,15 @@ watch(isAuthenticated, (newValue) => {
                 deletingCalendar = null;
             "
             @calendar-deleted="handleCalendarDeleted"
+        />
+
+        <FeedCalendarsModal
+            v-if="feedToken.showCalendarPicker"
+            :calendars="calendars"
+            :selected-calendars="feedToken.selectedCalendars"
+            high-z-index
+            @close="feedToken.showCalendarPicker = false"
+            @calendars-updated="handleFeedCalendarsUpdated"
         />
     </Modal>
 </template>
