@@ -196,5 +196,12 @@ export const api = {
                 body: JSON.stringify({ enabled, schedule }),
             });
         },
+
+        async updateTheme(theme) {
+            return request("/api/settings/theme", {
+                method: "PUT",
+                body: JSON.stringify({ theme }),
+            });
+        },
     },
 };
