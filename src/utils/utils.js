@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export function createUtils(dependencies = {}) {
     const { logger, config, errors } = dependencies;
@@ -226,6 +227,15 @@ export function createUtils(dependencies = {}) {
             }
 
             return url.replace(/^webcal:\/\//, "https://");
+        },
+
+        /**
+         * Generate a cryptographically secure random token
+         * @param {number} bytes - Number of bytes (default 32, produces 64 hex chars)
+         * @returns {string} - Hex-encoded random token
+         */
+        generateSecureToken(bytes = 32) {
+            return crypto.randomBytes(bytes).toString("hex");
         },
     };
 }
