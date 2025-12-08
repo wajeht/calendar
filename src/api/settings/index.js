@@ -92,12 +92,16 @@ export function createSettingsRouter(dependencies = {}) {
     });
 
     router.get("/feed-token", requireAuth, async (_req, res) => {
-        let token = await models.settings.get("feed_token");
+        const token = await models.settings.get("feed_token");
 
         if (!token) {
-            token = utils.generateSecureToken(32);
-            await models.settings.set("feed_token", token);
-            logger.info("Feed token generated on first access");
+            res.json({
+                success: true,
+                message: "No feed token configured",
+                errors: null,
+                data: null,
+            });
+            return;
         }
 
         const feedCalendars = (await models.settings.get("feed_calendars")) || [];

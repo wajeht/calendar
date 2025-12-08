@@ -144,7 +144,19 @@ describe("Settings", () => {
     });
 
     describe("GET /api/settings/feed-token", () => {
-        it("should get feed token when authenticated", async () => {
+        it("should return null data when no token exists", async () => {
+            const response = await authServer.get("/api/settings/feed-token");
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("No feed token configured");
+            expect(response.body.errors).toBe(null);
+            expect(response.body.data).toBe(null);
+        });
+
+        it("should get feed token after generation", async () => {
+            await authServer.post("/api/settings/feed-token/regenerate");
+
             const response = await authServer.get("/api/settings/feed-token");
 
             expect(response.status).toBe(200);
@@ -160,6 +172,8 @@ describe("Settings", () => {
         });
 
         it("should return same token on subsequent calls", async () => {
+            await authServer.post("/api/settings/feed-token/regenerate");
+
             const response1 = await authServer.get("/api/settings/feed-token");
             const response2 = await authServer.get("/api/settings/feed-token");
 
@@ -174,8 +188,19 @@ describe("Settings", () => {
     });
 
     describe("POST /api/settings/feed-token/regenerate", () => {
+        it("should generate feed token when none exists", async () => {
+            const response = await authServer.post("/api/settings/feed-token/regenerate");
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("Feed token regenerated successfully");
+            expect(response.body.data.token).toBeDefined();
+            expect(response.body.data.token).toHaveLength(64);
+            expect(response.body.data.feedUrl).toContain(response.body.data.token);
+        });
+
         it("should regenerate feed token", async () => {
-            const originalResponse = await authServer.get("/api/settings/feed-token");
+            const originalResponse = await authServer.post("/api/settings/feed-token/regenerate");
             const originalToken = originalResponse.body.data.token;
 
             const response = await authServer.post("/api/settings/feed-token/regenerate");
