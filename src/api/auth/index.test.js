@@ -82,6 +82,20 @@ describe("Auth", () => {
                 expect(["light", "dark", "system"]).toContain(response.body.data.theme);
             });
 
+            it("should include feedToken for authenticated users", async () => {
+                const response = await server.get("/api/auth/me");
+
+                expect(response.body.data.feedToken).toBeDefined();
+                expect(typeof response.body.data.feedToken).toBe("object");
+                expect(response.body.data.feedToken).toHaveProperty("token");
+                expect(response.body.data.feedToken).toHaveProperty("feedUrl");
+                expect(response.body.data.feedToken).toHaveProperty("calendars");
+                expect(response.body.data.feedToken.token).toHaveLength(64); // 32 bytes = 64 hex chars
+                expect(response.body.data.feedToken.feedUrl).toContain("/api/feed/");
+                expect(response.body.data.feedToken.feedUrl).toContain(".ics");
+                expect(Array.isArray(response.body.data.feedToken.calendars)).toBe(true);
+            });
+
             it("should return consistent data structure", async () => {
                 const response = await server.get("/api/auth/me");
 
@@ -92,6 +106,7 @@ describe("Auth", () => {
                         calendars: expect.any(Array),
                         cronSettings: expect.any(Object),
                         theme: expect.any(String),
+                        feedToken: expect.any(Object),
                     }),
                 );
             });
@@ -134,6 +149,13 @@ describe("Auth", () => {
                 expect(response.body.data).not.toHaveProperty("cronSettings");
             });
 
+            it("should not include feedToken for unauthenticated users", async () => {
+                const response = await server.get("/api/auth/me");
+
+                expect(response.body.data.feedToken).toBeUndefined();
+                expect(response.body.data).not.toHaveProperty("feedToken");
+            });
+
             it("should return safe data structure for unauthenticated users", async () => {
                 const response = await server.get("/api/auth/me");
 
@@ -146,6 +168,7 @@ describe("Auth", () => {
                 );
 
                 expect(Object.keys(response.body.data)).not.toContain("cronSettings");
+                expect(Object.keys(response.body.data)).not.toContain("feedToken");
             });
         });
 
@@ -177,17 +200,28 @@ describe("Auth", () => {
                 expect(authResponse.body.data.cronSettings).toMatchObject({
                     enabled: expect.any(Boolean),
                 });
+                expect(authResponse.body.data.feedToken).toMatchObject({
+                    token: expect.any(String),
+                    feedUrl: expect.any(String),
+                    calendars: expect.any(Array),
+                });
 
                 await server.logout();
                 const unauthResponse = await server.get("/api/auth/me");
                 expect(unauthResponse.body.data.isAuthenticated).toBe(false);
                 expect(unauthResponse.body.data.cronSettings).toBeUndefined();
+                expect(unauthResponse.body.data.feedToken).toBeUndefined();
 
                 await server.login();
                 const reAuthResponse = await server.get("/api/auth/me");
                 expect(reAuthResponse.body.data.isAuthenticated).toBe(true);
                 expect(reAuthResponse.body.data.cronSettings).toMatchObject({
                     enabled: expect.any(Boolean),
+                });
+                expect(reAuthResponse.body.data.feedToken).toMatchObject({
+                    token: expect.any(String),
+                    feedUrl: expect.any(String),
+                    calendars: expect.any(Array),
                 });
             });
         });
