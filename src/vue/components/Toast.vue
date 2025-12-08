@@ -22,7 +22,7 @@ function getIcon(type) {
                     v-for="toast in toasts"
                     :key="toast.id"
                     :class="[
-                        'bg-white border border-gray-300 rounded shadow-lg p-3 mb-3 min-w-[300px] max-w-[450px] pointer-events-auto relative font-inherit',
+                        'bg-white border border-gray-300 rounded shadow-lg p-3 mb-3 min-w-[300px] max-w-[450px] pointer-events-auto relative font-inherit dark:bg-gray-800 dark:border-gray-600',
                         toast.type === 'success' ? 'border-l-4 border-l-green-500' : '',
                         toast.type === 'error' ? 'border-l-4 border-l-red-500' : '',
                         toast.type === 'warning' ? 'border-l-4 border-l-yellow-500' : '',
@@ -41,15 +41,20 @@ function getIcon(type) {
                         >
                             {{ getIcon(toast.type) }}
                         </div>
-                        <div class="flex-1 text-sm text-gray-800 leading-relaxed">
-                            <div v-if="toast.title" class="font-bold mb-1 text-sm text-gray-800">
+                        <div
+                            class="flex-1 text-sm text-gray-800 dark:text-gray-200 leading-relaxed"
+                        >
+                            <div
+                                v-if="toast.title"
+                                class="font-bold mb-1 text-sm text-gray-800 dark:text-gray-100"
+                            >
                                 {{ toast.title }}
                             </div>
                             <div>{{ toast.message }}</div>
                         </div>
                     </div>
                     <button
-                        class="absolute top-1.5 right-2 bg-none border-none text-base text-gray-500 cursor-pointer p-1 w-6 h-6 flex items-center justify-center leading-none rounded hover:text-gray-600 hover:bg-gray-100"
+                        class="absolute top-1.5 right-2 bg-none border-none text-base text-gray-500 cursor-pointer p-1 w-6 h-6 flex items-center justify-center leading-none rounded hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700"
                         @click="removeToast(toast.id)"
                     >
                         &times;

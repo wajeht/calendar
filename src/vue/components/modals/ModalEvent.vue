@@ -124,13 +124,16 @@ const linkedLocation = computed(() => {
 
 <template>
     <Modal title="Event Details" @close="emit('close')">
-        <div v-if="props.event" class="space-y-3">
-            <h3 class="text-lg font-semibold mb-4">{{ props.event.title || "Event Details" }}</h3>
+        <div v-if="props.event" class="space-y-3 text-gray-800 dark:text-gray-200">
+            <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                {{ props.event.title || "Event Details" }}
+            </h3>
 
             <div class="space-y-2 text-sm">
                 <!-- All day indicator -->
                 <div v-if="props.event.allDay" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >When:</span
                     >
                     <span>All day event</span>
@@ -138,7 +141,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Start time -->
                 <div class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Start:</span
                     >
                     <span>{{ formattedStartDate }}</span>
@@ -146,13 +150,17 @@ const linkedLocation = computed(() => {
 
                 <!-- End time -->
                 <div v-if="props.event.end" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]">End:</span>
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
+                        >End:</span
+                    >
                     <span>{{ formattedEndDate }}</span>
                 </div>
 
                 <!-- Duration -->
                 <div v-if="duration" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Duration:</span
                     >
                     <span>{{ duration }}</span>
@@ -160,7 +168,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Location -->
                 <div v-if="linkedLocation" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Location:</span
                     >
                     <span v-html="linkedLocation"></span>
@@ -168,7 +177,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Description -->
                 <div v-if="linkedDescription" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Description:</span
                     >
                     <div v-html="linkedDescription" class="inline"></div>
@@ -176,7 +186,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Status -->
                 <div v-if="props.event.extendedProps?.status" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Status:</span
                     >
                     <span>{{ props.event.extendedProps.status }}</span>
@@ -190,7 +201,8 @@ const linkedLocation = computed(() => {
                     "
                     class="mb-2"
                 >
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Organizer:</span
                     >
                     <span v-if="props.event.extendedProps.organizerName">{{
@@ -226,7 +238,8 @@ const linkedLocation = computed(() => {
                     "
                     class="mb-2"
                 >
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Attendees:</span
                     >
                     <span>{{ props.event.extendedProps.attendeeCount }} attendee(s)</span>
@@ -234,7 +247,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Attendee names -->
                 <div v-if="props.event.extendedProps?.attendeeNames" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Names:</span
                     >
                     <span>{{
@@ -247,7 +261,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Attendee emails -->
                 <div v-if="attendeeEmails.length > 0" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Emails:</span
                     >
                     <span>
@@ -260,7 +275,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Transparency -->
                 <div v-if="props.event.extendedProps?.transparency" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Show as:</span
                     >
                     <span>{{
@@ -270,7 +286,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Created -->
                 <div v-if="props.event.extendedProps?.created" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Created:</span
                     >
                     <span>{{ new Date(props.event.extendedProps.created).toLocaleString() }}</span>
@@ -278,7 +295,8 @@ const linkedLocation = computed(() => {
 
                 <!-- Last Modified -->
                 <div v-if="props.event.extendedProps?.lastModified" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Modified:</span
                     >
                     <span>{{
@@ -288,17 +306,20 @@ const linkedLocation = computed(() => {
 
                 <!-- Event UID -->
                 <div v-if="props.event.extendedProps?.uid" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Event ID:</span
                     >
-                    <code class="text-xs bg-gray-100 px-2 py-1 rounded break-all">{{
-                        props.event.extendedProps.uid
-                    }}</code>
+                    <code
+                        class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded break-all"
+                        >{{ props.event.extendedProps.uid }}</code
+                    >
                 </div>
 
                 <!-- Calendar -->
                 <div v-if="props.calendar" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Calendar:</span
                     >
                     <span class="inline-flex items-center">
@@ -312,14 +333,15 @@ const linkedLocation = computed(() => {
 
                 <!-- Event URL -->
                 <div v-if="props.event.url" class="mb-2">
-                    <span class="font-bold text-gray-800 mr-2 inline-block min-w-[80px]"
+                    <span
+                        class="font-bold text-gray-800 dark:text-gray-200 mr-2 inline-block min-w-[80px]"
                         >Link:</span
                     >
                     <a
                         :href="props.event.url"
                         target="_blank"
                         rel="noopener noreferrer"
-                        class="text-blue-600 hover:underline"
+                        class="text-blue-600 dark:text-blue-400 hover:underline"
                         >Open in calendar</a
                     >
                 </div>

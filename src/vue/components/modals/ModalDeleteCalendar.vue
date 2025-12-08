@@ -46,7 +46,7 @@ function handleClose() {
 
 <template>
     <Modal title="Delete Confirmation" :high-z-index="props.highZIndex" @close="handleClose">
-        <p class="text-gray-700">
+        <p class="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete "<strong>{{ props.calendar.name }}</strong
             >"? This action cannot be undone.
         </p>

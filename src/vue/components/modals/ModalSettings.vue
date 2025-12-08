@@ -3,6 +3,7 @@ import { ref, reactive, useTemplateRef, onMounted, computed, watch, toRef } from
 import { useToast } from "../../composables/useToast";
 import { useAsyncData } from "../../composables/useAsyncData.js";
 import { useAuthStore } from "../../composables/useAuthStore.js";
+import { useTheme } from "../../composables/useTheme.js";
 import { api } from "../../api.js";
 import Modal from "../../components/Modal.vue";
 import FormGroup from "../../components/FormGroup.vue";
@@ -32,6 +33,7 @@ const props = defineProps({
 const emit = defineEmits(["close", "calendar-updated", "show-password-modal", "auth-changed"]);
 const toast = useToast();
 const auth = useAuthStore();
+const { theme, setTheme } = useTheme();
 const isAuthenticated = toRef(props, "isAuthenticated");
 
 const cronSettings = reactive({
@@ -333,7 +335,9 @@ watch(isAuthenticated, (newValue) => {
         <!-- Vertical Layout Container -->
         <div class="flex h-[500px]">
             <!-- Sidebar Navigation -->
-            <div class="w-36 border-r border-gray-300 bg-gray-100">
+            <div
+                class="w-36 border-r border-gray-300 bg-gray-100 dark:border-gray-600 dark:bg-gray-900"
+            >
                 <nav class="py-4 pl-4 pr-3 space-y-2">
                     <Button
                         @click="handleTabClick('calendars')"
@@ -391,7 +395,9 @@ watch(isAuthenticated, (newValue) => {
                 <!-- Calendars Tab -->
                 <div v-if="activeTab === 'calendars'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Calendars</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                            Calendars
+                        </h3>
                         <Button variant="primary" @click="showAddModal = true">
                             Add Calendar
                         </Button>
@@ -400,29 +406,31 @@ watch(isAuthenticated, (newValue) => {
                     <!-- Calendar List -->
                     <div class="space-y-4">
                         <div
-                            class="h-[400px] overflow-y-auto border border-gray-200 rounded-lg bg-white"
+                            class="h-[400px] overflow-y-auto border border-gray-200 rounded-lg bg-white dark:border-gray-600 dark:bg-gray-800"
                         >
                             <div class="overflow-x-hidden">
                                 <table class="w-full table-fixed">
-                                    <thead class="bg-gray-50 sticky top-0 z-10">
+                                    <thead class="bg-gray-50 sticky top-0 z-10 dark:bg-gray-900">
                                         <tr>
                                             <th
-                                                class="w-3/4 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                class="w-3/4 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                             >
                                                 Calendar
                                             </th>
                                             <th
-                                                class="w-1/4 px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                class="w-1/4 px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                                             >
                                                 Actions
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody class="bg-white divide-y divide-gray-200">
+                                    <tbody
+                                        class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700"
+                                    >
                                         <tr
                                             v-for="calendar in calendars"
                                             :key="calendar.id"
-                                            class="hover:bg-gray-50"
+                                            class="hover:bg-gray-50 dark:hover:bg-gray-700"
                                         >
                                             <td class="px-4 py-4">
                                                 <div class="flex items-start space-x-3">
@@ -431,13 +439,15 @@ watch(isAuthenticated, (newValue) => {
                                                         :style="{ backgroundColor: calendar.color }"
                                                     ></div>
                                                     <div class="min-w-0 flex-1">
-                                                        <div class="font-medium text-gray-900">
+                                                        <div
+                                                            class="font-medium text-gray-900 dark:text-gray-100"
+                                                        >
                                                             {{ calendar.name }}
                                                         </div>
                                                         <div class="mt-2">
                                                             <span
                                                                 v-if="!calendar.visible_to_public"
-                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 whitespace-nowrap"
                                                             >
                                                                 Hidden from Public
                                                             </span>
@@ -445,13 +455,13 @@ watch(isAuthenticated, (newValue) => {
                                                                 v-else-if="
                                                                     !calendar.show_details_to_public
                                                                 "
-                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap"
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 whitespace-nowrap"
                                                             >
                                                                 Details Hidden from Public
                                                             </span>
                                                             <span
                                                                 v-else
-                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
+                                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 whitespace-nowrap"
                                                             >
                                                                 Visible to Public
                                                             </span>
@@ -481,7 +491,7 @@ watch(isAuthenticated, (newValue) => {
                                         <tr v-if="calendars.length === 0">
                                             <td
                                                 colspan="2"
-                                                class="px-4 py-8 text-center text-gray-500"
+                                                class="px-4 py-8 text-center text-gray-500 dark:text-gray-400"
                                             >
                                                 No calendars configured. Click "Add Calendar" to get
                                                 started.
@@ -500,13 +510,35 @@ watch(isAuthenticated, (newValue) => {
                     class="h-full overflow-y-auto space-y-6 p-6"
                 >
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">Preferences</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                            Preferences
+                        </h3>
                     </div>
 
                     <div class="space-y-6">
-                        <!-- Auto Refresh Section -->
+                        <!-- Appearance Section -->
                         <div class="space-y-4">
-                            <h4 class="text-md font-medium text-gray-900">Auto Refresh</h4>
+                            <h4 class="text-md font-medium text-gray-900 dark:text-gray-100">
+                                Appearance
+                            </h4>
+                            <FormGroup label="Theme" input-id="theme-select">
+                                <Select
+                                    id="theme-select"
+                                    :model-value="theme"
+                                    @update:model-value="setTheme"
+                                >
+                                    <option value="system">System</option>
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                </Select>
+                            </FormGroup>
+                        </div>
+
+                        <!-- Auto Refresh Section -->
+                        <div class="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                            <h4 class="text-md font-medium text-gray-900 dark:text-gray-100">
+                                Auto Refresh
+                            </h4>
                             <div>
                                 <Checkbox
                                     id="enable-auto-refresh"
@@ -535,7 +567,7 @@ watch(isAuthenticated, (newValue) => {
                                 </FormGroup>
 
                                 <FormGroup v-if="cronSettings.lastRun" label="Last Run">
-                                    <div class="text-sm py-1.5 text-gray-600">
+                                    <div class="text-sm py-1.5 text-gray-600 dark:text-gray-400">
                                         {{ new Date(cronSettings.lastRun).toLocaleString() }}
                                     </div>
                                 </FormGroup>
@@ -543,8 +575,10 @@ watch(isAuthenticated, (newValue) => {
                         </div>
 
                         <!-- Manual Refresh Section -->
-                        <div class="border-t border-gray-200 pt-4">
-                            <h4 class="text-md font-medium text-gray-900 mb-4">Manual Refresh</h4>
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                            <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
+                                Manual Refresh
+                            </h4>
                             <Button
                                 @click="refreshAllCalendars"
                                 :loading="isRefreshing"
@@ -555,8 +589,10 @@ watch(isAuthenticated, (newValue) => {
                         </div>
 
                         <!-- Import/Export Section -->
-                        <div class="border-t border-gray-200 pt-4">
-                            <h4 class="text-md font-medium text-gray-900 mb-4">Import/Export</h4>
+                        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                            <h4 class="text-md font-medium text-gray-900 dark:text-gray-100 mb-4">
+                                Import/Export
+                            </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Button
                                     @click="exportCalendars"
@@ -590,7 +626,9 @@ watch(isAuthenticated, (newValue) => {
                 <div v-if="activeTab === 'account'" class="h-full overflow-y-auto space-y-6 p-6">
                     <!-- Password Change Section -->
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Account</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                            Account
+                        </h3>
                         <form @submit.prevent="changePassword" class="space-y-4">
                             <!-- Hidden username field for password managers -->
                             <input
@@ -671,21 +709,21 @@ watch(isAuthenticated, (newValue) => {
                 <!-- About Tab -->
                 <div v-if="activeTab === 'about'" class="h-full overflow-y-auto space-y-6 p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">About</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">About</h3>
                     </div>
 
                     <div class="space-y-6">
                         <div class="space-y-4">
-                            <p class="text-sm text-gray-600 leading-relaxed">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                                 A web-based calendar application with multiple calendar source
                                 support via iCal/WebCal URLs
                             </p>
 
-                            <p class="text-sm text-gray-600">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
                                 Questions or feedback?
                                 <a
                                     href="mailto:github@jaw.dev"
-                                    class="text-gray-800 hover:text-gray-900 underline"
+                                    class="text-gray-800 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 underline"
                                 >
                                     Drop me a line
                                 </a>
@@ -694,7 +732,7 @@ watch(isAuthenticated, (newValue) => {
                                     href="https://github.com/wajeht/calendar/issues"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="text-gray-800 hover:text-gray-900 underline"
+                                    class="text-gray-800 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 underline"
                                 >
                                     create an issue
                                 </a>
@@ -703,19 +741,19 @@ watch(isAuthenticated, (newValue) => {
                                     href="https://github.com/wajeht/calendar"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="text-gray-800 hover:text-gray-900 underline"
+                                    class="text-gray-800 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 underline"
                                 >
                                     Github
                                 </a>
                             </p>
 
-                            <p class="text-sm text-gray-600">
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
                                 Copyright © {{ copyRightYear }}. Made with ❤️ by
                                 <a
                                     href="https://github.com/wajeht"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="text-gray-800 hover:text-gray-900 underline"
+                                    class="text-gray-800 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 underline"
                                 >
                                     @wajeht
                                 </a>
