@@ -29,21 +29,25 @@ const buttonClasses = computed(() => {
         case "primary":
             classes.push(
                 "text-white bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-700 hover:from-slate-800 hover:to-slate-700 hover:border-slate-700",
+                "dark:from-slate-600 dark:to-slate-700 dark:border-slate-600 dark:hover:from-slate-700 dark:hover:to-slate-600",
             );
             break;
         case "danger":
             classes.push(
                 "text-white bg-gradient-to-b from-red-500 to-red-700 border border-red-500 hover:from-red-700 hover:to-red-500 hover:border-red-700",
+                "dark:from-red-600 dark:to-red-700 dark:border-red-600 dark:hover:from-red-700 dark:hover:to-red-600",
             );
             break;
         case "warning":
             classes.push(
                 "text-white bg-gradient-to-b from-yellow-500 to-yellow-600 border border-yellow-500 hover:from-yellow-600 hover:to-yellow-500 hover:border-yellow-600",
+                "dark:from-yellow-600 dark:to-yellow-700 dark:border-yellow-600 dark:hover:from-yellow-700 dark:hover:to-yellow-600",
             );
             break;
         default:
             classes.push(
                 "text-gray-800 bg-gradient-to-b from-white to-gray-200 border border-gray-300 hover:from-gray-200 hover:to-gray-300 hover:border-gray-400",
+                "dark:text-gray-200 dark:from-gray-700 dark:to-gray-800 dark:border-gray-600 dark:hover:from-gray-600 dark:hover:to-gray-700 dark:hover:border-gray-500",
             );
     }
 

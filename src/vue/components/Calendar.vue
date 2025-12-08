@@ -15,9 +15,11 @@ import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
 
 import { useToast } from "../composables/useToast";
 import { useAuthStore } from "../composables/useAuthStore.js";
+import { useTheme } from "../composables/useTheme.js";
 
 const toast = useToast();
 const auth = useAuthStore();
+const { initialize: initTheme } = useTheme();
 const calendars = ref([]);
 
 const calendarRef = useTemplateRef("calendarRef");
@@ -271,6 +273,7 @@ onMounted(async () => {
     const data = await auth.initialize();
     calendars.value = data;
     updateCalendarSources(data);
+    initTheme();
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     scheduleMidnightUpdate();

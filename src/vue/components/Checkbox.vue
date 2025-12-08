@@ -34,7 +34,7 @@ const checkboxId = computed(() => {
 <template>
     <label
         :for="checkboxId"
-        class="cursor-pointer font-normal text-gray-800 text-[13px] leading-relaxed m-0 flex items-center"
+        class="cursor-pointer font-normal text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed m-0 flex items-center"
     >
         <div class="relative flex items-center mr-2">
             <input
@@ -48,8 +48,8 @@ const checkboxId = computed(() => {
                 :class="[
                     'w-4 h-4 border rounded-sm flex items-center justify-center transition-all duration-200',
                     model
-                        ? 'border-slate-700 bg-slate-700'
-                        : 'border-gray-300 bg-white hover:border-slate-400',
+                        ? 'border-slate-700 bg-slate-700 dark:border-slate-500 dark:bg-slate-600'
+                        : 'border-gray-300 bg-white hover:border-slate-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-slate-500',
                     props.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
                 ]"
             >

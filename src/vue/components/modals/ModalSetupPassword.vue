@@ -59,8 +59,10 @@ onMounted(async () => {
 <template>
     <Modal title="Setup Application Password" @close="emit('close')">
         <div class="text-center mb-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Welcome to Calendar!</h3>
-            <p class="text-sm text-gray-600">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Welcome to Calendar!
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
                 To secure your calendar application, please create an admin password.
             </p>
         </div>

@@ -99,7 +99,7 @@ const sizeClasses = computed(() => {
             closedby="none"
             :class="[
                 'modal-dialog',
-                'bg-white border border-gray-300 rounded-sm shadow-lg overflow-hidden',
+                'bg-white border border-gray-300 rounded-sm shadow-lg overflow-hidden dark:bg-gray-800 dark:border-gray-600',
                 'text-[13px] leading-tight',
                 props.highZIndex ? 'z-[4001]' : 'z-[3001]',
                 isClosing ? 'modal-closing' : '',
@@ -111,14 +111,14 @@ const sizeClasses = computed(() => {
             <!-- Modal Header -->
             <div
                 v-if="props.title || $slots.header"
-                class="bg-gray-100 border-b border-gray-300 p-4 relative"
+                class="bg-gray-100 border-b border-gray-300 p-4 relative dark:bg-gray-900 dark:border-gray-600"
             >
-                <h2 class="m-0 text-base font-bold text-gray-800">
+                <h2 class="m-0 text-base font-bold text-gray-800 dark:text-gray-100">
                     <slot name="header">{{ props.title }}</slot>
                 </h2>
                 <button
                     v-if="props.closable"
-                    class="modal-close-btn absolute top-1/2 right-4 transform -translate-y-1/2 bg-transparent border-0 text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800 transition-colors duration-150"
+                    class="modal-close-btn absolute top-1/2 right-4 transform -translate-y-1/2 bg-transparent border-0 text-lg cursor-pointer text-gray-500 p-0 w-5 h-5 flex items-center justify-center hover:text-gray-800 transition-colors duration-150 dark:text-gray-400 dark:hover:text-gray-200"
                     tabindex="-1"
                     @click="closeModal"
                     style="font-family: inherit; outline: none"
@@ -138,7 +138,10 @@ const sizeClasses = computed(() => {
             </div>
 
             <!-- Modal Footer -->
-            <div v-if="$slots.footer" class="bg-gray-100 border-t border-gray-300 p-4 text-right">
+            <div
+                v-if="$slots.footer"
+                class="bg-gray-100 border-t border-gray-300 p-4 text-right dark:bg-gray-900 dark:border-gray-600"
+            >
                 <slot name="footer" />
             </div>
         </dialog>

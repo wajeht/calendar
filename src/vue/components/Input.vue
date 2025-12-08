@@ -61,7 +61,7 @@ const inputClasses = computed(() => {
     }
 
     if (props.disabled) {
-        classes.push("bg-gray-100 cursor-not-allowed");
+        classes.push("bg-gray-100 dark:bg-gray-800 cursor-not-allowed");
     }
 
     if (props.type === "password") {
@@ -78,6 +78,7 @@ const inputClasses = computed(() => {
             ref="inputRef"
             :class="[
                 'w-full px-2 py-1.5 border border-gray-300 rounded-sm text-[13px] box-border focus:outline-none focus:border-blue-400 focus:shadow-[0_0_4px_rgba(102,175,233,0.6)]',
+                'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:shadow-[0_0_4px_rgba(59,130,246,0.5)]',
                 inputClasses,
             ]"
             :type="inputType"
@@ -95,7 +96,7 @@ const inputClasses = computed(() => {
             type="button"
             @click="togglePasswordVisibility"
             :disabled="props.disabled"
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-400 dark:hover:text-gray-200"
             :title="showPassword ? 'Hide password' : 'Show password'"
         >
             <!-- Eye icon for show password -->
