@@ -6,13 +6,11 @@ describe("Feed Router", () => {
 
     beforeEach(async () => {
         await server.cleanDatabase();
-        // Also clean feed settings between tests
         await server.ctx.db("settings").where("key", "like", "feed_%").del();
     });
 
     describe("GET /api/feed/:token.ics", () => {
         it("should return iCal feed with valid token", async () => {
-            // Create a calendar with iCal data
             await server.ctx.models.calendar.create({
                 name: "Test Calendar",
                 url: "https://example.com/calendar.ics",
@@ -30,11 +28,9 @@ END:VCALENDAR`,
                 show_details_to_public: true,
             });
 
-            // Get the feed token
-            const tokenResponse = await server.get("/api/settings/feed-token");
+            const tokenResponse = await server.post("/api/settings/feed-token/regenerate");
             const token = tokenResponse.body.data.token;
 
-            // Access the feed
             const response = await server.get(`/api/feed/${token}.ics`);
 
             expect(response.status).toBe(200);
@@ -85,7 +81,7 @@ END:VCALENDAR`,
                 show_details_to_public: true,
             });
 
-            const tokenResponse = await server.get("/api/settings/feed-token");
+            const tokenResponse = await server.post("/api/settings/feed-token/regenerate");
             const token = tokenResponse.body.data.token;
 
             const response = await server.get(`/api/feed/${token}.ics`);
@@ -93,7 +89,6 @@ END:VCALENDAR`,
             expect(response.status).toBe(200);
             expect(response.text).toContain("Event from Calendar 1");
             expect(response.text).toContain("Event from Calendar 2");
-            // Should only have one VCALENDAR wrapper
             expect((response.text.match(/BEGIN:VCALENDAR/g) || []).length).toBe(1);
             expect((response.text.match(/END:VCALENDAR/g) || []).length).toBe(1);
         });
@@ -131,13 +126,12 @@ END:VCALENDAR`,
                 show_details_to_public: true,
             });
 
-            // Set feed to only include calendar 1
+            const tokenResponse = await server.post("/api/settings/feed-token/regenerate");
+            const token = tokenResponse.body.data.token;
+
             await server.put("/api/settings/feed-token/calendars", {
                 calendars: [cal1.id],
             });
-
-            const tokenResponse = await server.get("/api/settings/feed-token");
-            const token = tokenResponse.body.data.token;
 
             const response = await server.get(`/api/feed/${token}.ics`);
 
@@ -179,13 +173,12 @@ END:VCALENDAR`,
                 show_details_to_public: true,
             });
 
-            // Explicitly set to empty array (all calendars)
+            const tokenResponse = await server.post("/api/settings/feed-token/regenerate");
+            const token = tokenResponse.body.data.token;
+
             await server.put("/api/settings/feed-token/calendars", {
                 calendars: [],
             });
-
-            const tokenResponse = await server.get("/api/settings/feed-token");
-            const token = tokenResponse.body.data.token;
 
             const response = await server.get(`/api/feed/${token}.ics`);
 
@@ -195,7 +188,7 @@ END:VCALENDAR`,
         });
 
         it("should return empty feed when no calendars exist", async () => {
-            const tokenResponse = await server.get("/api/settings/feed-token");
+            const tokenResponse = await server.post("/api/settings/feed-token/regenerate");
             const token = tokenResponse.body.data.token;
 
             const response = await server.get(`/api/feed/${token}.ics`);
@@ -216,7 +209,7 @@ END:VCALENDAR`,
                 show_details_to_public: true,
             });
 
-            const tokenResponse = await server.get("/api/settings/feed-token");
+            const tokenResponse = await server.post("/api/settings/feed-token/regenerate");
             const token = tokenResponse.body.data.token;
 
             const response = await server.get(`/api/feed/${token}.ics`);
