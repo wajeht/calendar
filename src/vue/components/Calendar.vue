@@ -56,6 +56,16 @@ const viewMappings = {
     list: "listMonth",
 };
 
+function getInitialView() {
+    const params = new URLSearchParams(window.location.search);
+    return viewMappings[params.get("view")] || "timeGridWeek";
+}
+
+function getInitialDate() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("date") || undefined;
+}
+
 const calendarOptions = ref({
     plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin, iCalendarPlugin],
     initialView: getInitialView(),
@@ -89,17 +99,6 @@ const calendarOptions = ref({
     eventSourceFailure: handleEventSourceFailure,
     datesSet: updateURL,
 });
-
-function getInitialView() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const viewParam = urlParams.get("view");
-    return viewMappings[viewParam] || "timeGridWeek";
-}
-
-function getInitialDate() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("date") || undefined;
-}
 
 async function handleSettingsClick() {
     if (auth.isPasswordConfigured.value === false) {

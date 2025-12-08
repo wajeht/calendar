@@ -4,7 +4,7 @@ import { useToast } from "./useToast.js";
 import { useLogger } from "./useLogger.js";
 
 const CACHE_KEY = "calendar_app_cache";
-const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 1 day
 
 const logger = useLogger("AuthStore");
 
@@ -32,20 +32,33 @@ function getCache() {
         }
         logger.log("Cache miss");
         return null;
-    } catch {
-        logger.log("Cache read error");
+    } catch (error) {
+        logger.error("Cache read error:", error.message);
         return null;
     }
 }
 
 function setCache(data) {
     try {
-        const { feedToken, ...safeData } = data;
+        const { feedToken, calendars, ...safeData } = data;
+
+        // Cache events within ±30 days to stay under localStorage quota
+        const now = Date.now();
+        const past = now - 30 * 24 * 60 * 60 * 1000;
+        const future = now + 30 * 24 * 60 * 60 * 1000;
+
+        safeData.calendars = (calendars || []).map((cal) => ({
+            ...cal,
+            events: (cal.events || []).filter((event) => {
+                const start = new Date(event.start).getTime();
+                return start >= past && start <= future;
+            }),
+        }));
         safeData._cachedAt = Date.now();
         localStorage.setItem(CACHE_KEY, JSON.stringify(safeData));
-        logger.log("Cache set:", Object.keys(safeData));
-    } catch {
-        logger.log("Cache write error");
+        logger.log("Cache set");
+    } catch (error) {
+        logger.error("Cache write error:", error.message);
     }
 }
 
@@ -53,8 +66,8 @@ function clearCache() {
     try {
         localStorage.removeItem(CACHE_KEY);
         logger.log("Cache cleared");
-    } catch {
-        logger.log("Cache clear error");
+    } catch (error) {
+        logger.error("Cache clear error:", error.message);
     }
 }
 
@@ -95,11 +108,12 @@ export function useAuthStore() {
             const result = await api.auth.me();
             if (result?.success) {
                 logger.log("Fresh data received:", Object.keys(result.data));
+                logger.log("isAuthenticated:", result.data.isAuthenticated);
                 applyData(result.data);
                 setCache(result.data);
                 return result.data.calendars || [];
             }
-            logger.log("Fetch failed - no success");
+            logger.error("Fetch failed - success:", result?.success, "status:", result?.status);
             return [];
         } catch (error) {
             logger.error("Fetch error:", error.message);
