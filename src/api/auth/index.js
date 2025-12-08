@@ -132,8 +132,15 @@ export function createAuthRouter(dependencies = {}) {
 
     router.get("/me", async (req, res) => {
         const isAuthenticated = utils.isAuthenticated(req);
-        const existingPassword = await models.settings.get("app_password");
-        const calendars = await models.calendar.getAllForAccess(isAuthenticated);
+
+        const baseResults = await Promise.allSettled([
+            models.settings.get("app_password"),
+            models.calendar.getAllForAccess(isAuthenticated),
+        ]);
+
+        const existingPassword =
+            baseResults[0].status === "fulfilled" ? baseResults[0].value : null;
+        const calendars = baseResults[1].status === "fulfilled" ? baseResults[1].value : [];
 
         const data = {
             isAuthenticated,
@@ -142,16 +149,20 @@ export function createAuthRouter(dependencies = {}) {
         };
 
         if (isAuthenticated) {
-            data.cronSettings = services.cron.getStatus();
-            data.theme = (await models.settings.get("theme")) || "system";
+            const authSettings = await models.settings.getMany([
+                "theme",
+                "feed_token",
+                "feed_calendars",
+            ]);
 
-            const feedToken = await models.settings.get("feed_token");
-            if (feedToken) {
-                const feedCalendars = (await models.settings.get("feed_calendars")) || [];
+            data.cronSettings = services.cron.getStatus();
+            data.theme = authSettings.theme || "system";
+
+            if (authSettings.feed_token) {
                 data.feedToken = {
-                    token: feedToken,
-                    feedUrl: `/api/feed/${feedToken}.ics`,
-                    calendars: feedCalendars,
+                    token: authSettings.feed_token,
+                    feedUrl: `/api/feed/${authSettings.feed_token}.ics`,
+                    calendars: authSettings.feed_calendars || [],
                 };
             }
         }

@@ -58,6 +58,8 @@ const knexConfig = {
 if (process.env.NODE_ENV === "test") {
     console.log("🧪 Using in-memory database for tests");
     knexConfig.connection = { filename: ":memory:" };
+    // Disable pooling in test mode to avoid connection sharing issues
+    knexConfig.pool = { min: 0, max: 1 };
 }
 
 export default knexConfig;

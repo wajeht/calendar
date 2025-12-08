@@ -65,6 +65,34 @@ export function createSettings(dependencies = {}) {
         },
 
         /**
+         * Get multiple settings by keys in a single query
+         * @param {string[]} keys - Array of setting keys
+         * @returns {Promise<Object>} Object with requested settings
+         */
+        async getMany(keys) {
+            try {
+                const settings = await db("settings").whereIn("key", keys).select("key", "value");
+                const result = {};
+
+                for (const setting of settings) {
+                    try {
+                        result[setting.key] = JSON.parse(setting.value);
+                    } catch {
+                        result[setting.key] = setting.value;
+                    }
+                }
+
+                return result;
+            } catch (error) {
+                throw new DatabaseError(
+                    `Failed to get settings ${keys.join(", ")}: ${error.message}`,
+                    error,
+                    { cause: error },
+                );
+            }
+        },
+
+        /**
          * Get all settings
          * @returns {Promise<Object>} Object with all settings
          */
