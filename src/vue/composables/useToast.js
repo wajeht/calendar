@@ -1,5 +1,6 @@
 import { ref } from "vue";
 
+const MAX_TOASTS = 5;
 const toasts = ref([]);
 let toastId = 0;
 
@@ -17,6 +18,11 @@ export function useToast() {
         };
 
         toasts.value.push(toast);
+
+        // Keep only the most recent toasts
+        while (toasts.value.length > MAX_TOASTS) {
+            toasts.value.shift();
+        }
 
         if (duration > 0) {
             setTimeout(() => {
