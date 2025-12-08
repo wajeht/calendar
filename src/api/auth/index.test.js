@@ -82,7 +82,15 @@ describe("Auth", () => {
                 expect(["light", "dark", "system"]).toContain(response.body.data.theme);
             });
 
-            it("should include feedToken for authenticated users", async () => {
+            it("should not include feedToken when not generated", async () => {
+                const response = await server.get("/api/auth/me");
+
+                expect(response.body.data.feedToken).toBeUndefined();
+            });
+
+            it("should include feedToken after generation", async () => {
+                await server.post("/api/settings/feed-token/regenerate");
+
                 const response = await server.get("/api/auth/me");
 
                 expect(response.body.data.feedToken).toBeDefined();
@@ -106,7 +114,6 @@ describe("Auth", () => {
                         calendars: expect.any(Array),
                         cronSettings: expect.any(Object),
                         theme: expect.any(String),
-                        feedToken: expect.any(Object),
                     }),
                 );
             });
@@ -200,11 +207,6 @@ describe("Auth", () => {
                 expect(authResponse.body.data.cronSettings).toMatchObject({
                     enabled: expect.any(Boolean),
                 });
-                expect(authResponse.body.data.feedToken).toMatchObject({
-                    token: expect.any(String),
-                    feedUrl: expect.any(String),
-                    calendars: expect.any(Array),
-                });
 
                 await server.logout();
                 const unauthResponse = await server.get("/api/auth/me");
@@ -217,11 +219,6 @@ describe("Auth", () => {
                 expect(reAuthResponse.body.data.isAuthenticated).toBe(true);
                 expect(reAuthResponse.body.data.cronSettings).toMatchObject({
                     enabled: expect.any(Boolean),
-                });
-                expect(reAuthResponse.body.data.feedToken).toMatchObject({
-                    token: expect.any(String),
-                    feedUrl: expect.any(String),
-                    calendars: expect.any(Array),
                 });
             });
         });
