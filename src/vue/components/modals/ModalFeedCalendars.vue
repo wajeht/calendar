@@ -4,6 +4,7 @@ import { api } from "../../api.js";
 import { useToast } from "../../composables/useToast";
 import Modal from "../../components/Modal.vue";
 import Button from "../../components/Button.vue";
+import Checkbox from "../../components/Checkbox.vue";
 
 const props = defineProps({
     calendars: {
@@ -26,12 +27,20 @@ const toast = useToast();
 const isLoading = ref(false);
 const selected = ref([...props.selectedCalendars]);
 
-function toggleCalendar(calendarId) {
-    const index = selected.value.indexOf(calendarId);
-    if (index === -1) {
-        selected.value.push(calendarId);
+function isSelected(calendarId) {
+    return selected.value.includes(calendarId);
+}
+
+function toggleCalendar(calendarId, checked) {
+    if (checked) {
+        if (!selected.value.includes(calendarId)) {
+            selected.value.push(calendarId);
+        }
     } else {
-        selected.value.splice(index, 1);
+        const index = selected.value.indexOf(calendarId);
+        if (index !== -1) {
+            selected.value.splice(index, 1);
+        }
     }
 }
 
@@ -73,23 +82,19 @@ function handleClose() {
                 :key="calendar.id"
                 class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
             >
-                <input
-                    type="checkbox"
+                <Checkbox
                     :id="`feed-cal-${calendar.id}`"
-                    :checked="selected.includes(calendar.id)"
-                    @change="toggleCalendar(calendar.id)"
-                    class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                />
-                <div
-                    class="w-3 h-3 rounded-full flex-shrink-0"
-                    :style="{ backgroundColor: calendar.color }"
-                ></div>
-                <label
-                    :for="`feed-cal-${calendar.id}`"
-                    class="flex-1 text-sm text-gray-900 dark:text-gray-100 cursor-pointer"
+                    :model-value="isSelected(calendar.id)"
+                    @update:model-value="toggleCalendar(calendar.id, $event)"
                 >
-                    {{ calendar.name }}
-                </label>
+                    <span class="flex items-center gap-2">
+                        <span
+                            class="w-3 h-3 rounded-full flex-shrink-0"
+                            :style="{ backgroundColor: calendar.color }"
+                        ></span>
+                        {{ calendar.name }}
+                    </span>
+                </Checkbox>
             </div>
             <div
                 v-if="props.calendars.length === 0"
