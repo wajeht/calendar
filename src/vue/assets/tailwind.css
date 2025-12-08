@@ -1,1 +1,81 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Base dark mode styles */
+@layer base {
+    html {
+        @apply bg-white text-gray-900;
+    }
+
+    html.dark {
+        @apply bg-gray-900 text-gray-100;
+    }
+}
+
+/* FullCalendar dark mode styles */
+.dark .fc {
+    --fc-page-bg-color: theme(colors.gray.900);
+    --fc-neutral-bg-color: theme(colors.gray.800);
+    --fc-neutral-text-color: theme(colors.gray.300);
+    --fc-border-color: theme(colors.gray.700);
+    --fc-button-bg-color: theme(colors.gray.700);
+    --fc-button-border-color: theme(colors.gray.600);
+    --fc-button-text-color: theme(colors.gray.100);
+    --fc-button-hover-bg-color: theme(colors.gray.600);
+    --fc-button-hover-border-color: theme(colors.gray.500);
+    --fc-button-active-bg-color: theme(colors.gray.500);
+    --fc-button-active-border-color: theme(colors.gray.400);
+    --fc-today-bg-color: theme(colors.gray.800);
+    --fc-now-indicator-color: theme(colors.red.500);
+    --fc-list-event-hover-bg-color: theme(colors.gray.700);
+}
+
+.dark .fc-theme-standard td,
+.dark .fc-theme-standard th {
+    border-color: theme(colors.gray.700);
+}
+
+.dark .fc-theme-standard .fc-scrollgrid {
+    border-color: theme(colors.gray.700);
+}
+
+.dark .fc .fc-daygrid-day-number,
+.dark .fc .fc-col-header-cell-cushion {
+    color: theme(colors.gray.200);
+}
+
+.dark .fc .fc-daygrid-day.fc-day-today {
+    background-color: theme(colors.gray.800);
+}
+
+.dark .fc .fc-timegrid-now-indicator-line {
+    border-color: theme(colors.red.500);
+}
+
+.dark .fc .fc-timegrid-now-indicator-arrow {
+    border-color: theme(colors.red.500);
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+.dark .fc .fc-list-day-cushion {
+    background-color: theme(colors.gray.800);
+}
+
+.dark .fc .fc-list-event:hover td {
+    background-color: theme(colors.gray.700);
+}
+
+.dark .fc .fc-list-empty {
+    background-color: theme(colors.gray.900);
+}
+
+.dark .fc .fc-timegrid-slot-label-cushion,
+.dark .fc .fc-timegrid-axis-cushion {
+    color: theme(colors.gray.400);
+}
+
+.dark .fc .fc-non-business {
+    background-color: theme(colors.gray.800/50);
+}

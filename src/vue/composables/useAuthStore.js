@@ -6,6 +6,7 @@ const state = reactive({
     isAuthenticated: false,
     isPasswordConfigured: null,
     cronSettings: null,
+    theme: "system",
 });
 
 export function useAuthStore() {
@@ -18,6 +19,7 @@ export function useAuthStore() {
                 state.isAuthenticated = Boolean(result.data.isAuthenticated);
                 state.isPasswordConfigured = Boolean(result.data.isPasswordConfigured);
                 state.cronSettings = result.data.cronSettings || null;
+                state.theme = result.data.theme || "system";
                 return result.data.calendars || [];
             }
             return [];
@@ -34,6 +36,7 @@ export function useAuthStore() {
                 state.isAuthenticated = false;
                 state.isPasswordConfigured = null;
                 state.cronSettings = null;
+                state.theme = "system";
 
                 toast.success(result.message || "Logged out successfully");
                 return true;
@@ -51,9 +54,10 @@ export function useAuthStore() {
         isAuthenticated: toRef(state, "isAuthenticated"),
         isPasswordConfigured: toRef(state, "isPasswordConfigured"),
         cronSettings: toRef(state, "cronSettings"),
+        theme: toRef(state, "theme"),
         initialize,
         logout,
-        setAuth: (value) => (state.isAuthenticated = value),
         setPasswordConfigured: (value) => (state.isPasswordConfigured = value),
+        setTheme: (value) => (state.theme = value),
     };
 }
