@@ -16,30 +16,241 @@ export function createCalendarService(dependencies = {}) {
     if (!logger) throw new ConfigurationError("Logger required for calendar service");
     if (!utils) throw new ConfigurationError("Utils required for calendar service");
 
-    function formatDateForCalendar(icalTime) {
+    function formatDate(icalTime) {
         if (icalTime.isDate) {
             return icalTime.toJSDate().toISOString().split("T")[0];
         }
 
-        // For floating times (no timezone), format as ISO string without timezone conversion
-        // This preserves the original time values and lets the frontend handle timezone display
+        // Floating times (no timezone) - preserve original values
         if (!icalTime.zone || icalTime.zone.tzid === "floating") {
-            const year = icalTime.year;
-            const month = String(icalTime.month).padStart(2, "0");
-            const day = String(icalTime.day).padStart(2, "0");
-            const hour = String(icalTime.hour).padStart(2, "0");
-            const minute = String(icalTime.minute).padStart(2, "0");
-            const second = String(icalTime.second).padStart(2, "0");
-
-            return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${icalTime.year}-${pad(icalTime.month)}-${pad(icalTime.day)}T${pad(icalTime.hour)}:${pad(icalTime.minute)}:${pad(icalTime.second)}`;
         }
 
         return icalTime.toJSDate().toISOString();
     }
 
+    function getPropertyValue(component, name) {
+        const value = component.getFirstPropertyValue(name);
+        return value ? value.toJSDate().toISOString() : null;
+    }
+
+    function parseAttendee(attendee) {
+        const getParam = (name) =>
+            typeof attendee.getParameter === "function" ? attendee.getParameter(name) || "" : "";
+        const getEmail = () => {
+            if (typeof attendee.getFirstValue === "function") {
+                return (attendee.getFirstValue() || "").replace("mailto:", "");
+            }
+            return attendee.toString().replace("mailto:", "");
+        };
+
+        return {
+            name: getParam("cn"),
+            email: getEmail(),
+            role: getParam("role"),
+            status: getParam("partstat"),
+            type: getParam("cutype"),
+        };
+    }
+
+    function parseOrganizer(organizer) {
+        if (!organizer) return null;
+
+        const getName = () =>
+            typeof organizer.getParameter === "function" ? organizer.getParameter("cn") || "" : "";
+        const getEmail = () => {
+            if (typeof organizer.getFirstValue === "function") {
+                return (organizer.getFirstValue() || "").replace("mailto:", "");
+            }
+            return organizer.toString().replace("mailto:", "");
+        };
+
+        return { name: getName(), email: getEmail() };
+    }
+
+    function extractEventData(icalEvent) {
+        const component = icalEvent.component;
+
+        return {
+            uid: icalEvent.uid,
+            title: icalEvent.summary || "Untitled Event",
+            description: icalEvent.description || "",
+            location: icalEvent.location || "",
+            allDay: icalEvent.startDate.isDate,
+            organizer: parseOrganizer(icalEvent.organizer),
+            attendees: icalEvent.attendees?.map(parseAttendee) || null,
+            created: getPropertyValue(component, "created"),
+            lastModified: getPropertyValue(component, "last-modified"),
+            dtStamp: getPropertyValue(component, "dtstamp"),
+            status: component.getFirstPropertyValue("status"),
+            transparency: component.getFirstPropertyValue("transp"),
+            sequence: component.getFirstPropertyValue("sequence"),
+            url: component.getFirstPropertyValue("url"),
+        };
+    }
+
+    function createEventFromIcal(icalEvent) {
+        const event = {
+            ...extractEventData(icalEvent),
+            start: formatDate(icalEvent.startDate),
+        };
+        if (icalEvent.endDate) {
+            event.end = formatDate(icalEvent.endDate);
+        }
+        return event;
+    }
+
+    function createEventFromOccurrence(icalEvent, occurrenceDate) {
+        const event = {
+            ...extractEventData(icalEvent),
+            uid: `${icalEvent.uid}_${occurrenceDate.toJSDate().getTime()}`,
+            start: formatDate(occurrenceDate),
+            allDay: occurrenceDate.isDate,
+        };
+
+        // Calculate end time from duration
+        if (icalEvent.endDate && icalEvent.startDate) {
+            const durationMs = icalEvent.endDate.toJSDate() - icalEvent.startDate.toJSDate();
+            const endDate = occurrenceDate.clone();
+            endDate.addDuration(ICAL.Duration.fromSeconds(durationMs / 1000));
+            event.end = formatDate(endDate);
+        }
+
+        return event;
+    }
+
+    function parseICalToEvents(icalData) {
+        const jCalData = ICAL.parse(icalData);
+        const comp = new ICAL.Component(jCalData);
+        const vevents = comp.getAllSubcomponents("vevent");
+        const events = [];
+
+        for (const vevent of vevents) {
+            try {
+                const event = new ICAL.Event(vevent);
+
+                // Skip recurrence exceptions - master event expansion handles occurrences
+                if (event.isRecurrenceException()) continue;
+
+                if (event.isRecurring()) {
+                    const expand = new ICAL.RecurExpansion({
+                        component: vevent,
+                        dtstart: vevent.getFirstPropertyValue("dtstart"),
+                    });
+
+                    let next;
+                    let count = 0;
+                    // Limit: ~1 year of daily, ~7 years of weekly, ~30 years of monthly
+                    while ((next = expand.next()) && count < 365) {
+                        events.push(createEventFromOccurrence(event, next));
+                        count++;
+                    }
+                } else {
+                    events.push(createEventFromIcal(event));
+                }
+            } catch (err) {
+                logger.error("Error processing event:", err.message);
+            }
+        }
+
+        return events;
+    }
+
+    function buildExtendedProps(event) {
+        const props = {
+            description: event.description || "",
+            location: event.location || "",
+            uid: event.uid || "",
+            duration: event.duration || "",
+            status: event.status || "",
+            transparency: event.transparency || "",
+            sequence: event.sequence != null ? String(event.sequence) : "0",
+        };
+
+        if (event.dtStamp) props.dtStamp = event.dtStamp;
+        if (event.created) props.created = event.created;
+        if (event.lastModified) props.lastModified = event.lastModified;
+
+        if (event.organizer) {
+            if (event.organizer.name) props.organizerName = event.organizer.name;
+            if (event.organizer.email) props.organizerEmail = event.organizer.email;
+        }
+
+        if (event.attendees?.length) {
+            const names = event.attendees.map((a) => a.name).filter(Boolean);
+            const emails = event.attendees.map((a) => a.email).filter(Boolean);
+            if (names.length) props.attendeeNames = names.join(", ");
+            if (emails.length) props.attendeeEmails = emails.join(", ");
+            props.attendeeCount = String(event.attendees.length);
+        }
+
+        return props;
+    }
+
+    function toFullCalendarEvent(event, showDetailsToPublic) {
+        const fcEvent = {
+            title: event.title || (showDetailsToPublic ? "Untitled Event" : ""),
+            start: event.start,
+            allDay: event.allDay || false,
+            extendedProps: {
+                ...buildExtendedProps(event),
+                show_details_to_public: showDetailsToPublic,
+            },
+        };
+
+        if (event.end) fcEvent.end = event.end;
+        if (event.url) fcEvent.url = event.url;
+
+        return fcEvent;
+    }
+
+    function stripSensitiveData(event, showTitle) {
+        return {
+            uid: event.uid,
+            title: showTitle ? event.title : "Private",
+            description: "",
+            location: "",
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay,
+            organizer: null,
+            attendees: null,
+            status: event.status,
+            transparency: event.transparency,
+            sequence: event.sequence,
+            dtStamp: event.dtStamp,
+            created: event.created,
+            lastModified: event.lastModified,
+            url: null,
+        };
+    }
+
+    function processEventsForViews(events, calendar) {
+        if (!events?.length) {
+            return { publicEvents: [], authenticatedEvents: [] };
+        }
+
+        const validEvents = events.filter((e) => e.start || e.title);
+
+        const authenticatedEvents = validEvents.map((e) => toFullCalendarEvent(e, true));
+
+        let publicEvents;
+        if (!calendar.visible_to_public) {
+            publicEvents = [];
+        } else {
+            // SQLite stores booleans as 0/1, convert to boolean
+            const showDetails = Boolean(calendar.show_details_to_public);
+            publicEvents = validEvents
+                .map((e) => stripSensitiveData(e, showDetails))
+                .map((e) => toFullCalendarEvent(e, showDetails));
+        }
+
+        return { publicEvents, authenticatedEvents };
+    }
+
     async function fetchICalData(url) {
         const normalizedUrl = utils.normalizeCalendarUrl(url);
-
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -62,11 +273,6 @@ export function createCalendarService(dependencies = {}) {
                 });
             }
 
-            const contentType = response.headers.get("content-type");
-            if (contentType && !contentType.includes("calendar") && !contentType.includes("text")) {
-                logger.warn(`Unexpected content type: ${contentType} for ${url}`);
-            }
-
             return await response.text();
         } catch (error) {
             clearTimeout(timeoutId);
@@ -83,360 +289,20 @@ export function createCalendarService(dependencies = {}) {
         }
     }
 
-    function parseICalToEvents(icalData) {
-        try {
-            logger.debug("Parsing iCal data with ical.js...");
-
-            const jCalData = ICAL.parse(icalData);
-            const comp = new ICAL.Component(jCalData);
-            const vevents = comp.getAllSubcomponents("vevent");
-
-            logger.debug(`Found ${vevents.length} VEVENT components`);
-
-            const events = [];
-
-            for (let i = 0; i < vevents.length; i++) {
-                const vevent = vevents[i];
-                try {
-                    const event = new ICAL.Event(vevent);
-                    logger.debug(
-                        `Processing event: ${event.summary}, recurring: ${event.isRecurring()}`,
-                    );
-
-                    if (event.isRecurring()) {
-                        // Use RecurExpansion for recurring events - this handles RRULE, RDATE, EXDATE automatically
-                        logger.debug(`Expanding recurring event: ${event.summary}`);
-
-                        const expand = new ICAL.RecurExpansion({
-                            component: vevent,
-                            dtstart: vevent.getFirstPropertyValue("dtstart"),
-                        });
-
-                        let next;
-                        let count = 0;
-
-                        // Safety limit to prevent infinite recurring events:
-                        // - Daily events for ~1 year
-                        // - Weekly events for ~7 years
-                        // - Monthly events for ~30 years
-                        while ((next = expand.next()) && count < 365) {
-                            const eventInstance = createEventFromOccurrence(event, next);
-                            events.push(eventInstance);
-                            count++;
-                        }
-
-                        logger.debug(
-                            `Created ${count} instances for recurring event: ${event.summary}`,
-                        );
-                    } else {
-                        // Single event or modified instance
-                        logger.debug(
-                            `Adding single/modified event: ${event.summary}, UID: ${event.uid}`,
-                        );
-                        events.push(createEventFromIcal(event));
-                    }
-                } catch (eventError) {
-                    logger.error("Error processing event:", eventError.message);
-                }
-            }
-
-            logger.debug(`Successfully parsed ${events.length} total events`);
-            return events;
-        } catch (error) {
-            logger.error("Error parsing iCal data:", error);
-            throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, error, {
-                cause: error,
-            });
-        }
-    }
-
-    function createEventFromIcal(icalEvent) {
-        const event = {
-            uid: icalEvent.uid,
-            title: icalEvent.summary || "Untitled Event",
-            description: icalEvent.description || "",
-            location: icalEvent.location || "",
-            start: formatDateForCalendar(icalEvent.startDate),
-            allDay: icalEvent.startDate.isDate,
-        };
-
-        if (icalEvent.endDate) {
-            event.end = formatDateForCalendar(icalEvent.endDate);
-        }
-
-        addEventProperties(event, icalEvent);
-        return event;
-    }
-
-    function createEventFromOccurrence(originalEvent, occurrenceDate) {
-        const event = {
-            uid: `${originalEvent.uid}_${occurrenceDate.toJSDate().getTime()}`,
-            title: originalEvent.summary || "Untitled Event",
-            description: originalEvent.description || "",
-            location: originalEvent.location || "",
-            start: formatDateForCalendar(occurrenceDate),
-            allDay: occurrenceDate.isDate,
-        };
-
-        // Calculate end time if original event has duration
-        if (originalEvent.endDate && originalEvent.startDate) {
-            const durationMs =
-                originalEvent.endDate.toJSDate().getTime() -
-                originalEvent.startDate.toJSDate().getTime();
-            const endOccurrence = occurrenceDate.clone();
-            endOccurrence.addDuration(ICAL.Duration.fromSeconds(durationMs / 1000));
-            event.end = formatDateForCalendar(endOccurrence);
-        }
-
-        addEventProperties(event, originalEvent);
-        return event;
-    }
-
-    function addEventProperties(event, icalEvent) {
-        // Add organizer
-        if (icalEvent.organizer) {
-            try {
-                event.organizer = {
-                    name:
-                        (typeof icalEvent.organizer.getParameter === "function"
-                            ? icalEvent.organizer.getParameter("cn")
-                            : "") || "",
-                    email:
-                        (typeof icalEvent.organizer.getFirstValue === "function"
-                            ? icalEvent.organizer.getFirstValue()?.replace("mailto:", "")
-                            : icalEvent.organizer.toString().replace("mailto:", "")) || "",
-                };
-            } catch (error) {
-                // Fallback for organizer as string value
-                const organizerStr = icalEvent.organizer.toString();
-                event.organizer = {
-                    name: "",
-                    email: organizerStr.replace("mailto:", "") || "",
-                };
-            }
-        }
-
-        // Add attendees
-        if (icalEvent.attendees && icalEvent.attendees.length > 0) {
-            const attendees = [];
-            for (let i = 0; i < icalEvent.attendees.length; i++) {
-                const attendee = icalEvent.attendees[i];
-                try {
-                    attendees[i] = {
-                        name:
-                            (typeof attendee.getParameter === "function"
-                                ? attendee.getParameter("cn")
-                                : "") || "",
-                        email:
-                            (typeof attendee.getFirstValue === "function"
-                                ? attendee.getFirstValue()?.replace("mailto:", "")
-                                : attendee.toString().replace("mailto:", "")) || "",
-                        role:
-                            (typeof attendee.getParameter === "function"
-                                ? attendee.getParameter("role")
-                                : "") || "",
-                        status:
-                            (typeof attendee.getParameter === "function"
-                                ? attendee.getParameter("partstat")
-                                : "") || "",
-                        type:
-                            (typeof attendee.getParameter === "function"
-                                ? attendee.getParameter("cutype")
-                                : "") || "",
-                    };
-                } catch (error) {
-                    // Fallback for attendee as string value
-                    const attendeeStr = attendee.toString();
-                    attendees[i] = {
-                        name: "",
-                        email: attendeeStr.replace("mailto:", "") || "",
-                        role: "",
-                        status: "",
-                        type: "",
-                    };
-                }
-            }
-            event.attendees = attendees;
-        }
-
-        // Add timestamps
-        const created = icalEvent.component.getFirstPropertyValue("created");
-        if (created) event.created = created.toJSDate().toISOString();
-
-        const lastModified = icalEvent.component.getFirstPropertyValue("last-modified");
-        if (lastModified) event.lastModified = lastModified.toJSDate().toISOString();
-
-        const dtStamp = icalEvent.component.getFirstPropertyValue("dtstamp");
-        if (dtStamp) event.dtStamp = dtStamp.toJSDate().toISOString();
-
-        // Add other properties
-        const status = icalEvent.component.getFirstPropertyValue("status");
-        if (status) event.status = status;
-
-        const transparency = icalEvent.component.getFirstPropertyValue("transp");
-        if (transparency) event.transparency = transparency;
-
-        const sequence = icalEvent.component.getFirstPropertyValue("sequence");
-        if (sequence !== null) event.sequence = sequence;
-
-        const url = icalEvent.component.getFirstPropertyValue("url");
-        if (url) event.url = url;
-    }
-
-    function buildExtendedProps(event) {
-        const props = {
-            description: event.description || "",
-            location: event.location || "",
-            uid: event.uid || "",
-            duration: event.duration || "",
-            status: event.status || "",
-            transparency: event.transparency || "",
-            sequence: event.sequence ? String(event.sequence) : "0",
-        };
-
-        // Add timestamp fields if they exist
-        if (event.dtStamp) props.dtStamp = event.dtStamp;
-        if (event.created) props.created = event.created;
-        if (event.lastModified) props.lastModified = event.lastModified;
-
-        // Add organizer information if it exists
-        if (event.organizer) {
-            if (event.organizer.name) props.organizerName = event.organizer.name;
-            if (event.organizer.email) props.organizerEmail = event.organizer.email;
-        }
-
-        // Add attendee information if it exists
-        if (event.attendees && Array.isArray(event.attendees) && event.attendees.length > 0) {
-            const attendeeNames = [];
-            const attendeeEmails = [];
-
-            for (const attendee of event.attendees) {
-                if (attendee.name) attendeeNames.push(attendee.name);
-                if (attendee.email) attendeeEmails.push(attendee.email);
-            }
-
-            if (attendeeNames.length > 0) props.attendeeNames = attendeeNames.join(", ");
-            if (attendeeEmails.length > 0) props.attendeeEmails = attendeeEmails.join(", ");
-            props.attendeeCount = String(event.attendees.length);
-        }
-
-        return props;
-    }
-
-    function buildFullCalendarEvents(calendar, events, isAuthenticated = true) {
-        if (!events || events.length === 0) return [];
-
-        const validEvents = [];
-        const skippedEvents = [];
-
-        for (let i = 0; i < events.length; i++) {
-            const event = events[i];
-
-            // Skip events without valid start date or title
-            if (!event.start && !event.title) {
-                skippedEvents.push({
-                    reason: "No start date or title",
-                    event: event.uid || "unknown",
-                });
-                continue;
-            }
-
-            // For public users, check if details should be hidden
-            // For authenticated users, always show details
-            const shouldHideDetails =
-                !isAuthenticated &&
-                (!calendar.show_details_to_public ||
-                    (event.title === "" && event.description === "" && event.location === ""));
-
-            const fcEvent = {
-                title: event.title || (shouldHideDetails ? "" : "Untitled Event"),
-                start: event.start,
-                allDay: event.allDay || false,
-                extendedProps: {
-                    ...buildExtendedProps(event),
-                    show_details_to_public: !shouldHideDetails,
-                },
-            };
-
-            if (event.end) fcEvent.end = event.end;
-            if (event.url) fcEvent.url = event.url;
-
-            validEvents.push(fcEvent);
-        }
-
-        if (skippedEvents.length > 0) {
-            logger.debug("Skipped", skippedEvents.length, "invalid events:", skippedEvents);
-        }
-
-        return validEvents;
-    }
-
-    function processEventsForViews(events, calendar) {
-        if (!events || events.length === 0) {
-            return {
-                publicEvents: buildFullCalendarEvents(calendar, [], false),
-                authenticatedEvents: buildFullCalendarEvents(calendar, events, true),
-            };
-        }
-
-        // Authenticated users always see full details
-        const authenticatedEvents = buildFullCalendarEvents(calendar, events, true);
-        let publicEvents;
-
-        // If calendar is not visible to public, no public events at all
-        if (!calendar.visible_to_public) {
-            publicEvents = [];
-        } else if (!calendar.show_details_to_public) {
-            // If details should be hidden for public view, strip ALL sensitive information
-            const strippedEvents = [];
-            for (let i = 0; i < events.length; i++) {
-                const event = events[i];
-                strippedEvents[i] = {
-                    uid: event.uid,
-                    title: "Private", // Hide title completely
-                    description: "", // Hide description completely
-                    location: "", // Hide location completely
-                    start: event.start,
-                    end: event.end,
-                    allDay: event.allDay,
-                    // Remove all personal/sensitive details
-                    organizer: null,
-                    attendees: null,
-                    status: event.status,
-                    transparency: event.transparency,
-                    sequence: event.sequence,
-                    dtStamp: event.dtStamp,
-                    created: event.created,
-                    lastModified: event.lastModified,
-                    url: null, // Hide URL as well
-                };
-            }
-            publicEvents = buildFullCalendarEvents(calendar, strippedEvents, false);
-        } else {
-            const strippedEvents = [];
-            for (let i = 0; i < events.length; i++) {
-                const event = events[i];
-                strippedEvents[i] = {
-                    ...event,
-                    description: "", // Hide description completely
-                    location: "", // Hide location completely
-                    url: null, // Hide URL as well
-                    organizer: null,
-                    attendees: null,
-                };
-            }
-            publicEvents = buildFullCalendarEvents(calendar, strippedEvents, false);
-        }
-
-        return { publicEvents, authenticatedEvents };
-    }
-
     async function fetchAndProcessCalendar(calendarId, url) {
         try {
             logger.info(`Fetching calendar data for ID ${calendarId} from ${url}`);
 
             const rawData = await fetchICalData(url);
-            const events = parseICalToEvents(rawData);
+
+            let events;
+            try {
+                events = parseICalToEvents(rawData);
+            } catch (error) {
+                throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, error, {
+                    cause: error,
+                });
+            }
 
             logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
 
@@ -483,147 +349,94 @@ export function createCalendarService(dependencies = {}) {
     }
 
     async function refetchAllCalendars() {
-        try {
-            const calendars = await models.calendar.getAll();
-            logger.info(`Refetching ${calendars.length} calendars`);
+        const calendars = await models.calendar.getAll();
+        logger.info(`Refetching ${calendars.length} calendars`);
 
-            const results = [];
-
-            for (let i = 0; i < calendars.length; i++) {
-                const calendar = calendars[i];
-                try {
-                    const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
-                    results[i] = {
-                        success: true,
-                        calendarId: calendar.id,
-                        ...result,
-                    };
-                } catch (error) {
-                    logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
-                    results[i] = {
-                        success: false,
-                        calendarId: calendar.id,
-                        message: error.message,
-                    };
-                }
+        const results = [];
+        for (const calendar of calendars) {
+            try {
+                const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
+                results.push({ success: true, calendarId: calendar.id, ...result });
+            } catch (error) {
+                logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
+                results.push({ success: false, calendarId: calendar.id, message: error.message });
             }
-
-            let successful = 0;
-            let failed = 0;
-            for (let i = 0; i < results.length; i++) {
-                if (results[i].success) {
-                    successful++;
-                } else {
-                    failed++;
-                }
-            }
-
-            logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
-
-            return { total: calendars.length, successful, failed, results };
-        } catch (error) {
-            logger.error("Failed to refetch calendars:", error);
-            throw error;
         }
+
+        const successful = results.filter((r) => r.success).length;
+        const failed = results.length - successful;
+
+        logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
+
+        return { total: calendars.length, successful, failed, results };
     }
 
     async function exportCalendars() {
-        try {
-            const calendars = await models.calendar.getAll({ includeEvents: false });
+        const calendars = await models.calendar.getAll({ includeEvents: false });
 
-            const exportData = calendars.map((calendar) => ({
-                name: calendar.name,
-                url: calendar.url,
-                color: calendar.color,
-                visible_to_public: calendar.visible_to_public,
-                show_details_to_public: calendar.show_details_to_public,
-            }));
+        logger.info(`Exported ${calendars.length} calendars`);
 
-            logger.info(`Exported ${exportData.length} calendars`);
-
-            return {
-                calendars: exportData,
-                exportedAt: new Date().toISOString(),
-                version: "1.0",
-            };
-        } catch (error) {
-            logger.error("Calendar export failed:", error);
-            throw error;
-        }
+        return {
+            calendars: calendars.map(
+                ({ name, url, color, visible_to_public, show_details_to_public }) => ({
+                    name,
+                    url,
+                    color,
+                    visible_to_public,
+                    show_details_to_public,
+                }),
+            ),
+            exportedAt: new Date().toISOString(),
+            version: "1.0",
+        };
     }
 
     async function importCalendars(calendarsData, utils) {
-        try {
-            if (!Array.isArray(calendarsData)) {
-                throw new ValidationError({ calendarsData: "Calendars must be an array" });
-            }
-
-            const results = {
-                imported: 0,
-                skipped: 0,
-                errors: [],
-            };
-
-            for (const calendarData of calendarsData) {
-                try {
-                    if (!calendarData.name || !calendarData.url) {
-                        results.errors.push({
-                            calendar: calendarData,
-                            message: "Name and URL are required",
-                        });
-                        continue;
-                    }
-
-                    const existingCalendar = await models.calendar.getByUrl(calendarData.url);
-
-                    if (existingCalendar) {
-                        results.skipped++;
-                        continue;
-                    }
-
-                    const sanitizedName = utils.sanitizeString(calendarData.name);
-
-                    if (utils.isEmpty(sanitizedName)) {
-                        results.errors.push({
-                            calendar: calendarData,
-                            message: "Calendar name cannot be empty after sanitization",
-                        });
-                        continue;
-                    }
-
-                    const newCalendarData = {
-                        name: sanitizedName,
-                        url: calendarData.url,
-                        color: calendarData.color || utils.generateRandomColor(),
-                        visible_to_public:
-                            calendarData.visible_to_public !== undefined
-                                ? calendarData.visible_to_public
-                                : true,
-                        show_details_to_public:
-                            calendarData.show_details_to_public !== undefined
-                                ? calendarData.show_details_to_public
-                                : true,
-                    };
-
-                    await models.calendar.create(newCalendarData);
-                    results.imported++;
-                } catch (error) {
-                    results.errors.push({
-                        calendar: calendarData,
-                        message: error.message,
-                    });
-                }
-            }
-
-            logger.info(
-                `Calendar import completed: ${results.imported} imported, ${results.skipped} skipped, ${results.errors.length} errors`,
-            );
-
-            return results;
-        } catch (error) {
-            logger.error("Calendar import failed:", error);
-            throw error;
+        if (!Array.isArray(calendarsData)) {
+            throw new ValidationError({ calendarsData: "Calendars must be an array" });
         }
+
+        const results = { imported: 0, skipped: 0, errors: [] };
+
+        for (const data of calendarsData) {
+            try {
+                if (!data.name || !data.url) {
+                    results.errors.push({ calendar: data, message: "Name and URL are required" });
+                    continue;
+                }
+
+                if (await models.calendar.getByUrl(data.url)) {
+                    results.skipped++;
+                    continue;
+                }
+
+                const name = utils.sanitizeString(data.name);
+                if (utils.isEmpty(name)) {
+                    results.errors.push({
+                        calendar: data,
+                        message: "Calendar name cannot be empty after sanitization",
+                    });
+                    continue;
+                }
+
+                await models.calendar.create({
+                    name,
+                    url: data.url,
+                    color: data.color || utils.generateRandomColor(),
+                    visible_to_public: data.visible_to_public ?? true,
+                    show_details_to_public: data.show_details_to_public ?? true,
+                });
+                results.imported++;
+            } catch (error) {
+                results.errors.push({ calendar: data, message: error.message });
+            }
+        }
+
+        logger.info(
+            `Calendar import completed: ${results.imported} imported, ${results.skipped} skipped, ${results.errors.length} errors`,
+        );
+
+        return results;
     }
 
     return {

@@ -1042,6 +1042,187 @@ END:VCALENDAR`;
         });
     });
 
+    describe("recurring events with RECURRENCE-ID", () => {
+        it("should not duplicate events when RECURRENCE-ID exceptions exist", async () => {
+            // This iCal data simulates Google Calendar's pattern where:
+            // 1. A master recurring event has an RRULE
+            // 2. Modified instances have RECURRENCE-ID pointing to the original occurrence
+            const recurringWithExceptionsICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:recurring-master@example.com
+DTSTART:20251201T140000Z
+DTEND:20251201T150000Z
+RRULE:FREQ=WEEKLY;COUNT=4
+SUMMARY:Weekly Meeting
+DESCRIPTION:Regular weekly meeting
+END:VEVENT
+BEGIN:VEVENT
+UID:recurring-master@example.com
+DTSTART:20251208T150000Z
+DTEND:20251208T160000Z
+RECURRENCE-ID:20251208T140000Z
+SUMMARY:Weekly Meeting (Rescheduled)
+DESCRIPTION:This instance was moved to a different time
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(recurringWithExceptionsICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+            await calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            // Should have exactly 4 events (from RRULE COUNT=4), not 5
+            // The RECURRENCE-ID event should NOT be added as a separate event
+            expect(events).toHaveLength(4);
+
+            // All events should be from the master recurring expansion
+            const titles = events.map((e) => e.title);
+            expect(titles.every((t) => t === "Weekly Meeting")).toBe(true);
+        });
+
+        it("should skip standalone events with RECURRENCE-ID", async () => {
+            // This tests the case where we have orphan RECURRENCE-ID events
+            // (modified instances without the master event in the same file)
+            const orphanRecurrenceIdICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:single-event@example.com
+DTSTART:20251201T100000Z
+DTEND:20251201T110000Z
+SUMMARY:Regular Single Event
+DESCRIPTION:A normal single event
+END:VEVENT
+BEGIN:VEVENT
+UID:orphan-modified@example.com
+DTSTART:20251215T150000Z
+DTEND:20251215T160000Z
+RECURRENCE-ID:20251208T140000Z
+SUMMARY:Orphan Modified Instance
+DESCRIPTION:This is a modified instance without its master
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(orphanRecurrenceIdICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create({
+                ...sampleCalendar,
+                url: "https://example.com/orphan-test.ics",
+            });
+            await calendarService.fetchAndProcessCalendar(calendar.id, calendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            // Should only have 1 event - the single event
+            // The orphan RECURRENCE-ID event should be skipped
+            expect(events).toHaveLength(1);
+            expect(events[0].title).toBe("Regular Single Event");
+        });
+
+        it("should handle semi-monthly recurring events correctly", async () => {
+            // This simulates the AHOD Semi-Monthly pattern:
+            // Two separate recurring events, each with BYDAY rules
+            const semiMonthlyICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:first-wednesday@example.com
+DTSTART:20251203T154500Z
+DTEND:20251203T161500Z
+RRULE:FREQ=MONTHLY;COUNT=3;BYDAY=1WE
+SUMMARY:Semi-Monthly Meeting (1st Wed)
+END:VEVENT
+BEGIN:VEVENT
+UID:third-wednesday@example.com
+DTSTART:20251217T154500Z
+DTEND:20251217T161500Z
+RRULE:FREQ=MONTHLY;COUNT=3;BYDAY=3WE
+SUMMARY:Semi-Monthly Meeting (3rd Wed)
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(semiMonthlyICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create({
+                ...sampleCalendar,
+                url: "https://example.com/semi-monthly.ics",
+            });
+            await calendarService.fetchAndProcessCalendar(calendar.id, calendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            // Should have 6 events total (3 from each recurring rule)
+            expect(events).toHaveLength(6);
+
+            const firstWedEvents = events.filter((e) => e.title.includes("1st Wed"));
+            const thirdWedEvents = events.filter((e) => e.title.includes("3rd Wed"));
+
+            expect(firstWedEvents).toHaveLength(3);
+            expect(thirdWedEvents).toHaveLength(3);
+        });
+
+        it("should not create duplicates with Google Calendar style split UIDs", async () => {
+            // Google Calendar creates UIDs with _R suffixes for "split" recurring events
+            // This tests that we handle them correctly
+            const googleStyleICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:abc123_R20251203T214500@google.com
+DTSTART:20251203T154500Z
+DTEND:20251203T161500Z
+RRULE:FREQ=MONTHLY;COUNT=2;BYDAY=1WE
+SUMMARY:Google Style Recurring
+END:VEVENT
+BEGIN:VEVENT
+UID:abc123_R20251203T214500@google.com
+DTSTART:20251203T164500Z
+DTEND:20251203T171500Z
+RECURRENCE-ID:20251203T154500Z
+SUMMARY:Google Style Recurring (Modified)
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(googleStyleICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create({
+                ...sampleCalendar,
+                url: "https://example.com/google-style.ics",
+            });
+            await calendarService.fetchAndProcessCalendar(calendar.id, calendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            // Should have exactly 2 events from the recurring rule, not 3
+            // The RECURRENCE-ID event should be skipped
+            expect(events).toHaveLength(2);
+        });
+    });
+
     describe("formatDateForCalendar", () => {
         it("should produce exact data structure matching real API output", async () => {
             const realUfcStyleData = `BEGIN:VCALENDAR
