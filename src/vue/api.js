@@ -204,10 +204,6 @@ export const api = {
             });
         },
 
-        async getFeedToken() {
-            return request("/api/settings/feed-token");
-        },
-
         async regenerateFeedToken() {
             return request("/api/settings/feed-token/regenerate", {
                 method: "POST",
