@@ -145,17 +145,15 @@ export function createAuthRouter(dependencies = {}) {
             data.cronSettings = services.cron.getStatus();
             data.theme = (await models.settings.get("theme")) || "system";
 
-            let feedToken = await models.settings.get("feed_token");
-            if (!feedToken) {
-                feedToken = utils.generateSecureToken(32);
-                await models.settings.set("feed_token", feedToken);
+            const feedToken = await models.settings.get("feed_token");
+            if (feedToken) {
+                const feedCalendars = (await models.settings.get("feed_calendars")) || [];
+                data.feedToken = {
+                    token: feedToken,
+                    feedUrl: `/api/feed/${feedToken}.ics`,
+                    calendars: feedCalendars,
+                };
             }
-            const feedCalendars = (await models.settings.get("feed_calendars")) || [];
-            data.feedToken = {
-                token: feedToken,
-                feedUrl: `/api/feed/${feedToken}.ics`,
-                calendars: feedCalendars,
-            };
         }
 
         res.json({
