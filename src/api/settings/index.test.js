@@ -96,4 +96,50 @@ describe("Settings", () => {
             expect(response.status).toBe(401);
         });
     });
+
+    describe("PUT /api/settings/theme", () => {
+        it("should update theme with valid value", async () => {
+            const response = await authServer.put("/api/settings/theme", { theme: "dark" });
+
+            expect(response.status).toBe(200);
+            expect(response.body.success).toBe(true);
+            expect(response.body.message).toBe("Theme updated successfully");
+            expect(response.body.data.theme).toBe("dark");
+        });
+
+        it("should accept light theme", async () => {
+            const response = await authServer.put("/api/settings/theme", { theme: "light" });
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.theme).toBe("light");
+        });
+
+        it("should accept system theme", async () => {
+            const response = await authServer.put("/api/settings/theme", { theme: "system" });
+
+            expect(response.status).toBe(200);
+            expect(response.body.data.theme).toBe("system");
+        });
+
+        it("should reject invalid theme value", async () => {
+            const response = await authServer.put("/api/settings/theme", { theme: "invalid" });
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
+            expect(response.body.errors.theme).toBeTruthy();
+        });
+
+        it("should reject missing theme", async () => {
+            const response = await authServer.put("/api/settings/theme", {});
+
+            expect(response.status).toBe(400);
+            expect(response.body.success).toBe(false);
+        });
+
+        it("should require authentication", async () => {
+            const response = await server.put("/api/settings/theme", { theme: "dark" });
+
+            expect(response.status).toBe(401);
+        });
+    });
 });

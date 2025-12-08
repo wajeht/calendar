@@ -75,6 +75,13 @@ describe("Auth", () => {
                 expect(typeof response.body.data.cronSettings.enabled).toBe("boolean");
             });
 
+            it("should include theme for authenticated users", async () => {
+                const response = await server.get("/api/auth/me");
+
+                expect(response.body.data.theme).toBeDefined();
+                expect(["light", "dark", "system"]).toContain(response.body.data.theme);
+            });
+
             it("should return consistent data structure", async () => {
                 const response = await server.get("/api/auth/me");
 
@@ -84,6 +91,7 @@ describe("Auth", () => {
                         isPasswordConfigured: expect.any(Boolean),
                         calendars: expect.any(Array),
                         cronSettings: expect.any(Object),
+                        theme: expect.any(String),
                     }),
                 );
             });

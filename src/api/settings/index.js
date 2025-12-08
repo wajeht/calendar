@@ -68,5 +68,28 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
+    router.put("/theme", requireAuth, async (req, res) => {
+        validators.validateBody(req.body);
+
+        const { theme } = req.body;
+
+        if (!theme || !["light", "dark", "system"].includes(theme)) {
+            throw new ValidationError({
+                theme: "Theme must be 'light', 'dark', or 'system'",
+            });
+        }
+
+        await models.settings.set("theme", theme);
+
+        logger.info(`Theme updated: ${theme}`);
+
+        res.json({
+            success: true,
+            message: "Theme updated successfully",
+            errors: null,
+            data: { theme },
+        });
+    });
+
     return router;
 }

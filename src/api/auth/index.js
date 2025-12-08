@@ -143,6 +143,7 @@ export function createAuthRouter(dependencies = {}) {
 
         if (isAuthenticated) {
             data.cronSettings = services.cron.getStatus();
+            data.theme = (await models.settings.get("theme")) || "system";
         }
 
         res.json({
