@@ -203,5 +203,22 @@ export const api = {
                 body: JSON.stringify({ theme }),
             });
         },
+
+        async getFeedToken() {
+            return request("/api/settings/feed-token");
+        },
+
+        async regenerateFeedToken() {
+            return request("/api/settings/feed-token/regenerate", {
+                method: "POST",
+            });
+        },
+
+        async updateFeedCalendars(calendarIds) {
+            return request("/api/settings/feed-token/calendars", {
+                method: "PUT",
+                body: JSON.stringify({ calendars: calendarIds }),
+            });
+        },
     },
 };
