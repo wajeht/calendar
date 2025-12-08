@@ -91,5 +91,71 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
+    router.get("/feed-token", requireAuth, async (_req, res) => {
+        let token = await models.settings.get("feed_token");
+
+        if (!token) {
+            token = utils.generateSecureToken(32);
+            await models.settings.set("feed_token", token);
+            logger.info("Feed token generated on first access");
+        }
+
+        const feedCalendars = (await models.settings.get("feed_calendars")) || [];
+
+        res.json({
+            success: true,
+            message: "Feed token retrieved successfully",
+            errors: null,
+            data: {
+                token,
+                feedUrl: `/api/feed/${token}.ics`,
+                calendars: feedCalendars,
+            },
+        });
+    });
+
+    router.post("/feed-token/regenerate", requireAuth, async (_req, res) => {
+        const token = utils.generateSecureToken(32);
+        await models.settings.set("feed_token", token);
+
+        const feedCalendars = (await models.settings.get("feed_calendars")) || [];
+
+        logger.info("Feed token regenerated");
+
+        res.json({
+            success: true,
+            message: "Feed token regenerated successfully",
+            errors: null,
+            data: {
+                token,
+                feedUrl: `/api/feed/${token}.ics`,
+                calendars: feedCalendars,
+            },
+        });
+    });
+
+    router.put("/feed-token/calendars", requireAuth, async (req, res) => {
+        validators.validateBody(req.body);
+
+        const { calendars } = req.body;
+
+        if (!Array.isArray(calendars)) {
+            throw new ValidationError({
+                calendars: "Calendars must be an array of IDs",
+            });
+        }
+
+        await models.settings.set("feed_calendars", calendars);
+
+        logger.info(`Feed calendars updated: ${calendars.length} selected`);
+
+        res.json({
+            success: true,
+            message: "Feed calendars updated successfully",
+            errors: null,
+            data: { calendars },
+        });
+    });
+
     return router;
 }
