@@ -17,8 +17,8 @@ const knexConfig = {
     },
     seeds: { directory: path.resolve(__dirname, "./seeds") },
     pool: {
-        min: 2,
-        max: 10,
+        min: 1,
+        max: 3,
         acquireTimeoutMillis: 30000, // 30 seconds
         createTimeoutMillis: 30000, // 30 seconds
         idleTimeoutMillis: 600000, // 10 minutes
