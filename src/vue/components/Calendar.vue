@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, reactive, useTemplateRef } from "vue";
+import { ref, onMounted, onUnmounted, reactive, useTemplateRef, defineAsyncComponent } from "vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -7,11 +7,11 @@ import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
 import iCalendarPlugin from "@fullcalendar/icalendar";
 
-import PasswordModal from "./modals/ModalPassword.vue";
-import SettingsModal from "./modals/ModalSettings.vue";
-import EventModal from "./modals/ModalEvent.vue";
-import ConfirmModal from "./modals/ModalConfirm.vue";
-import SetupPasswordModal from "./modals/ModalSetupPassword.vue";
+const PasswordModal = defineAsyncComponent(() => import("./modals/ModalPassword.vue"));
+const SettingsModal = defineAsyncComponent(() => import("./modals/ModalSettings.vue"));
+const EventModal = defineAsyncComponent(() => import("./modals/ModalEvent.vue"));
+const ConfirmModal = defineAsyncComponent(() => import("./modals/ModalConfirm.vue"));
+const SetupPasswordModal = defineAsyncComponent(() => import("./modals/ModalSetupPassword.vue"));
 
 import { useToast } from "../composables/useToast";
 import { useAuthStore } from "../composables/useAuthStore.js";
@@ -214,8 +214,8 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
-let lastKnownDate = new Date().toISOString().split("T")[0];
-let midnightTimeout = null;
+const lastKnownDate = ref(new Date().toISOString().split("T")[0]);
+const midnightTimeout = ref(null);
 
 function navigateToTodayIfNeeded(previousDate) {
     const calendar = calendarRef.value?.getApi();
@@ -242,10 +242,10 @@ function navigateToTodayIfNeeded(previousDate) {
 
 function handleDateChange() {
     const currentDate = new Date().toISOString().split("T")[0];
-    if (currentDate === lastKnownDate) return;
+    if (currentDate === lastKnownDate.value) return;
 
-    const previousDate = lastKnownDate;
-    lastKnownDate = currentDate;
+    const previousDate = lastKnownDate.value;
+    lastKnownDate.value = currentDate;
 
     navigateToTodayIfNeeded(previousDate);
     scheduleMidnightUpdate();
@@ -258,7 +258,7 @@ function handleVisibilityChange() {
 }
 
 function scheduleMidnightUpdate() {
-    if (midnightTimeout) clearTimeout(midnightTimeout);
+    if (midnightTimeout.value) clearTimeout(midnightTimeout.value);
 
     const now = new Date();
     const midnight = new Date(now);
@@ -266,7 +266,7 @@ function scheduleMidnightUpdate() {
     midnight.setHours(0, 0, 0, 100); // 100ms after midnight
 
     const msUntilMidnight = midnight - now;
-    midnightTimeout = setTimeout(handleDateChange, msUntilMidnight);
+    midnightTimeout.value = setTimeout(handleDateChange, msUntilMidnight);
 }
 
 onMounted(async () => {
@@ -281,7 +281,10 @@ onMounted(async () => {
 
 onUnmounted(() => {
     document.removeEventListener("visibilitychange", handleVisibilityChange);
-    if (midnightTimeout) clearTimeout(midnightTimeout);
+    if (midnightTimeout.value) {
+        clearTimeout(midnightTimeout.value);
+        midnightTimeout.value = null;
+    }
 });
 </script>
 

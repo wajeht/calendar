@@ -40,7 +40,7 @@ const viteConfig = {
     build: {
         outDir: "../../public",
         reportCompressedSize: true,
-        chunkSizeWarningLimit: 1600,
+        chunkSizeWarningLimit: 500,
         emptyOutDir: false,
     },
 };
@@ -50,18 +50,26 @@ export default defineConfig(({ mode }) => ({
     build: {
         ...viteConfig.build,
         rollupOptions: {
-            output:
-                mode === "development"
-                    ? {
-                          entryFileNames: `assets/[name].js`,
-                          chunkFileNames: `assets/[name].js`,
-                          assetFileNames: `assets/[name].[ext]`,
-                      }
-                    : {
-                          entryFileNames: `assets/[name]-[hash].js`,
-                          chunkFileNames: `assets/[name]-[hash].js`,
-                          assetFileNames: `assets/[name]-[hash].[ext]`,
-                      },
+            output: {
+                entryFileNames:
+                    mode === "development" ? `assets/[name].js` : `assets/[name]-[hash].js`,
+                chunkFileNames:
+                    mode === "development" ? `assets/[name].js` : `assets/[name]-[hash].js`,
+                assetFileNames:
+                    mode === "development" ? `assets/[name].[ext]` : `assets/[name]-[hash].[ext]`,
+                manualChunks: {
+                    vendor: ["vue"],
+                    fullcalendar: [
+                        "@fullcalendar/core",
+                        "@fullcalendar/vue3",
+                        "@fullcalendar/daygrid",
+                        "@fullcalendar/timegrid",
+                        "@fullcalendar/list",
+                        "@fullcalendar/interaction",
+                        "@fullcalendar/icalendar",
+                    ],
+                },
+            },
         },
     },
 }));
