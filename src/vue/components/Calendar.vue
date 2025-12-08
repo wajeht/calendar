@@ -16,8 +16,10 @@ const SetupPasswordModal = defineAsyncComponent(() => import("./modals/ModalSetu
 import { useToast } from "../composables/useToast";
 import { useAuthStore } from "../composables/useAuthStore.js";
 import { useTheme } from "../composables/useTheme.js";
+import { useLogger } from "../composables/useLogger.js";
 
 const toast = useToast();
+const logger = useLogger("Calendar");
 const auth = useAuthStore();
 const { initialize: initTheme } = useTheme();
 const calendars = ref([]);
@@ -148,7 +150,8 @@ function handleEventSourceFailure(error) {
 
 async function handleAuthenticated() {
     showPasswordModal.value = false;
-    const data = await auth.initialize();
+    auth.clearCache();
+    const { calendars: data } = await auth.initialize();
     calendars.value = data;
     updateCalendarSources(data);
     if (showSettingsModal.value) settingsInitialTab.value = "calendars";
@@ -182,7 +185,7 @@ function updateCalendarSources(calendarData) {
 
 async function reloadCalendars() {
     try {
-        const data = await auth.initialize();
+        const { calendars: data } = await auth.initialize();
         calendars.value = data;
         updateCalendarSources(data);
     } catch (error) {
@@ -270,13 +273,27 @@ function scheduleMidnightUpdate() {
 }
 
 onMounted(async () => {
-    const data = await auth.initialize();
+    logger.log("Mount started");
+    const { calendars: data, fromCache, sync } = await auth.initialize();
+    logger.log("Initialize done, fromCache:", fromCache, "calendars:", data.length);
     calendars.value = data;
     updateCalendarSources(data);
     initTheme();
 
+    if (fromCache && sync) {
+        logger.log("Showing sync toast and starting background sync");
+        const syncToastId = toast.info("Syncing...", null, 0);
+        const freshData = await sync();
+        logger.log("Fresh data received, calendars:", freshData.length);
+        calendars.value = freshData;
+        updateCalendarSources(freshData);
+        toast.removeToast(syncToastId);
+        logger.log("Sync toast removed");
+    }
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
     scheduleMidnightUpdate();
+    logger.log("Mount complete");
 });
 
 onUnmounted(() => {
