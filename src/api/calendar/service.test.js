@@ -1223,6 +1223,151 @@ END:VCALENDAR`;
         });
     });
 
+    describe("combineCalendarsToIcal", () => {
+        it("should combine multiple calendars into single iCal", async () => {
+            const calendars = [
+                {
+                    id: 1,
+                    name: "Calendar 1",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:event1@example.com
+DTSTART:20250101T100000Z
+DTEND:20250101T110000Z
+SUMMARY:Event 1
+END:VEVENT
+END:VCALENDAR`,
+                },
+                {
+                    id: 2,
+                    name: "Calendar 2",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:event2@example.com
+DTSTART:20250102T100000Z
+DTEND:20250102T110000Z
+SUMMARY:Event 2
+END:VEVENT
+END:VCALENDAR`,
+                },
+            ];
+
+            const result = calendarService.combineCalendarsToIcal(calendars);
+
+            expect(result).toContain("BEGIN:VCALENDAR");
+            expect(result).toContain("END:VCALENDAR");
+            expect(result).toContain("Event 1");
+            expect(result).toContain("Event 2");
+            // Should only have one VCALENDAR wrapper
+            expect((result.match(/BEGIN:VCALENDAR/g) || []).length).toBe(1);
+            expect((result.match(/END:VCALENDAR/g) || []).length).toBe(1);
+            // Should have two VEVENTs
+            expect((result.match(/BEGIN:VEVENT/g) || []).length).toBe(2);
+        });
+
+        it("should handle empty calendar list", async () => {
+            const result = calendarService.combineCalendarsToIcal([]);
+
+            expect(result).toContain("BEGIN:VCALENDAR");
+            expect(result).toContain("END:VCALENDAR");
+            expect(result).not.toContain("BEGIN:VEVENT");
+        });
+
+        it("should skip calendars without ical_data", async () => {
+            const calendars = [
+                {
+                    id: 1,
+                    name: "Calendar with data",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:event1@example.com
+DTSTART:20250101T100000Z
+SUMMARY:Has Data
+END:VEVENT
+END:VCALENDAR`,
+                },
+                {
+                    id: 2,
+                    name: "Calendar without data",
+                    ical_data: null,
+                },
+                {
+                    id: 3,
+                    name: "Calendar with empty data",
+                    ical_data: "",
+                },
+            ];
+
+            const result = calendarService.combineCalendarsToIcal(calendars);
+
+            expect(result).toContain("Has Data");
+            expect((result.match(/BEGIN:VEVENT/g) || []).length).toBe(1);
+        });
+
+        it("should include proper iCal headers", async () => {
+            const calendars = [
+                {
+                    id: 1,
+                    name: "Test",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:test@example.com
+DTSTART:20250101T100000Z
+SUMMARY:Test
+END:VEVENT
+END:VCALENDAR`,
+                },
+            ];
+
+            const result = calendarService.combineCalendarsToIcal(calendars);
+
+            expect(result).toContain("VERSION:2.0");
+            expect(result).toContain("PRODID:");
+            expect(result).toContain("CALSCALE:GREGORIAN");
+            expect(result).toContain("METHOD:PUBLISH");
+        });
+
+        it("should handle calendars with multiple events", async () => {
+            const calendars = [
+                {
+                    id: 1,
+                    name: "Multi-event calendar",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:event1@example.com
+DTSTART:20250101T100000Z
+SUMMARY:First Event
+END:VEVENT
+BEGIN:VEVENT
+UID:event2@example.com
+DTSTART:20250102T100000Z
+SUMMARY:Second Event
+END:VEVENT
+BEGIN:VEVENT
+UID:event3@example.com
+DTSTART:20250103T100000Z
+SUMMARY:Third Event
+END:VEVENT
+END:VCALENDAR`,
+                },
+            ];
+
+            const result = calendarService.combineCalendarsToIcal(calendars);
+
+            expect(result).toContain("First Event");
+            expect(result).toContain("Second Event");
+            expect(result).toContain("Third Event");
+            expect((result.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
+        });
+    });
+
     describe("formatDateForCalendar", () => {
         it("should produce exact data structure matching real API output", async () => {
             const realUfcStyleData = `BEGIN:VCALENDAR

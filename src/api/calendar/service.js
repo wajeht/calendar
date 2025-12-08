@@ -439,10 +439,54 @@ export function createCalendarService(dependencies = {}) {
         return results;
     }
 
+    function combineCalendarsToIcal(calendars) {
+        const lines = [
+            "BEGIN:VCALENDAR",
+            "VERSION:2.0",
+            "PRODID:-//Calendar App//Combined Feed//EN",
+            "CALSCALE:GREGORIAN",
+            "METHOD:PUBLISH",
+            "X-WR-CALNAME:Combined Calendar Feed",
+        ];
+
+        for (const calendar of calendars) {
+            if (!calendar.ical_data) continue;
+            const vevents = extractVEvents(calendar.ical_data);
+            lines.push(...vevents);
+        }
+
+        lines.push("END:VCALENDAR");
+        return lines.join("\r\n");
+    }
+
+    function extractVEvents(icalData) {
+        const events = [];
+        const lines = icalData.split(/\r?\n/);
+        let inEvent = false;
+        let currentEvent = [];
+
+        for (const line of lines) {
+            if (line === "BEGIN:VEVENT") {
+                inEvent = true;
+                currentEvent = [line];
+            } else if (line === "END:VEVENT") {
+                currentEvent.push(line);
+                events.push(...currentEvent);
+                inEvent = false;
+                currentEvent = [];
+            } else if (inEvent) {
+                currentEvent.push(line);
+            }
+        }
+
+        return events;
+    }
+
     return {
         exportCalendars,
         importCalendars,
         refetchAllCalendars,
         fetchAndProcessCalendar,
+        combineCalendarsToIcal,
     };
 }
