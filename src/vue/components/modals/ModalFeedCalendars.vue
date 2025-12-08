@@ -25,6 +25,7 @@ const emit = defineEmits(["close", "calendars-updated"]);
 
 const toast = useToast();
 const isLoading = ref(false);
+
 const selected = ref([...props.selectedCalendars]);
 
 function isSelected(calendarId) {

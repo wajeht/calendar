@@ -296,6 +296,30 @@ async function changePassword() {
     }
 }
 
+async function generateFeedToken() {
+    if (feedTokenRegenerating.value) return;
+
+    feedTokenRegenerating.value = true;
+    try {
+        const result = await api.settings.regenerateFeedToken();
+        if (result.success) {
+            auth.setFeedToken({
+                token: result.data.token,
+                feedUrl: result.data.feedUrl,
+                calendars: result.data.calendars || [],
+            });
+            toast.success("Feed URL generated successfully");
+            showCalendarPicker.value = true;
+        } else {
+            toast.error(result.message || "Failed to generate feed URL");
+        }
+    } catch (error) {
+        toast.error("Error generating feed URL: " + error.message);
+    } finally {
+        feedTokenRegenerating.value = false;
+    }
+}
+
 async function regenerateFeedToken() {
     if (feedTokenRegenerating.value) return;
 
@@ -677,11 +701,30 @@ watch(isAuthenticated, (newValue) => {
                                 Calendar Feed
                             </h4>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Subscribe to this URL in any calendar app to see your selected
+                                Subscribe to a URL in any calendar app to see your selected
                                 calendars combined.
                             </p>
 
-                            <div class="space-y-4">
+                            <!-- No feed URL generated yet -->
+                            <div v-if="!auth.feedToken.value" class="space-y-4">
+                                <div
+                                    class="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-center"
+                                >
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                        No feed URL has been generated yet.
+                                    </p>
+                                    <Button
+                                        @click="generateFeedToken"
+                                        :loading="feedTokenRegenerating"
+                                        variant="primary"
+                                    >
+                                        Generate Feed URL
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <!-- Feed URL exists -->
+                            <div v-else class="space-y-4">
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
