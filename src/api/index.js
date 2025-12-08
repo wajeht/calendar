@@ -2,6 +2,7 @@ import express from "express";
 import { createAuthRouter } from "./auth/index.js";
 import { createSettingsRouter } from "./settings/index.js";
 import { createCalendarRouter } from "./calendar/index.js";
+import { createFeedRouter } from "./feed/index.js";
 
 export function createGeneralRouter(dependencies = {}) {
     const { utils, db, errors } = dependencies;
@@ -323,6 +324,16 @@ export function createRouter(dependencies = {}) {
             services,
             middleware,
             validators,
+        }),
+    );
+
+    router.use(
+        "/api/feed",
+        createFeedRouter({
+            logger,
+            errors,
+            models,
+            services,
         }),
     );
 
