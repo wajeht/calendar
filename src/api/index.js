@@ -56,7 +56,7 @@ export function notFoundHandler(dependencies = {}) {
     if (!utils) throw new ConfigurationError("Utils required for notFoundHandler");
 
     return (req, res, _next) => {
-        logger.warn(`404 - Not Found: ${req.method} ${req.originalUrl}`);
+        logger.warn("route not found", { method: req.method, url: req.originalUrl });
 
         if (utils.isApiRequest(req)) {
             return res.status(404).json({
@@ -111,7 +111,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof AuthenticationError) {
-            logger.warn(`401 - Authentication failed: ${req.method} ${req.originalUrl}`);
+            logger.warn("authentication failed", { method: req.method, url: req.originalUrl });
             if (utils.isApiRequest(req)) {
                 return res.status(401).json({
                     success: false,
@@ -129,7 +129,11 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof NotFoundError) {
-            logger.warn(`404 - ${err.message}: ${req.method} ${req.originalUrl}`);
+            logger.warn("resource not found", {
+                message: err.message,
+                method: req.method,
+                url: req.originalUrl,
+            });
             if (utils.isApiRequest(req)) {
                 return res.status(404).json({
                     success: false,
@@ -146,7 +150,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof CalendarFetchError) {
-            logger.error("Calendar fetch error:", err);
+            logger.error("calendar fetch error", { error: err.message, context: err.context });
             if (utils.isApiRequest(req)) {
                 return res.status(502).json({
                     success: false,
@@ -163,7 +167,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof DatabaseError) {
-            logger.error("Database error:", err);
+            logger.error("database error", { error: err.message });
             const message =
                 config.app.env === "development" ? err.message : "Database error occurred";
             if (utils.isApiRequest(req)) {
@@ -182,7 +186,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof TimeoutError) {
-            logger.error("Timeout error:", err);
+            logger.error("timeout error", { error: err.message });
             if (utils.isApiRequest(req)) {
                 return res.status(408).json({
                     success: false,
@@ -199,7 +203,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof ICalParseError) {
-            logger.error("iCal parse error:", err);
+            logger.error("ical parse error", { error: err.message });
             if (utils.isApiRequest(req)) {
                 return res.status(422).json({
                     success: false,
@@ -216,7 +220,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof ParseError) {
-            logger.error("Parse error:", err);
+            logger.error("parse error", { error: err.message });
             if (utils.isApiRequest(req)) {
                 return res.status(422).json({
                     success: false,
@@ -233,7 +237,7 @@ export function errorHandler(dependencies = {}) {
         }
 
         if (err instanceof ConfigurationError) {
-            logger.error("Configuration error:", err);
+            logger.error("configuration error", { error: err.message });
             if (utils.isApiRequest(req)) {
                 return res.status(500).json({
                     success: false,
@@ -250,7 +254,7 @@ export function errorHandler(dependencies = {}) {
             });
         }
 
-        logger.error("Unhandled error:", err);
+        logger.error("unhandled error", { error: err.message, stack: err.stack });
         const statusCode = err.statusCode || err.status || 500;
         const message = err.message || "Internal server error";
 
