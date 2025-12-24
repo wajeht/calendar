@@ -80,30 +80,7 @@ export async function createApp(customConfig = {}) {
 
             next();
         })
-        .use((req, res, next) => {
-            const start = Date.now();
-            const correlationId = `req_${Date.now()}_${Math.floor(Math.random() * 1e9).toString(36)}`;
-
-            req.correlationId = correlationId;
-            res.setHeader("X-Correlation-ID", correlationId);
-
-            if (ctx.config.app.env !== "test") {
-                ctx.logger.debug(`[${correlationId}] ${req.method} ${req.url}`);
-            }
-
-            res.on("finish", () => {
-                const duration = Date.now() - start;
-                const level = res.statusCode >= 400 ? "warn" : "debug";
-
-                if (ctx.config.app.env !== "test") {
-                    ctx.logger[level](
-                        `[${correlationId}] ${req.method} ${req.url} ${res.statusCode} ${duration}ms`,
-                    );
-                }
-            });
-
-            next();
-        })
+        .use(ctx.logger.middleware())
         .use(cookieParser())
         .use(express.json({ limit: ctx.config.app.jsonLimit || "1mb" }))
         .use(
@@ -158,13 +135,13 @@ export async function createServer(customConfig = {}) {
     server.requestTimeout = 120000; // same as timeout
 
     server.on("listening", async () => {
-        ctx.logger.success(`Server running on http://localhost:${PORT}`);
+        ctx.logger.info("server started", { port: PORT, url: `http://localhost:${PORT}` });
 
         if (process.env.NODE_ENV !== "test") {
             try {
                 await ctx.services.cron.start();
             } catch (error) {
-                ctx.logger.error("Failed to start cron service:", error.message);
+                ctx.logger.error("failed to start cron service", { error: error.message });
             }
         }
     });
@@ -174,15 +151,13 @@ export async function createServer(customConfig = {}) {
             throw error;
         }
 
-        const bind = typeof PORT === "string" ? "Pipe " + PORT : "Port " + PORT;
-
         switch (error.code) {
             case "EACCES":
-                ctx.logger.error(`${bind} requires elevated privileges`);
+                ctx.logger.error("port requires elevated privileges", { port: PORT });
                 process.exit(1);
                 break;
             case "EADDRINUSE":
-                ctx.logger.error(`${bind} is already in use`);
+                ctx.logger.error("port already in use", { port: PORT });
                 process.exit(1);
                 break;
             default:
@@ -194,25 +169,25 @@ export async function createServer(customConfig = {}) {
 }
 
 export async function closeServer({ server, ctx }) {
-    ctx.logger.info("Shutting down server gracefully...");
+    ctx.logger.info("shutdown initiated");
 
     try {
         if (process.env.NODE_ENV !== "test") {
             try {
                 ctx.services.cron.stop();
-                ctx.logger.info("Cron service stopped");
+                ctx.logger.info("cron service stopped");
             } catch (error) {
-                ctx.logger.warn("Error stopping cron service:", error.message);
+                ctx.logger.warn("error stopping cron service", { error: error.message });
             }
         }
 
         try {
             if (ctx.db && typeof ctx.db.destroy === "function") {
                 await ctx.db.destroy();
-                ctx.logger.info("Database connections closed");
+                ctx.logger.info("database connections closed");
             }
         } catch (error) {
-            ctx.logger.warn("Error closing database:", error.message);
+            ctx.logger.warn("error closing database", { error: error.message });
         }
 
         if (server) {
@@ -222,28 +197,26 @@ export async function closeServer({ server, ctx }) {
                 server.timeout = 1;
 
                 const shutdownTimeout = setTimeout(() => {
-                    ctx.logger.error(
-                        "Could not close connections in time, forcefully shutting down",
-                    );
+                    ctx.logger.error("shutdown timeout", { timeout_ms: 10000 });
                     reject(new ctx.errors.TimeoutError("Server close timeout", 10000));
                 }, 10000);
 
                 server.close((error) => {
                     clearTimeout(shutdownTimeout);
                     if (error) {
-                        ctx.logger.error("Error closing HTTP server:", error.message);
+                        ctx.logger.error("error closing http server", { error: error.message });
                         reject(error);
                     } else {
-                        ctx.logger.info("HTTP server closed");
+                        ctx.logger.info("http server closed");
                         resolve();
                     }
                 });
             });
         }
 
-        ctx.logger.success("Server shutdown complete");
+        ctx.logger.info("shutdown complete");
     } catch (error) {
-        ctx.logger.error("Error during graceful shutdown:", error.message);
+        ctx.logger.error("error during graceful shutdown", { error: error.message });
         process.exit(1);
     }
 }
