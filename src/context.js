@@ -33,7 +33,7 @@ export function createContext(customConfig = {}) {
 
     const icalLibrary = customConfig.ICAL || ICAL;
 
-    const logger = createLogger(finalConfig.logger);
+    const logger = createLogger("calendar");
     const db = finalConfig.database?.instance || createDatabase(finalConfig.db);
     const errors = {
         ParseError,
