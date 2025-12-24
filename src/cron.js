@@ -24,16 +24,17 @@ export function createCronService(dependencies = {}) {
                 isEnabled = cronSettings.enabled !== false; // Default to true if not set
                 currentSchedule = cronSettings.schedule || "0 */1 * * *";
                 lastRun = cronSettings.lastRun || null;
-                logger.info(
-                    `Loaded cron settings: enabled=${isEnabled}, schedule=${currentSchedule}`,
-                );
+                logger.info("loaded cron settings", {
+                    enabled: isEnabled,
+                    schedule: currentSchedule,
+                });
             } else {
                 isEnabled = true;
                 await saveSettings();
-                logger.info("Initialized default cron settings");
+                logger.info("initialized default cron settings");
             }
         } catch (error) {
-            logger.error("Failed to load cron settings from database:", error.message);
+            logger.error("failed to load cron settings", { error: error.message });
             isEnabled = true;
         }
     }
@@ -46,13 +47,13 @@ export function createCronService(dependencies = {}) {
                 lastRun: lastRun,
             });
         } catch (error) {
-            logger.error("Failed to save cron settings to database:", error.message);
+            logger.error("failed to save cron settings", { error: error.message });
         }
     }
 
     async function refetchCalendarsTask() {
         if (isRefetchRunning) {
-            logger.warn("Calendar refetch already in progress, skipping");
+            logger.warn("calendar refetch already in progress", { schedule: currentSchedule });
             return;
         }
 
@@ -61,21 +62,26 @@ export function createCronService(dependencies = {}) {
         lastRun = new Date().toISOString();
 
         try {
-            logger.info("Starting scheduled calendar refetch");
             const result = await services.calendar.refetchAllCalendars();
-            const duration = Date.now() - startTime;
 
-            logger.info(
-                `Scheduled refetch completed in ${duration}ms - ${result.successful}/${result.total} calendars updated`,
-            );
-
-            if (result.failed > 0) {
-                logger.warn(`${result.failed} calendars failed to update`);
-            }
+            logger.info("scheduled refetch complete", {
+                trigger: "cron",
+                schedule: currentSchedule,
+                duration_ms: Date.now() - startTime,
+                total: result.total,
+                successful: result.successful,
+                failed: result.failed,
+            });
 
             await saveSettings();
         } catch (error) {
-            logger.error("Scheduled calendar refetch failed:", error.message);
+            logger.error("scheduled refetch failed", {
+                trigger: "cron",
+                schedule: currentSchedule,
+                duration_ms: Date.now() - startTime,
+                error: error.message,
+                error_type: error.constructor.name,
+            });
         } finally {
             isRefetchRunning = false;
         }
@@ -102,7 +108,11 @@ export function createCronService(dependencies = {}) {
             cronJobs.forEach((job) => job.start());
         }
 
-        logger.info(`Cron service started with ${cronJobs.length} job(s), enabled: ${isEnabled}`);
+        logger.info("cron service started", {
+            job_count: cronJobs.length,
+            enabled: isEnabled,
+            schedule: currentSchedule,
+        });
     }
 
     function stop() {
@@ -113,7 +123,7 @@ export function createCronService(dependencies = {}) {
             }
         });
         cronJobs = [];
-        logger.info("Cron service stopped");
+        logger.info("cron service stopped");
     }
 
     function getStatus() {
@@ -155,17 +165,18 @@ export function createCronService(dependencies = {}) {
 
                 cronJobs.push(calendarJob);
 
-                logger.info(`Cron schedule updated to: ${currentSchedule}`);
+                logger.info("cron schedule updated", {
+                    schedule: currentSchedule,
+                    enabled: isEnabled,
+                });
             }
         }
 
         if (cronJobs.length > 0) {
             if (isEnabled) {
                 cronJobs.forEach((job) => job.start());
-                logger.info("Cron jobs started");
             } else {
                 cronJobs.forEach((job) => job.stop());
-                logger.info("Cron jobs stopped");
             }
         }
 
