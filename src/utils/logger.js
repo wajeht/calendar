@@ -1,67 +1,51 @@
+import crypto from "crypto";
 import { styleText } from "node:util";
-import { inspect } from "node:util";
+import { AsyncLocalStorage } from "async_hooks";
 
-export function createLogger(config = {}) {
-    const { level = "info" } = config;
+const store = new AsyncLocalStorage();
+const levelColors = { debug: "magenta", info: "cyan", warn: "yellow", error: "red" };
 
-    const levels = { debug: 0, info: 1, warn: 2, error: 3 };
-    const currentLevel = levels[level] ?? 1;
+export function createLogger(service = "app") {
+    const ctx = () => store.getStore() || {};
 
-    const shouldLog = (logLevel) => levels[logLevel] >= currentLevel;
+    const set = (data) => Object.assign(ctx(), data);
 
-    const getTimestamp = () => {
-        return new Date().toISOString();
+    const withContext = (data, fn) => store.run({ ...ctx(), ...data }, fn);
+
+    const log = (level, msg, data = {}) => {
+        const output = JSON.stringify({
+            ts: new Date().toISOString(),
+            level,
+            service,
+            msg,
+            ...ctx(),
+            ...data,
+        });
+        process.stdout.write(styleText(levelColors[level] || "white", output) + "\n");
     };
 
-    const formatArgs = (args) => {
-        return args.length > 0
-            ? " " + args.map((arg) => (typeof arg === "string" ? arg : inspect(arg))).join(" ")
-            : "";
+    const middleware = () => (req, res, next) => {
+        const start = Date.now();
+        const init = {
+            request_id: req.get("x-request-id") || "req_" + crypto.randomBytes(8).toString("hex"),
+            method: req.method,
+            path: req.path,
+        };
+
+        res.on("finish", () =>
+            log("info", "request", { status: res.statusCode, ms: Date.now() - start }),
+        );
+
+        store.run(init, next);
     };
 
     return {
-        info: (message, ...args) => {
-            if (shouldLog("info")) {
-                process.stdout.write(
-                    styleText("cyan", `[${getTimestamp()}] ℹ️  ${message}`) +
-                        formatArgs(args) +
-                        "\n",
-                );
-            }
-        },
-        error: (message, ...args) => {
-            if (shouldLog("error")) {
-                process.stderr.write(
-                    styleText("red", `[${getTimestamp()}] ❌ ${message}`) + formatArgs(args) + "\n",
-                );
-            }
-        },
-        success: (message, ...args) => {
-            if (shouldLog("info")) {
-                process.stdout.write(
-                    styleText("green", `[${getTimestamp()}] ✅ ${message}`) +
-                        formatArgs(args) +
-                        "\n",
-                );
-            }
-        },
-        warn: (message, ...args) => {
-            if (shouldLog("warn")) {
-                process.stdout.write(
-                    styleText("yellow", `[${getTimestamp()}] ⚠️  ${message}`) +
-                        formatArgs(args) +
-                        "\n",
-                );
-            }
-        },
-        debug: (message, ...args) => {
-            if (shouldLog("debug")) {
-                process.stdout.write(
-                    styleText("magenta", `[${getTimestamp()}] 🐛 ${message}`) +
-                        formatArgs(args) +
-                        "\n",
-                );
-            }
-        },
+        middleware,
+        set,
+        withContext,
+        info: (msg, data) => log("info", msg, data),
+        warn: (msg, data) => log("warn", msg, data),
+        error: (msg, data) => log("error", msg, data),
+        debug: (msg, data) => log("debug", msg, data),
     };
 }
