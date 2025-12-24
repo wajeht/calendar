@@ -58,7 +58,7 @@ export function createSettingsRouter(dependencies = {}) {
 
         const result = await services.cron.updateSettings({ enabled, schedule });
 
-        logger.info(`Cron settings updated: enabled=${enabled}, schedule=${schedule}`);
+        logger.info("cron settings updated", { enabled, schedule });
 
         res.json({
             success: true,
@@ -81,7 +81,7 @@ export function createSettingsRouter(dependencies = {}) {
 
         await models.settings.set("theme", theme);
 
-        logger.info(`Theme updated: ${theme}`);
+        logger.info("theme updated", { theme });
 
         res.json({
             success: true,
@@ -124,7 +124,7 @@ export function createSettingsRouter(dependencies = {}) {
 
         const feedCalendars = (await models.settings.get("feed_calendars")) || [];
 
-        logger.info("Feed token regenerated");
+        logger.info("feed token regenerated");
 
         res.json({
             success: true,
@@ -151,7 +151,10 @@ export function createSettingsRouter(dependencies = {}) {
 
         await models.settings.set("feed_calendars", calendars);
 
-        logger.info(`Feed calendars updated: ${calendars.length} selected`);
+        logger.info("feed calendars updated", {
+            calendar_count: calendars.length,
+            calendar_ids: calendars,
+        });
 
         res.json({
             success: true,

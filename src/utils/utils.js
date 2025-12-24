@@ -188,7 +188,7 @@ export function createUtils(dependencies = {}) {
             try {
                 return await bcrypt.hash(password, saltRounds);
             } catch (error) {
-                logger.error("Password hashing error:", error);
+                logger.error("password hashing error", { error: error.message });
                 throw new ConfigurationError("Failed to hash password", { cause: error });
             }
         },
@@ -211,7 +211,7 @@ export function createUtils(dependencies = {}) {
             try {
                 return await bcrypt.compare(password, hash);
             } catch (error) {
-                logger.error("Password verification error:", error);
+                logger.error("password verification error", { error: error.message });
                 return false;
             }
         },

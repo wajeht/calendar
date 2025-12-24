@@ -125,15 +125,23 @@ export function createCalendarService(dependencies = {}) {
         const comp = new ICAL.Component(jCalData);
         const vevents = comp.getAllSubcomponents("vevent");
         const events = [];
+        let recurringCount = 0;
+        let singleCount = 0;
+        let skippedExceptions = 0;
+        let parseErrors = 0;
 
         for (const vevent of vevents) {
             try {
                 const event = new ICAL.Event(vevent);
 
                 // Skip recurrence exceptions - master event expansion handles occurrences
-                if (event.isRecurrenceException()) continue;
+                if (event.isRecurrenceException()) {
+                    skippedExceptions++;
+                    continue;
+                }
 
                 if (event.isRecurring()) {
+                    recurringCount++;
                     const expand = new ICAL.RecurExpansion({
                         component: vevent,
                         dtstart: vevent.getFirstPropertyValue("dtstart"),
@@ -147,12 +155,25 @@ export function createCalendarService(dependencies = {}) {
                         count++;
                     }
                 } else {
+                    singleCount++;
                     events.push(createEventFromIcal(event));
                 }
             } catch (err) {
-                logger.error("Error processing event:", err.message);
+                parseErrors++;
+                logger.warn("event parse error", {
+                    error: err.message,
+                    uid: vevent?.getFirstPropertyValue("uid"),
+                });
             }
         }
+
+        logger.set({
+            vevent_count: vevents.length,
+            recurring_events: recurringCount,
+            single_events: singleCount,
+            skipped_exceptions: skippedExceptions,
+            parse_errors: parseErrors,
+        });
 
         return events;
     }
@@ -251,8 +272,10 @@ export function createCalendarService(dependencies = {}) {
 
     async function fetchICalData(url) {
         const normalizedUrl = utils.normalizeCalendarUrl(url);
+        const urlHost = new URL(normalizedUrl).host;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const fetchStart = Date.now();
 
         try {
             const response = await fetch(normalizedUrl, {
@@ -273,9 +296,20 @@ export function createCalendarService(dependencies = {}) {
                 });
             }
 
-            return await response.text();
+            const data = await response.text();
+
+            logger.set({
+                url_host: urlHost,
+                fetch_ms: Date.now() - fetchStart,
+                response_status: response.status,
+                response_bytes: data.length,
+            });
+
+            return data;
         } catch (error) {
             clearTimeout(timeoutId);
+            logger.set({ url_host: urlHost, fetch_ms: Date.now() - fetchStart });
+
             if (error.name === "AbortError") {
                 throw new TimeoutError(`Request timeout after 30s for ${url}`, 30000, {
                     cause: error,
@@ -290,75 +324,86 @@ export function createCalendarService(dependencies = {}) {
     }
 
     async function fetchAndProcessCalendar(calendarId, url) {
-        try {
-            logger.info(`Fetching calendar data for ID ${calendarId} from ${url}`);
+        const startTime = Date.now();
 
-            const rawData = await fetchICalData(url);
-
-            let events;
+        return logger.withContext({ calendar_id: calendarId }, async () => {
             try {
-                events = parseICalToEvents(rawData);
-            } catch (error) {
-                throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, error, {
-                    cause: error,
-                });
-            }
+                const rawData = await fetchICalData(url);
 
-            logger.info(`Parsed ${events.length} events from calendar ${calendarId}`);
+                let events;
+                try {
+                    events = parseICalToEvents(rawData);
+                } catch (error) {
+                    throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, error, {
+                        cause: error,
+                    });
+                }
 
-            const calendar = await models.calendar.getById(calendarId);
-            if (!calendar) {
-                throw new NotFoundError(`Calendar ${calendarId}`);
-            }
+                const calendar = await models.calendar.getById(calendarId);
+                if (!calendar) {
+                    throw new NotFoundError(`Calendar ${calendarId}`);
+                }
 
-            const { publicEvents, authenticatedEvents } = processEventsForViews(events, calendar);
-
-            logger.info(
-                `Processed ${publicEvents.length} public events and ${authenticatedEvents.length} authenticated events`,
-            );
-
-            await models.calendar.update(calendarId, {
-                ical_data: rawData,
-                events_processed: JSON.stringify(events),
-                events_public: JSON.stringify(publicEvents),
-                events_private: JSON.stringify(authenticatedEvents),
-            });
-
-            logger.info(`Successfully updated calendar ${calendarId} with ${events.length} events`);
-
-            return { rawData, events, publicEvents, authenticatedEvents };
-        } catch (error) {
-            logger.error(`Failed to fetch calendar ${calendarId}:`, error);
-
-            try {
-                await models.calendar.update(calendarId, {
-                    ical_data: null,
-                    events_processed: JSON.stringify([]),
-                    events_public: JSON.stringify([]),
-                    events_private: JSON.stringify([]),
-                });
-            } catch (updateError) {
-                logger.error(
-                    `Failed to update calendar ${calendarId} with error state:`,
-                    updateError,
+                const { publicEvents, authenticatedEvents } = processEventsForViews(
+                    events,
+                    calendar,
                 );
-            }
 
-            throw error;
-        }
+                await models.calendar.update(calendarId, {
+                    ical_data: rawData,
+                    events_processed: JSON.stringify(events),
+                    events_public: JSON.stringify(publicEvents),
+                    events_private: JSON.stringify(authenticatedEvents),
+                });
+
+                logger.info("calendar sync complete", {
+                    calendar_name: calendar.name,
+                    visible_to_public: calendar.visible_to_public,
+                    total_events: events.length,
+                    public_events: publicEvents.length,
+                    private_events: authenticatedEvents.length,
+                    duration_ms: Date.now() - startTime,
+                    success: true,
+                });
+
+                return { rawData, events, publicEvents, authenticatedEvents };
+            } catch (error) {
+                try {
+                    await models.calendar.update(calendarId, {
+                        ical_data: null,
+                        events_processed: JSON.stringify([]),
+                        events_public: JSON.stringify([]),
+                        events_private: JSON.stringify([]),
+                    });
+                } catch (updateError) {
+                    logger.set({ clear_error: updateError.message });
+                }
+
+                logger.error("calendar sync failed", {
+                    error: error.message,
+                    error_type: error.constructor.name,
+                    duration_ms: Date.now() - startTime,
+                    success: false,
+                });
+
+                throw error;
+            }
+        });
     }
 
     async function refetchAllCalendars() {
+        const startTime = Date.now();
         const calendars = await models.calendar.getAll();
-        logger.info(`Refetching ${calendars.length} calendars`);
 
         const results = [];
+        let totalEvents = 0;
+
         for (const calendar of calendars) {
             try {
                 const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
+                totalEvents += result.events.length;
                 results.push({ success: true, calendarId: calendar.id, ...result });
             } catch (error) {
-                logger.error(`Failed to refetch calendar ${calendar.id}:`, error);
                 results.push({ success: false, calendarId: calendar.id, message: error.message });
             }
         }
@@ -366,7 +411,14 @@ export function createCalendarService(dependencies = {}) {
         const successful = results.filter((r) => r.success).length;
         const failed = results.length - successful;
 
-        logger.info(`Refetch complete: ${successful} successful, ${failed} failed`);
+        logger.info("batch calendar sync complete", {
+            total_calendars: calendars.length,
+            successful,
+            failed,
+            total_events: totalEvents,
+            duration_ms: Date.now() - startTime,
+            calendars_processed: calendars.map((c) => c.name),
+        });
 
         return { total: calendars.length, successful, failed, results };
     }
@@ -374,7 +426,7 @@ export function createCalendarService(dependencies = {}) {
     async function exportCalendars() {
         const calendars = await models.calendar.getAll({ includeEvents: false });
 
-        logger.info(`Exported ${calendars.length} calendars`);
+        logger.info("exported calendars", { count: calendars.length });
 
         return {
             calendars: calendars.map(
@@ -432,9 +484,11 @@ export function createCalendarService(dependencies = {}) {
             }
         }
 
-        logger.info(
-            `Calendar import completed: ${results.imported} imported, ${results.skipped} skipped, ${results.errors.length} errors`,
-        );
+        logger.info("calendar import completed", {
+            imported: results.imported,
+            skipped: results.skipped,
+            errors: results.errors.length,
+        });
 
         return results;
     }

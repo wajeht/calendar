@@ -103,14 +103,17 @@ export function createCalendarRouter(dependencies = {}) {
 
         const calendar = await models.calendar.create(calendarData);
 
-        logger.info(`Calendar created: ${calendar.name}`);
+        logger.info("calendar created", { name: calendar.name, id: calendar.id });
 
         if (process.env.NODE_ENV !== "test") {
             setImmediate(async () => {
                 try {
                     await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
                 } catch (error) {
-                    logger.error(`Background calendar fetch failed for ${calendar.id}:`, error);
+                    logger.error("background calendar fetch failed", {
+                        calendar_id: calendar.id,
+                        error: error.message,
+                    });
                 }
             });
         }
@@ -162,18 +165,21 @@ export function createCalendarRouter(dependencies = {}) {
                             updatedCalendar.id,
                             updatedCalendar.url,
                         );
-                        logger.info(`Calendar events reprocessed for ${updatedCalendar.name}`);
+                        logger.info("calendar events reprocessed", {
+                            name: updatedCalendar.name,
+                            id: updatedCalendar.id,
+                        });
                     } catch (error) {
-                        logger.error(
-                            `Background calendar reprocessing failed for ${updatedCalendar.id}:`,
-                            error,
-                        );
+                        logger.error("background calendar reprocessing failed", {
+                            calendar_id: updatedCalendar.id,
+                            error: error.message,
+                        });
                     }
                 });
             }
         }
 
-        logger.info(`Calendar updated: ${updatedCalendar.name}`);
+        logger.info("calendar updated", { name: updatedCalendar.name, id: updatedCalendar.id });
 
         res.json({
             success: true,
@@ -192,7 +198,7 @@ export function createCalendarRouter(dependencies = {}) {
             throw new NotFoundError("Calendar");
         }
 
-        logger.info(`Calendar deleted: ${calendar.name}`);
+        logger.info("calendar deleted", { name: calendar.name, id: calendar.id });
 
         res.json({
             success: true,
@@ -203,7 +209,7 @@ export function createCalendarRouter(dependencies = {}) {
     });
 
     router.post("/refresh", requireAuth, async (_req, res) => {
-        logger.info("Calendar refresh requested");
+        logger.set({ trigger: "manual" });
 
         const result = await services.calendar.refetchAllCalendars();
 

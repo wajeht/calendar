@@ -31,7 +31,11 @@ export function createFeedRouter(dependencies = {}) {
 
         const ical = services.calendar.combineCalendarsToIcal(calendars);
 
-        logger.info(`Feed accessed with valid token (${calendars.length} calendars)`);
+        logger.info("feed accessed", {
+            calendar_count: calendars.length,
+            selected_ids: selectedIds.length > 0 ? selectedIds : "all",
+            ical_bytes: ical.length,
+        });
 
         res.setHeader("Content-Type", "text/calendar; charset=utf-8");
         res.setHeader("Content-Disposition", 'attachment; filename="calendar.ics"');

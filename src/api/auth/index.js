@@ -34,7 +34,7 @@ export function createAuthRouter(dependencies = {}) {
 
         if (lockedUntil && Date.now() < lockedUntil) {
             const timeLeft = Math.ceil((lockedUntil - Date.now()) / 1000 / 60);
-            logger.warn(`Login attempt on locked session. ${timeLeft} minutes remaining`);
+            logger.warn("login attempt on locked session", { minutes_remaining: timeLeft });
             throw new ValidationError({
                 password: `Account locked. Try again in ${timeLeft} minutes`,
             });
@@ -59,7 +59,7 @@ export function createAuthRouter(dependencies = {}) {
                     maxAge: 15 * 60 * 1000, // 15 minutes
                     path: "/",
                 });
-                logger.warn(`Account locked after 5 failed attempts`);
+                logger.warn("account locked after failed attempts", { attempts: 5 });
                 throw new ValidationError({
                     password: "Too many failed attempts. Account locked for 15 minutes",
                 });
@@ -73,7 +73,7 @@ export function createAuthRouter(dependencies = {}) {
                 path: "/",
             });
 
-            logger.warn(`Failed login attempt ${newFailedAttempts}/5`);
+            logger.warn("failed login attempt", { attempt: newFailedAttempts, max_attempts: 5 });
             throw new ValidationError({ password: "Invalid password" });
         }
 
@@ -98,7 +98,7 @@ export function createAuthRouter(dependencies = {}) {
 
         res.cookie("session_token", sessionToken, cookieOptions);
 
-        logger.info("Successful login");
+        logger.info("login successful");
         res.json({
             success: true,
             message: "Authentication successful",
@@ -121,7 +121,7 @@ export function createAuthRouter(dependencies = {}) {
 
         res.clearCookie("session_token", cookieOptions);
 
-        logger.info("User logged out");
+        logger.info("user logged out");
         res.json({
             success: true,
             message: "Logged out successfully",
@@ -214,7 +214,7 @@ export function createAuthRouter(dependencies = {}) {
         const hashedPassword = await utils.hashPassword(password);
         await models.settings.set("app_password", hashedPassword);
 
-        logger.info("Initial application password configured");
+        logger.info("initial password configured");
 
         res.json({
             success: true,
@@ -274,7 +274,7 @@ export function createAuthRouter(dependencies = {}) {
         const hashedNewPassword = await utils.hashPassword(newPassword);
         await models.settings.set("app_password", hashedNewPassword);
 
-        logger.info("Application password changed successfully");
+        logger.info("password changed");
 
         res.json({
             success: true,
