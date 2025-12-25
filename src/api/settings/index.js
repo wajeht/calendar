@@ -119,7 +119,7 @@ export function createSettingsRouter(dependencies = {}) {
     });
 
     router.post("/feed-token/regenerate", requireAuth, async (_req, res) => {
-        const token = utils.generateSecureToken(32);
+        const token = utils.generateSecureToken(48);
         await models.settings.set("feed_token", token);
 
         const feedCalendars = (await models.settings.get("feed_calendars")) || [];

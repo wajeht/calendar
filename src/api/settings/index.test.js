@@ -164,7 +164,7 @@ describe("Settings", () => {
             expect(response.body.message).toBe("Feed token retrieved successfully");
             expect(response.body.errors).toBe(null);
             expect(response.body.data.token).toBeDefined();
-            expect(response.body.data.token).toHaveLength(64); // 32 bytes = 64 hex chars
+            expect(response.body.data.token).toHaveLength(96); // 48 bytes = 96 hex chars
             expect(response.body.data.feedUrl).toContain("/api/feed/");
             expect(response.body.data.feedUrl).toContain(".ics");
             expect(response.body.data.calendars).toBeDefined();
@@ -195,7 +195,7 @@ describe("Settings", () => {
             expect(response.body.success).toBe(true);
             expect(response.body.message).toBe("Feed token regenerated successfully");
             expect(response.body.data.token).toBeDefined();
-            expect(response.body.data.token).toHaveLength(64);
+            expect(response.body.data.token).toHaveLength(96);
             expect(response.body.data.feedUrl).toContain(response.body.data.token);
         });
 
@@ -210,7 +210,7 @@ describe("Settings", () => {
             expect(response.body.message).toBe("Feed token regenerated successfully");
             expect(response.body.data.token).toBeDefined();
             expect(response.body.data.token).not.toBe(originalToken);
-            expect(response.body.data.token).toHaveLength(64);
+            expect(response.body.data.token).toHaveLength(96);
             expect(response.body.data.feedUrl).toContain(response.body.data.token);
         });
 
