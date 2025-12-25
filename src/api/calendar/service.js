@@ -1,5 +1,5 @@
 export function createCalendarService(dependencies = {}) {
-    const { ICAL, logger, models, errors, utils } = dependencies;
+    const { ICAL, logger, models, errors, utils, config } = dependencies;
 
     if (!errors) throw new Error("Errors required for calendar service");
     const {
@@ -15,6 +15,8 @@ export function createCalendarService(dependencies = {}) {
     if (!models) throw new ConfigurationError("Models required for calendar service");
     if (!logger) throw new ConfigurationError("Logger required for calendar service");
     if (!utils) throw new ConfigurationError("Utils required for calendar service");
+
+    const fetchTimeout = config?.timeouts?.calendarFetch || 30000;
 
     function formatDate(icalTime) {
         if (icalTime.isDate) {
@@ -274,7 +276,7 @@ export function createCalendarService(dependencies = {}) {
         const normalizedUrl = utils.normalizeCalendarUrl(url);
         const urlHost = new URL(normalizedUrl).host;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
         const fetchStart = Date.now();
 
         try {
@@ -311,9 +313,11 @@ export function createCalendarService(dependencies = {}) {
             logger.set({ url_host: urlHost, fetch_ms: Date.now() - fetchStart });
 
             if (error.name === "AbortError") {
-                throw new TimeoutError(`Request timeout after 30s for ${url}`, 30000, {
-                    cause: error,
-                });
+                throw new TimeoutError(
+                    `Request timeout after ${fetchTimeout}ms for ${url}`,
+                    fetchTimeout,
+                    { cause: error },
+                );
             }
             throw new CalendarFetchError(
                 `Failed to fetch iCal data from ${url}: ${error.message}`,
@@ -446,6 +450,13 @@ export function createCalendarService(dependencies = {}) {
     async function importCalendars(calendarsData, utils) {
         if (!Array.isArray(calendarsData)) {
             throw new ValidationError({ calendarsData: "Calendars must be an array" });
+        }
+
+        const MAX_IMPORT = 100;
+        if (calendarsData.length > MAX_IMPORT) {
+            throw new ValidationError({
+                calendarsData: `Cannot import more than ${MAX_IMPORT} calendars at once`,
+            });
         }
 
         const results = { imported: 0, skipped: 0, errors: [] };

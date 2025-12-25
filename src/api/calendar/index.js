@@ -1,5 +1,7 @@
 import express from "express";
 
+const pendingFetches = new Set();
+
 export function createCalendarRouter(dependencies = {}) {
     const { models, services, middleware, utils, logger, errors, validators } = dependencies;
 
@@ -105,7 +107,8 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info("calendar created", { name: calendar.name, id: calendar.id });
 
-        if (process.env.NODE_ENV !== "test") {
+        if (process.env.NODE_ENV !== "test" && !pendingFetches.has(calendar.id)) {
+            pendingFetches.add(calendar.id);
             setImmediate(async () => {
                 try {
                     await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
@@ -114,6 +117,8 @@ export function createCalendarRouter(dependencies = {}) {
                         calendar_id: calendar.id,
                         error: error.message,
                     });
+                } finally {
+                    pendingFetches.delete(calendar.id);
                 }
             });
         }
@@ -158,7 +163,8 @@ export function createCalendarRouter(dependencies = {}) {
             updateData.visible_to_public !== undefined ||
             updateData.show_details_to_public !== undefined
         ) {
-            if (process.env.NODE_ENV !== "test") {
+            if (process.env.NODE_ENV !== "test" && !pendingFetches.has(updatedCalendar.id)) {
+                pendingFetches.add(updatedCalendar.id);
                 setImmediate(async () => {
                     try {
                         await services.calendar.fetchAndProcessCalendar(
@@ -174,6 +180,8 @@ export function createCalendarRouter(dependencies = {}) {
                             calendar_id: updatedCalendar.id,
                             error: error.message,
                         });
+                    } finally {
+                        pendingFetches.delete(updatedCalendar.id);
                     }
                 });
             }

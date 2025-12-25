@@ -189,7 +189,7 @@ describe("Calendar Service", () => {
 
             await expect(
                 calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url),
-            ).rejects.toThrow("Request timeout after 30s");
+            ).rejects.toThrow("Request timeout after 30000ms");
         });
 
         it("should handle fetch failure", async () => {
