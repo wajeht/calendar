@@ -63,6 +63,7 @@ export function createContext(customConfig = {}) {
             models,
             errors,
             utils,
+            config: finalConfig,
             ICAL: icalLibrary,
         }),
     };
