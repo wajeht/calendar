@@ -129,10 +129,11 @@ export async function createServer(customConfig = {}) {
 
     const server = app.listen(PORT);
 
-    server.timeout = 120000; // 2 minutes
-    server.keepAliveTimeout = 65000; // 65 seconds
-    server.headersTimeout = 66000; // slightly higher than keepAliveTimeout
-    server.requestTimeout = 120000; // same as timeout
+    const serverTimeout = ctx.config.timeouts?.server || 120000;
+    server.timeout = serverTimeout;
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+    server.requestTimeout = serverTimeout;
 
     server.on("listening", async () => {
         ctx.logger.info("server started", { port: PORT, url: `http://localhost:${PORT}` });
@@ -191,15 +192,16 @@ export async function closeServer({ server, ctx }) {
         }
 
         if (server) {
+            const shutdownMs = ctx.config.timeouts?.shutdown || 10000;
             await new Promise((resolve, reject) => {
                 server.keepAliveTimeout = 0;
                 server.headersTimeout = 0;
                 server.timeout = 1;
 
                 const shutdownTimeout = setTimeout(() => {
-                    ctx.logger.error("shutdown timeout", { timeout_ms: 10000 });
-                    reject(new ctx.errors.TimeoutError("Server close timeout", 10000));
-                }, 10000);
+                    ctx.logger.error("shutdown timeout", { timeout_ms: shutdownMs });
+                    reject(new ctx.errors.TimeoutError("Server close timeout", shutdownMs));
+                }, shutdownMs);
 
                 server.close((error) => {
                     clearTimeout(shutdownTimeout);
