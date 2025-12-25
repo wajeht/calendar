@@ -98,7 +98,7 @@ describe("Auth", () => {
                 expect(response.body.data.feedToken).toHaveProperty("token");
                 expect(response.body.data.feedToken).toHaveProperty("feedUrl");
                 expect(response.body.data.feedToken).toHaveProperty("calendars");
-                expect(response.body.data.feedToken.token).toHaveLength(64); // 32 bytes = 64 hex chars
+                expect(response.body.data.feedToken.token).toHaveLength(96); // 48 bytes = 96 hex chars
                 expect(response.body.data.feedToken.feedUrl).toContain("/api/feed/");
                 expect(response.body.data.feedToken.feedUrl).toContain(".ics");
                 expect(Array.isArray(response.body.data.feedToken.calendars)).toBe(true);

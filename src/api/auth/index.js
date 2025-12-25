@@ -80,9 +80,7 @@ export function createAuthRouter(dependencies = {}) {
         res.clearCookie("failed_attempts", { path: "/" });
         res.clearCookie("locked_until", { path: "/" });
 
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2);
-        const sessionToken = `${timestamp}.${random}`;
+        const sessionToken = `${Date.now()}.${utils.generateSecureToken(16)}`;
 
         const cookieOptions = {
             httpOnly: true,
