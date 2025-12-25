@@ -21,8 +21,14 @@ export const config = deepFreeze({
     },
 
     cors: {
-        origin: process.env.CORS_ORIGIN || true,
+        origin: process.env.CORS_ORIGIN || false,
         credentials: process.env.CORS_CREDENTIALS === "true" || false,
+    },
+
+    timeouts: {
+        calendarFetch: parseInt(process.env.CALENDAR_FETCH_TIMEOUT) || 30000,
+        server: parseInt(process.env.SERVER_TIMEOUT) || 120000,
+        shutdown: parseInt(process.env.SHUTDOWN_TIMEOUT) || 10000,
     },
 
     security: {
