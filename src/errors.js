@@ -59,15 +59,6 @@ export class TimeoutError extends Error {
     }
 }
 
-export class ParseError extends Error {
-    constructor(message, originalError = null, options = {}) {
-        super(message, options);
-        this.name = "ParseError";
-        this.statusCode = 422;
-        this.originalError = originalError;
-    }
-}
-
 export class ICalParseError extends Error {
     constructor(message, originalError = null, options = {}) {
         super(message, options);

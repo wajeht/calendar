@@ -1,5 +1,4 @@
 import {
-    ParseError,
     TimeoutError,
     NotFoundError,
     DatabaseError,
@@ -36,7 +35,6 @@ export function createContext(customConfig = {}) {
     const logger = createLogger("calendar");
     const db = finalConfig.database?.instance || createDatabase(finalConfig.db);
     const errors = {
-        ParseError,
         TimeoutError,
         NotFoundError,
         DatabaseError,

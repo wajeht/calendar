@@ -80,7 +80,6 @@ export function errorHandler(dependencies = {}) {
     if (!errors) throw new Error("Errors required for errorHandler");
 
     const {
-        ParseError,
         TimeoutError,
         DatabaseError,
         NotFoundError,
@@ -215,23 +214,6 @@ export function errorHandler(dependencies = {}) {
             return res.status(422).render("general/error.html", {
                 title: "422 - Calendar Parse Error",
                 error: "Invalid calendar data format",
-                statusCode: 422,
-            });
-        }
-
-        if (err instanceof ParseError) {
-            logger.error("parse error", { error: err.message });
-            if (utils.isApiRequest(req)) {
-                return res.status(422).json({
-                    success: false,
-                    message: err.message,
-                    errors: null,
-                    data: null,
-                });
-            }
-            return res.status(422).render("general/error.html", {
-                title: "422 - Parse Error",
-                error: "Invalid data format",
                 statusCode: 422,
             });
         }
