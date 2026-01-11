@@ -13,6 +13,7 @@ export function createLogger(service = "app") {
     const withContext = (data, fn) => store.run({ ...ctx(), ...data }, fn);
 
     const log = (level, msg, data = {}) => {
+        if (process.env?.LOG_LEVEL === "silent") return;
         const output = JSON.stringify({
             ts: new Date().toISOString(),
             level,

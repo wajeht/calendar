@@ -3,6 +3,7 @@ import { beforeAll, afterAll } from "vitest";
 
 export async function createTestServer() {
     process.env.NODE_ENV = "test";
+    process.env.LOG_LEVEL = "silent";
     const { createApp } = await import("../app.js");
     const { app, ctx } = await createApp();
 
