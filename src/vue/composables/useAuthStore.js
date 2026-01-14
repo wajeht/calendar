@@ -27,6 +27,16 @@ function getCache() {
                 localStorage.removeItem(CACHE_KEY);
                 return null;
             }
+            // Skip cache if no events (likely stale from DB change or new calendar)
+            const totalEvents = (parsed.calendars || []).reduce(
+                (sum, cal) => sum + (cal.events?.length || 0),
+                0,
+            );
+            if (totalEvents === 0 && parsed.calendars?.length > 0) {
+                logger.log("Cache has calendars but no events, skipping");
+                localStorage.removeItem(CACHE_KEY);
+                return null;
+            }
             logger.log("Cache hit:", Object.keys(parsed));
             return parsed;
         }
