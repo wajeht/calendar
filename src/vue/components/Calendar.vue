@@ -273,22 +273,11 @@ function scheduleMidnightUpdate() {
 
 onMounted(async () => {
     logger.log("Mount started");
-    const { calendars: data, fromCache, sync } = await auth.initialize();
-    logger.log("Initialize done, fromCache:", fromCache, "calendars:", data.length);
+    const { calendars: data } = await auth.initialize();
+    logger.log("Initialize done, calendars:", data.length);
     calendars.value = data;
     updateCalendarSources(data);
     initTheme();
-
-    if (fromCache && sync) {
-        logger.log("Showing sync toast and starting background sync");
-        const syncToastId = toast.info("Syncing...", null, 0);
-        const freshData = await sync();
-        logger.log("Fresh data received, calendars:", freshData.length);
-        calendars.value = freshData;
-        updateCalendarSources(freshData);
-        toast.removeToast(syncToastId);
-        logger.log("Sync toast removed");
-    }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     scheduleMidnightUpdate();

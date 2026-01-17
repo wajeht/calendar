@@ -3,9 +3,6 @@ import { reactive, toRef } from "vue";
 import { useToast } from "./useToast.js";
 import { useLogger } from "./useLogger.js";
 
-const CACHE_KEY = "calendar_app_cache";
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 1 day
-
 const logger = useLogger("AuthStore");
 
 const state = reactive({
@@ -16,70 +13,6 @@ const state = reactive({
     feedToken: null,
     isSyncing: false,
 });
-
-function getCache() {
-    try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-            const parsed = JSON.parse(cached);
-            if (parsed._cachedAt && Date.now() - parsed._cachedAt > CACHE_EXPIRY_MS) {
-                logger.log("Cache expired");
-                localStorage.removeItem(CACHE_KEY);
-                return null;
-            }
-            // Skip cache if no events (likely stale from DB change or new calendar)
-            const totalEvents = (parsed.calendars || []).reduce(
-                (sum, cal) => sum + (cal.events?.length || 0),
-                0,
-            );
-            if (totalEvents === 0 && parsed.calendars?.length > 0) {
-                logger.log("Cache has calendars but no events, skipping");
-                localStorage.removeItem(CACHE_KEY);
-                return null;
-            }
-            logger.log("Cache hit:", Object.keys(parsed));
-            return parsed;
-        }
-        logger.log("Cache miss");
-        return null;
-    } catch (error) {
-        logger.error("Cache read error:", error.message);
-        return null;
-    }
-}
-
-function setCache(data) {
-    try {
-        const { feedToken, calendars, ...safeData } = data;
-
-        // Cache events within ±30 days to stay under localStorage quota
-        const now = Date.now();
-        const past = now - 30 * 24 * 60 * 60 * 1000;
-        const future = now + 30 * 24 * 60 * 60 * 1000;
-
-        safeData.calendars = (calendars || []).map((cal) => ({
-            ...cal,
-            events: (cal.events || []).filter((event) => {
-                const start = new Date(event.start).getTime();
-                return start >= past && start <= future;
-            }),
-        }));
-        safeData._cachedAt = Date.now();
-        localStorage.setItem(CACHE_KEY, JSON.stringify(safeData));
-        logger.log("Cache set");
-    } catch (error) {
-        logger.error("Cache write error:", error.message);
-    }
-}
-
-function clearCache() {
-    try {
-        localStorage.removeItem(CACHE_KEY);
-        logger.log("Cache cleared");
-    } catch (error) {
-        logger.error("Cache clear error:", error.message);
-    }
-}
 
 function applyData(data) {
     state.isAuthenticated = Boolean(data.isAuthenticated);
@@ -94,21 +27,8 @@ export function useAuthStore() {
 
     async function initialize() {
         logger.log("Initialize started");
-        const cached = getCache();
-
-        if (cached) {
-            applyData(cached);
-            logger.log("Using cached data, returning sync function");
-            return {
-                calendars: cached.calendars || [],
-                fromCache: true,
-                sync: () => fetchFreshData(),
-            };
-        }
-
-        logger.log("No cache, fetching fresh data");
         const calendars = await fetchFreshData();
-        return { calendars, fromCache: false, sync: null };
+        return { calendars };
     }
 
     async function fetchFreshData() {
@@ -118,9 +38,7 @@ export function useAuthStore() {
             const result = await api.auth.me();
             if (result?.success) {
                 logger.log("Fresh data received:", Object.keys(result.data));
-                logger.log("isAuthenticated:", result.data.isAuthenticated);
                 applyData(result.data);
-                setCache(result.data);
                 return result.data.calendars || [];
             }
             logger.error("Fetch failed - success:", result?.success, "status:", result?.status);
@@ -131,7 +49,6 @@ export function useAuthStore() {
             return [];
         } finally {
             state.isSyncing = false;
-            logger.log("Sync complete");
         }
     }
 
@@ -144,8 +61,6 @@ export function useAuthStore() {
                 state.cronSettings = null;
                 state.theme = "system";
                 state.feedToken = null;
-                clearCache();
-
                 toast.success(result.message || "Logged out successfully");
                 return true;
             } else {
@@ -181,6 +96,5 @@ export function useAuthStore() {
         setTheme: (value) => (state.theme = value),
         setFeedToken,
         setFeedCalendars,
-        clearCache,
     };
 }
