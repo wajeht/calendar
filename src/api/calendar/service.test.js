@@ -231,20 +231,27 @@ describe("Calendar Service", () => {
             ).rejects.toThrow(`Calendar ${nonExistentId}`);
         });
 
-        it("should clear calendar data on error", async () => {
-            const fetchError = new Error("Network error");
-            global.fetch.mockRejectedValue(fetchError);
+        it("should preserve existing events on fetch error", async () => {
+            global.fetch.mockResolvedValueOnce({
+                ok: true,
+                text: () => Promise.resolve(sampleICalData),
+            });
 
             const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+            await calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
+
+            const calendarWithEvents = await testServer.ctx.models.calendar.getById(calendar.id);
+            const originalEvents = JSON.parse(calendarWithEvents.events_processed);
+            expect(originalEvents.length).toBeGreaterThan(0);
+
+            global.fetch.mockRejectedValueOnce(new Error("Network error"));
 
             try {
                 await calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
             } catch {}
+
             const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
-            expect(updatedCalendar.ical_data).toBe(null);
-            expect(JSON.parse(updatedCalendar.events_processed)).toEqual([]);
-            expect(JSON.parse(updatedCalendar.events_public)).toEqual([]);
-            expect(JSON.parse(updatedCalendar.events_private)).toEqual([]);
+            expect(JSON.parse(updatedCalendar.events_processed)).toEqual(originalEvents);
         });
 
         it("should process public vs authenticated events correctly", async () => {

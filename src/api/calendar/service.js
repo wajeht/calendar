@@ -372,17 +372,6 @@ export function createCalendarService(dependencies = {}) {
 
                 return { rawData, events, publicEvents, authenticatedEvents };
             } catch (error) {
-                try {
-                    await models.calendar.update(calendarId, {
-                        ical_data: null,
-                        events_processed: JSON.stringify([]),
-                        events_public: JSON.stringify([]),
-                        events_private: JSON.stringify([]),
-                    });
-                } catch (updateError) {
-                    logger.set({ clear_error: updateError.message });
-                }
-
                 logger.error("calendar sync failed", {
                     error: error.message,
                     error_type: error.constructor.name,
