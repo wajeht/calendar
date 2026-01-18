@@ -69,6 +69,8 @@ export const config = deepFreeze({
             return process.env.SESSION_SECRET;
         })(),
         cookieDomain: process.env.COOKIE_DOMAIN || undefined,
+        idleTimeout: parseInt(process.env.SESSION_IDLE_TIMEOUT) || 7 * 24 * 60 * 60 * 1000, // 7 days
+        absoluteTimeout: parseInt(process.env.SESSION_ABSOLUTE_TIMEOUT) || 30 * 24 * 60 * 60 * 1000, // 30 days
     },
 
     cache: {
