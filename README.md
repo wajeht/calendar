@@ -11,21 +11,21 @@ A web-based calendar application with multiple calendar source support via iCal/
 ```
 📝 Add Calendar (name + color + iCal URL) → 🗄️ Database
     ↓
-⚡ Immediately fetches iCal → ICAL.js parser → 3 versions stored:
+⚡ Background fetch triggered → ICAL.js parser → 4 columns stored:
 ├─ Raw iCal data
-├─ Full events (titles, attendees, descriptions, locations)
-└─ Stripped events (time slots only)
+├─ Processed events (all parsed)
+├─ Public events (visibility-based)
+└─ Private events (full details)
     ↓
 👤 User visits calendar
     ↓
 🌍 Public User                    🔒 Authenticated User
-Check flags:                      Always full details:
-├─ visible_to_public?             ├─ Titles & descriptions
-├─ show_details_to_public?        ├─ Clickable attendee emails
-└─ Show nothing/blocks/full       └─ Meeting links & metadata
-    ↓                                 ↓
-📱 Click event                    📱 Click event
-Limited/no details               Rich modal with smart links
+├─ visible_to_public=false        Always full details:
+│  → Calendar hidden              ├─ Titles & descriptions
+├─ show_details_to_public=false   ├─ Clickable attendee emails
+│  → Time blocks only             └─ Meeting links & metadata
+└─ show_details_to_public=true
+   → Full details shown
 ```
 
 ## 📑 Docs
