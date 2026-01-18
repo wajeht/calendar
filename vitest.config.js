@@ -4,7 +4,7 @@ export default defineConfig({
     test: {
         env: {
             NODE_ENV: "test",
-            APP_ENV: "development",
+            APP_ENV: "test",
             APP_PORT: "80",
             APP_VUE_PORT: "3000",
             PRODUCTION_SSH_URL: "calendar@420.247.0.365",

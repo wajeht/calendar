@@ -201,7 +201,7 @@ export function createUtils(dependencies = {}) {
                 });
             }
 
-            const saltRounds = 12;
+            const saltRounds = config.app.env === "test" ? 1 : 12;
             try {
                 return await bcrypt.hash(password, saltRounds);
             } catch (error) {
