@@ -239,7 +239,8 @@ describe("Auth", () => {
             it("should handle expired session tokens gracefully", async () => {
                 await server.logout();
 
-                const expiredTimestamp = Date.now() - 25 * 60 * 60 * 1000;
+                // Token older than 30-day absolute timeout
+                const expiredTimestamp = Date.now() - 31 * 24 * 60 * 60 * 1000;
                 const expiredToken = `${expiredTimestamp}.expired123`;
 
                 const response = await server
@@ -516,6 +517,228 @@ describe("Auth", () => {
             const response = await server.put("/api/auth/password", passwordData);
 
             expect(response.status).toBe(401);
+        });
+    });
+
+    describe("session management", () => {
+        const DAY = 24 * 60 * 60 * 1000;
+
+        beforeEach(async () => {
+            await server.logout();
+        });
+
+        describe("cookies on login", () => {
+            it("should set session_token and session_activity cookies", async () => {
+                const response = await server.post("/api/auth", { password: "test-password" });
+
+                expect(response.status).toBe(200);
+                const cookies = response.headers["set-cookie"];
+                expect(cookies.some((c) => c.includes("session_token"))).toBe(true);
+                expect(cookies.some((c) => c.includes("session_activity"))).toBe(true);
+            });
+
+            it("should set httpOnly flag on cookies", async () => {
+                const response = await server.post("/api/auth", { password: "test-password" });
+
+                const cookies = response.headers["set-cookie"];
+                expect(cookies.find((c) => c.includes("session_token"))).toContain("HttpOnly");
+                expect(cookies.find((c) => c.includes("session_activity"))).toContain("HttpOnly");
+            });
+
+            it("should set sameSite=strict on cookies", async () => {
+                const response = await server.post("/api/auth", { password: "test-password" });
+
+                const cookies = response.headers["set-cookie"];
+                expect(cookies.find((c) => c.includes("session_token")).toLowerCase()).toContain(
+                    "samesite=strict",
+                );
+                expect(cookies.find((c) => c.includes("session_activity")).toLowerCase()).toContain(
+                    "samesite=strict",
+                );
+            });
+
+            it("should set session_activity to current timestamp", async () => {
+                const before = Date.now();
+                const response = await server.post("/api/auth", { password: "test-password" });
+                const after = Date.now();
+
+                const cookies = response.headers["set-cookie"];
+                const match = cookies.find((c) => c.includes("session_activity")).match(/=(\d+)/);
+                const timestamp = parseInt(match[1]);
+
+                expect(timestamp).toBeGreaterThanOrEqual(before);
+                expect(timestamp).toBeLessThanOrEqual(after);
+            });
+        });
+
+        describe("cookies on logout", () => {
+            it("should clear both cookies", async () => {
+                await server.login();
+                const response = await server.post("/api/auth/logout");
+
+                expect(response.status).toBe(200);
+                const cookies = response.headers["set-cookie"];
+                const sessionCookie = cookies.find((c) => c.includes("session_token"));
+                const activityCookie = cookies.find((c) => c.includes("session_activity"));
+
+                const isCleared = (cookie) =>
+                    cookie.includes("Expires=Thu, 01 Jan 1970") ||
+                    cookie.toLowerCase().includes("max-age=0");
+
+                expect(isCleared(sessionCookie)).toBe(true);
+                expect(isCleared(activityCookie)).toBe(true);
+            });
+        });
+
+        describe("absolute timeout (30 days)", () => {
+            it("should reject tokens older than 30 days", async () => {
+                const token = `${Date.now() - 31 * DAY}.randomtoken123`;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+
+                expect(response.body.data.isAuthenticated).toBe(false);
+            });
+
+            it("should accept tokens within 30 days", async () => {
+                const token = `${Date.now() - 29 * DAY}.randomtoken123`;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+
+                expect(response.body.data.isAuthenticated).toBe(true);
+            });
+
+            it("should reject at boundary (just over 30 days)", async () => {
+                const token = `${Date.now() - 30 * DAY - 1000}.randomtoken123`;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+
+                expect(response.body.data.isAuthenticated).toBe(false);
+            });
+        });
+
+        describe("idle timeout (7 days)", () => {
+            it("should reject sessions idle more than 7 days", async () => {
+                const token = `${Date.now() - 5 * DAY}.randomtoken123`;
+                const activity = Date.now() - 8 * DAY;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+
+                expect(response.body.data.isAuthenticated).toBe(false);
+            });
+
+            it("should accept sessions active within 7 days", async () => {
+                const token = `${Date.now() - 5 * DAY}.randomtoken123`;
+                const activity = Date.now() - 6 * DAY;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+
+                expect(response.body.data.isAuthenticated).toBe(true);
+            });
+
+            it("should accept at boundary (just under 7 days)", async () => {
+                const token = `${Date.now() - DAY}.randomtoken123`;
+                const activity = Date.now() - 7 * DAY + 1000;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+
+                expect(response.body.data.isAuthenticated).toBe(true);
+            });
+        });
+
+        describe("sliding session", () => {
+            it("should extend cookies on authenticated requests", async () => {
+                await server.login();
+
+                const response = await server.get("/api/settings/cron");
+
+                expect(response.status).toBe(200);
+                const cookies = response.headers["set-cookie"];
+                expect(cookies.some((c) => c.includes("session_token"))).toBe(true);
+                expect(cookies.some((c) => c.includes("session_activity"))).toBe(true);
+            });
+
+            it("should update activity timestamp on each request", async () => {
+                await server.login();
+
+                const before = Date.now();
+                const response = await server.get("/api/settings/cron");
+                const after = Date.now();
+
+                const cookies = response.headers["set-cookie"];
+                const match = cookies.find((c) => c.includes("session_activity")).match(/=(\d+)/);
+                const timestamp = parseInt(match[1]);
+
+                expect(timestamp).toBeGreaterThanOrEqual(before);
+                expect(timestamp).toBeLessThanOrEqual(after);
+            });
+        });
+
+        describe("combined timeouts", () => {
+            it("should reject when absolute exceeded even with recent activity", async () => {
+                const token = `${Date.now() - 31 * DAY}.randomtoken123`;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+
+                expect(response.body.data.isAuthenticated).toBe(false);
+            });
+
+            it("should reject when idle exceeded even with valid absolute", async () => {
+                const token = `${Date.now() - 5 * DAY}.randomtoken123`;
+                const activity = Date.now() - 8 * DAY;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+
+                expect(response.body.data.isAuthenticated).toBe(false);
+            });
+
+            it("should accept when both timeouts within limits", async () => {
+                const token = `${Date.now() - 15 * DAY}.randomtoken123`;
+                const activity = Date.now() - 3 * DAY;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+
+                expect(response.body.data.isAuthenticated).toBe(true);
+            });
+        });
+
+        describe("edge cases", () => {
+            it("should accept when session_activity cookie missing", async () => {
+                const token = `${Date.now() - DAY}.randomtoken123`;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}`);
+
+                expect(response.body.data.isAuthenticated).toBe(true);
+            });
+
+            it("should accept when session_activity is invalid", async () => {
+                const token = `${Date.now() - DAY}.randomtoken123`;
+
+                const response = await server
+                    .request("get", "/api/auth/me")
+                    .set("Cookie", `session_token=${token}; session_activity=invalid`);
+
+                expect(response.body.data.isAuthenticated).toBe(true);
+            });
         });
     });
 });
