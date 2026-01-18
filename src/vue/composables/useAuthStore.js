@@ -35,7 +35,7 @@ function getCache() {
 
 function setCache(data) {
     try {
-        const { feedToken, ...rest } = data;
+        const { feedToken: _feedToken, ...rest } = data;
         rest._cachedAt = Date.now();
         localStorage.setItem(CACHE_KEY, JSON.stringify(rest));
     } catch {}

@@ -45,13 +45,10 @@ export function useTheme() {
     const auth = useAuthStore();
 
     function initialize() {
-        // Apply current theme from auth store
         applyTheme(auth.theme.value);
 
-        // Setup system theme change listener
         setupMediaQueryListener(auth);
 
-        // Watch for theme changes in auth store
         watch(
             () => auth.theme.value,
             (newTheme) => {
@@ -63,26 +60,21 @@ export function useTheme() {
     async function setTheme(newTheme) {
         const previousTheme = auth.theme.value;
 
-        // Optimistically update UI
         auth.setTheme(newTheme);
         applyTheme(newTheme);
 
-        // Sync to backend
         try {
             const result = await api.settings.updateTheme(newTheme);
             if (!result.success) {
-                // Revert on failure
                 auth.setTheme(previousTheme);
                 applyTheme(previousTheme);
             }
-        } catch (error) {
-            // Revert on error
+        } catch {
             auth.setTheme(previousTheme);
             applyTheme(previousTheme);
         }
     }
 
-    // Cleanup on unmount
     onBeforeUnmount(() => {
         cleanupMediaQueryListener();
     });

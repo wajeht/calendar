@@ -1,0 +1,22 @@
+{
+    "$schema": "./node_modules/oxfmt/configuration_schema.json",
+    "tabWidth": 4,
+    "semi": true,
+    "useTabs": false,
+    "singleQuote": false,
+    "trailingComma": "all",
+    "bracketSpacing": true,
+    "printWidth": 100,
+    "ignorePatterns": [
+        "node_modules",
+        "coverage",
+        "dist",
+        "public/assets",
+        "package-lock.json",
+        "db.sqlite",
+        "db.sqlite-shm",
+        "db.sqlite-wal",
+        "*.min.js",
+        "*.min.css"
+    ]
+}

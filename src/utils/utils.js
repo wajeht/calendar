@@ -165,7 +165,7 @@ export function createUtils(dependencies = {}) {
                 }
 
                 return true;
-            } catch (error) {
+            } catch {
                 return false;
             }
         },

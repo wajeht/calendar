@@ -1,13 +1,29 @@
 {
     "name": "calendar",
     "version": "0.0.1",
-    "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
-    "main": "server.js",
     "private": "true",
-    "type": "module",
+    "description": "A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.",
+    "keywords": [
+        "calendar",
+        "fullcalendar",
+        "google",
+        "ical"
+    ],
+    "homepage": "https://github.com/wajeht/calendar#readme",
+    "bugs": {
+        "url": "https://github.com/wajeht/calendar/issues"
+    },
+    "license": "MIT",
+    "author": "wajeht",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/wajeht/calendar.git"
+    },
     "directories": {
         "doc": "docs"
     },
+    "type": "module",
+    "main": "server.js",
     "scripts": {
         "start": "node ./src/server.js",
         "dev": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"npm run dev:vue\" \"npm run dev:server\"",
@@ -27,26 +43,13 @@
         "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
         "db:reset:password": "sqlite3 src/db/sqlite/db.sqlite \"DELETE FROM settings WHERE key = 'app_password';\"",
         "rmds": "find . -name '.DS_Store' -delete",
-        "format": "prettier --write .",
+        "lint:check": "oxlint .",
+        "lint": "oxlint --fix .",
+        "format:check": "oxfmt --check .",
+        "format": "oxfmt --write . > /dev/null",
         "test": "vitest run",
         "test:watch": "vitest"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/wajeht/calendar.git"
-    },
-    "keywords": [
-        "google",
-        "ical",
-        "calendar",
-        "fullcalendar"
-    ],
-    "author": "wajeht",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/wajeht/calendar/issues"
-    },
-    "homepage": "https://github.com/wajeht/calendar#readme",
     "dependencies": {
         "@fullcalendar/core": "^7.0.0-rc.0",
         "@fullcalendar/daygrid": "^7.0.0-rc.0",
@@ -72,14 +75,11 @@
         "@tailwindcss/vite": "4.1.18",
         "@vitejs/plugin-vue": "6.0.3",
         "concurrently": "^9.1.0",
-        "prettier": "3.8.0",
+        "oxfmt": "^0.23.0",
+        "oxlint": "^1.38.0",
         "supertest": "7.2.2",
         "vite": "7.3.1",
         "vitest": "4.0.17"
-    },
-    "engines": {
-        "node": ">=24.0.0",
-        "npm": ">=10.0.0"
     },
     "optionalDependencies": {
         "@rollup/rollup-darwin-arm64": "*",
@@ -87,5 +87,9 @@
         "@rollup/rollup-linux-x64-gnu": "*",
         "@rollup/rollup-linux-x64-musl": "*",
         "@rollup/rollup-win32-x64-msvc": "*"
+    },
+    "engines": {
+        "node": ">=24.0.0",
+        "npm": ">=10.0.0"
     }
 }

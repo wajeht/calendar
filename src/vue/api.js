@@ -60,7 +60,7 @@ async function request(url, options = {}) {
     if (!isNoContent) {
         try {
             parsed = isJSON ? await response.json() : await response.text();
-        } catch (_e) {
+        } catch {
             parsed = null;
         }
     }
