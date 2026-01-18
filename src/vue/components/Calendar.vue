@@ -149,7 +149,6 @@ function handleEventSourceFailure(error) {
 
 async function handleAuthenticated() {
     showPasswordModal.value = false;
-    auth.clearCache();
     const { calendars: data } = await auth.initialize();
     calendars.value = data;
     updateCalendarSources(data);
