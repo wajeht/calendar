@@ -272,7 +272,9 @@ function scheduleMidnightUpdate() {
 
 onMounted(async () => {
     logger.log("Mount started");
+    const syncToastId = toast.info("Syncing...", null, 0);
     const { calendars: data } = await auth.initialize();
+    toast.removeToast(syncToastId);
     logger.log("Initialize done, calendars:", data.length);
     calendars.value = data;
     updateCalendarSources(data);
