@@ -81,20 +81,24 @@ export function createAuthRouter(dependencies = {}) {
         res.clearCookie("locked_until", { path: "/" });
 
         const sessionToken = `${Date.now()}.${utils.generateSecureToken(16)}`;
+        const now = Date.now();
 
         const cookieOptions = {
             httpOnly: true,
-            secure: config.app.env === "production", // Only require HTTPS in production
-            sameSite: "strict", // Stricter CSRF protection
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            path: "/", // Explicit path
+            secure: config.app.env === "production",
+            sameSite: "strict",
+            path: "/",
+            ...(config.auth.cookieDomain && { domain: config.auth.cookieDomain }),
         };
 
-        if (config.auth.cookieDomain) {
-            cookieOptions.domain = config.auth.cookieDomain;
-        }
-
-        res.cookie("session_token", sessionToken, cookieOptions);
+        res.cookie("session_token", sessionToken, {
+            ...cookieOptions,
+            maxAge: config.auth.absoluteTimeout,
+        });
+        res.cookie("session_activity", String(now), {
+            ...cookieOptions,
+            maxAge: config.auth.idleTimeout,
+        });
 
         logger.info("login successful");
         res.json({
@@ -111,13 +115,11 @@ export function createAuthRouter(dependencies = {}) {
             secure: config.app.env === "production",
             sameSite: "strict",
             path: "/",
+            ...(config.auth.cookieDomain && { domain: config.auth.cookieDomain }),
         };
 
-        if (config.auth.cookieDomain) {
-            cookieOptions.domain = config.auth.cookieDomain;
-        }
-
         res.clearCookie("session_token", cookieOptions);
+        res.clearCookie("session_activity", cookieOptions);
 
         logger.info("user logged out");
         res.json({
