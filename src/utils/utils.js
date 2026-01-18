@@ -128,7 +128,7 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Validate session token with idle and absolute timeouts (OWASP compliant)
+         * Validate session token with idle and absolute timeouts
          * @param {string} token - Session token to validate
          * @param {number} [lastActivity] - Last activity timestamp for idle check
          * @returns {boolean} - True if token is valid and not expired
