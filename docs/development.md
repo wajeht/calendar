@@ -82,10 +82,18 @@ npm test                 # Run tests once
 npm run test:watch       # Run tests in watch mode
 ```
 
+### Linting & Formatting
+
+```bash
+npm run lint:check       # Check for lint issues
+npm run lint             # Fix lint issues
+npm run format:check     # Check formatting
+npm run format           # Fix formatting
+```
+
 ### Utilities
 
 ```bash
-npm run format           # Format code with Prettier
 npm run rmds            # Remove .DS_Store files
 ```
 
