@@ -3,6 +3,9 @@ import { reactive, toRef } from "vue";
 import { useToast } from "./useToast.js";
 import { useLogger } from "./useLogger.js";
 
+const CACHE_KEY = "calendar:cache";
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
 const logger = useLogger("AuthStore");
 
 const state = reactive({
@@ -13,6 +16,30 @@ const state = reactive({
     feedToken: null,
     isSyncing: false,
 });
+
+function getCache() {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+
+        const cached = JSON.parse(raw);
+        if (Date.now() - cached._cachedAt > CACHE_TTL) {
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+        return cached;
+    } catch {
+        return null;
+    }
+}
+
+function setCache(data) {
+    try {
+        const { feedToken, ...rest } = data;
+        rest._cachedAt = Date.now();
+        localStorage.setItem(CACHE_KEY, JSON.stringify(rest));
+    } catch {}
+}
 
 function applyData(data) {
     state.isAuthenticated = Boolean(data.isAuthenticated);
@@ -27,8 +54,19 @@ export function useAuthStore() {
 
     async function initialize() {
         logger.log("Initialize started");
+        const cached = getCache();
+
+        if (cached) {
+            applyData(cached);
+            return {
+                calendars: cached.calendars || [],
+                fromCache: true,
+                sync: () => fetchFreshData(),
+            };
+        }
+
         const calendars = await fetchFreshData();
-        return { calendars };
+        return { calendars, fromCache: false };
     }
 
     async function fetchFreshData() {
@@ -39,6 +77,7 @@ export function useAuthStore() {
             if (result?.success) {
                 logger.log("Fresh data received:", Object.keys(result.data));
                 applyData(result.data);
+                setCache(result.data);
                 return result.data.calendars || [];
             }
             logger.error("Fetch failed - success:", result?.success, "status:", result?.status);

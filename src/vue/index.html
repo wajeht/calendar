@@ -8,7 +8,7 @@
         <script>
             (function () {
                 try {
-                    var cache = localStorage.getItem("calendar_app_cache");
+                    var cache = localStorage.getItem("calendar:cache");
                     var theme = cache ? JSON.parse(cache).theme : "system";
                     var isDark =
                         theme === "dark" ||
