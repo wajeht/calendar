@@ -52,7 +52,7 @@ export function createContext(customConfig = {}) {
     };
 
     const middleware = {
-        auth: createAuthMiddleware({ utils, errors }),
+        auth: createAuthMiddleware({ utils, errors, config: finalConfig }),
     };
 
     const services = {
