@@ -128,27 +128,43 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Validate session token and check if it's still valid
+         * Validate session token with idle and absolute timeouts (OWASP compliant)
          * @param {string} token - Session token to validate
+         * @param {number} [lastActivity] - Last activity timestamp for idle check
          * @returns {boolean} - True if token is valid and not expired
          */
-        validateSessionToken(token) {
+        validateSessionToken(token, lastActivity = null) {
             if (!token || typeof token !== "string") {
                 return false;
             }
 
             try {
                 const [timestamp] = token.split(".");
-                const tokenTime = parseInt(timestamp);
+                const tokenCreatedAt = parseInt(timestamp);
 
-                if (isNaN(tokenTime)) {
+                if (isNaN(tokenCreatedAt)) {
                     return false;
                 }
 
                 const now = Date.now();
-                const twentyFourHours = 24 * 60 * 60 * 1000;
 
-                return now - tokenTime < twentyFourHours;
+                // Absolute timeout - max session lifetime from creation
+                if (now - tokenCreatedAt > config.auth.absoluteTimeout) {
+                    return false;
+                }
+
+                // Idle timeout - max time since last activity
+                if (lastActivity) {
+                    const lastActivityTime = parseInt(lastActivity);
+                    if (
+                        !isNaN(lastActivityTime) &&
+                        now - lastActivityTime > config.auth.idleTimeout
+                    ) {
+                        return false;
+                    }
+                }
+
+                return true;
             } catch (error) {
                 return false;
             }
@@ -165,7 +181,8 @@ export function createUtils(dependencies = {}) {
          */
         isAuthenticated(req) {
             const token = req.cookies?.session_token || null;
-            return this.validateSessionToken(token);
+            const lastActivity = req.cookies?.session_activity || null;
+            return this.validateSessionToken(token, lastActivity);
         },
 
         /**
