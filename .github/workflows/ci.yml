@@ -86,4 +86,3 @@ jobs:
             tag: ${{ needs.build.outputs.tag }}
         secrets:
             GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
