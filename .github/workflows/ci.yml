@@ -41,6 +41,7 @@ jobs:
               run: npm test
 
     build:
+        if: github.event_name == 'push'
         name: Build Docker Image
         runs-on: ubuntu-latest
         outputs:
