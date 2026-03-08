@@ -30,9 +30,6 @@ format:
 lint:
 	@docker compose -f docker-compose.dev.yml exec bang npm run lint
 
-deploy:
-	@./scripts/deploy.sh
-
 shell:
 	@docker compose -f docker-compose.dev.yml exec bang sh
 
@@ -44,12 +41,6 @@ db-rollback:
 
 db-seed:
 	@docker compose -f docker-compose.dev.yml exec bang npm run db:seed:run
-
-pull-prod-db:
-	@./scripts/db.sh pull
-
-push-prod-db:
-	@./scripts/db.sh push
 
 db-reset:
 	make db-rollback
