@@ -1,4 +1,4 @@
-# 🗓️ Calendar
+# Calendar
 
 [![Node.js CI](https://github.com/wajeht/calendar/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wajeht/calendar/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -6,7 +6,7 @@
 
 A web-based calendar application with multiple calendar source support via iCal/WebCal URLs.
 
-# 📖 How It Works
+# How It Works
 
 ```
 📝 Add Calendar (name + color + iCal URL) → 🗄️ Database
@@ -28,11 +28,11 @@ A web-based calendar application with multiple calendar source support via iCal/
    → Full details shown
 ```
 
-## 📑 Docs
+## Docs
 
 - See [DEVELOPMENT](./docs/development.md) for `development` guide.
 - See [CONTRIBUTION](./docs/contribution.md) for `contribution` guide.
 
-## 📜 License
+## License
 
 Distributed under the MIT License © [wajeht](https://github.com/wajeht). See [LICENSE](./LICENSE) for more information.
