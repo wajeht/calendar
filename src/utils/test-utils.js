@@ -1,5 +1,5 @@
 import request from "supertest";
-import { beforeAll, afterAll } from "vitest";
+import { beforeAll, afterAll } from "vite-plus/test";
 
 export async function createTestServer() {
     process.env.NODE_ENV = "test";

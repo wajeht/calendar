@@ -27,11 +27,11 @@
     "scripts": {
         "start": "node ./src/server.js",
         "dev": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"npm run dev:vue\" \"npm run dev:server\"",
-        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"rm ./public/assets/* && vite build --watch --mode development\" \"npm run dev:server\"",
+        "dev:serve": "concurrently -n \"VUE,EXPRESS\" -c \"#42b883,#68a063\" \"rm ./public/assets/* && NODE_ENV=development vp build --watch\" \"npm run dev:server\"",
         "dev:server": "npm run db:prepare && node --watch ./src/server.js",
-        "dev:vue": "vite",
-        "build": "rm -rf ./public/assets/* && vite build",
-        "preview": "vite preview",
+        "dev:vue": "vp dev",
+        "build": "rm -rf ./public/assets/* && vp build",
+        "preview": "vp preview",
         "update:deps": "npx npm-check -u",
         "check:deps": "npx depcheck",
         "db:prepare": "npm run db:migrate:latest",
@@ -43,12 +43,12 @@
         "db:seed:run": "knex seed:run --knexfile=./src/db/knexfile.js",
         "db:reset:password": "sqlite3 src/db/sqlite/db.sqlite \"DELETE FROM settings WHERE key = 'app_password';\"",
         "rmds": "find . -name '.DS_Store' -delete",
-        "lint:check": "oxlint .",
-        "lint": "oxlint --fix .",
-        "format:check": "oxfmt --check .",
-        "format": "oxfmt --write . > /dev/null",
-        "test": "vitest run",
-        "test:watch": "vitest"
+        "lint:check": "vp lint",
+        "lint": "vp lint --fix",
+        "format:check": "vp fmt --check",
+        "format": "vp fmt",
+        "test": "vp test run",
+        "test:watch": "vp test"
     },
     "dependencies": {
         "@fullcalendar/core": "^7.0.0-rc.0",
@@ -75,21 +75,12 @@
         "@tailwindcss/vite": "4.2.1",
         "@vitejs/plugin-vue": "6.0.4",
         "concurrently": "9.2.1",
-        "oxfmt": "0.37.0",
-        "oxlint": "1.52.0",
         "supertest": "7.2.2",
-        "vite": "7.3.1",
-        "vitest": "4.0.18"
-    },
-    "optionalDependencies": {
-        "@rollup/rollup-darwin-arm64": "*",
-        "@rollup/rollup-darwin-x64": "*",
-        "@rollup/rollup-linux-x64-gnu": "*",
-        "@rollup/rollup-linux-x64-musl": "*",
-        "@rollup/rollup-win32-x64-msvc": "*"
+        "vite-plus": "latest"
     },
     "engines": {
         "node": ">=25.0.0",
         "npm": ">=10.0.0"
-    }
+    },
+    "packageManager": "npm@11.11.1"
 }

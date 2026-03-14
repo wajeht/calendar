@@ -1,5 +1,5 @@
 import { setupTestServer, setupAuthenticatedTestServer } from "../../utils/test-utils.js";
-import { describe, it, beforeAll, beforeEach, afterEach, expect } from "vitest";
+import { describe, it, beforeAll, beforeEach, afterEach, expect } from "vite-plus/test";
 
 describe("Auth", () => {
     const server = setupTestServer();

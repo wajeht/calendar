@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, expect } from "vitest";
+import { describe, it, beforeAll, expect } from "vite-plus/test";
 import { setupAuthenticatedTestServer } from "../../utils/test-utils.js";
 
 describe("Calendar", () => {

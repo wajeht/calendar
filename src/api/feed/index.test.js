@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vite-plus/test";
 import { setupAuthenticatedTestServer } from "../../utils/test-utils.js";
 
 describe("Feed Router", () => {
