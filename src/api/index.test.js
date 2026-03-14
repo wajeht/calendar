@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "vite-plus/test";
 import { setupTestServer } from "../utils/test-utils.js";
 
 describe("Main API", () => {

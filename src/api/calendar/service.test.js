@@ -1,4 +1,13 @@
-import { describe, it, expect, beforeEach, vi, afterEach, beforeAll, afterAll } from "vitest";
+import {
+    describe,
+    it,
+    expect,
+    beforeEach,
+    vi,
+    afterEach,
+    beforeAll,
+    afterAll,
+} from "vite-plus/test";
 import { createTestServer } from "../../utils/test-utils.js";
 import { createCalendarService } from "./service.js";
 
