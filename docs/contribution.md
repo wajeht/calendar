@@ -178,7 +178,7 @@ npm run test:watch    # Watch mode
 
 ```javascript
 // API tests (using Vitest + custom test server)
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, beforeAll, afterAll, expect } from "vite-plus/test";
 import { createTestServer, setupAuthenticatedServer } from "../../utils/test-utils.js";
 
 describe("Calendar API", () => {
