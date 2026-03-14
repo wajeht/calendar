@@ -179,7 +179,7 @@ export default defineConfig({
             "node_modules",
             "coverage",
             "dist",
-            "public/assets",
+            "public",
             "package-lock.json",
             "db.sqlite",
             "db.sqlite-shm",
