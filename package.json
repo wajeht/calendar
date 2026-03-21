@@ -79,7 +79,7 @@
         "vite-plus": "latest"
     },
     "engines": {
-        "node": ">=25.0.0",
+        "node": ">=22",
         "npm": ">=10.0.0"
     },
     "packageManager": "npm@11.12.0"
