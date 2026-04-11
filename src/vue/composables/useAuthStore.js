@@ -80,7 +80,7 @@ export function useAuthStore() {
             return {
                 calendars: cached.calendars || [],
                 fromCache: true,
-                sync: refresh,
+                sync: () => fetchFreshData(),
             };
         }
 

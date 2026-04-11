@@ -281,10 +281,13 @@ onMounted(async () => {
 
     if (fromCache && sync) {
         const syncToastId = toast.info("Syncing...", null, 0);
-        const freshData = await sync();
-        calendars.value = freshData;
-        updateCalendarSources(freshData);
-        toast.removeToast(syncToastId);
+        try {
+            const freshData = await sync();
+            calendars.value = freshData;
+            updateCalendarSources(freshData);
+        } finally {
+            toast.removeToast(syncToastId);
+        }
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
