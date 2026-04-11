@@ -17,6 +17,48 @@ export function createCalendarService(dependencies = {}) {
     if (!utils) throw new ConfigurationError("Utils required for calendar service");
 
     const fetchTimeout = config?.timeouts?.calendarFetch || 30000;
+    const pendingFetches = new Map();
+
+    function queueCalendarFetch(calendarId, errorMessage) {
+        if (process.env.NODE_ENV === "test") {
+            return;
+        }
+
+        const existingFetch = pendingFetches.get(calendarId);
+        if (existingFetch) {
+            existingFetch.rerun = true;
+            existingFetch.errorMessage = errorMessage;
+            return;
+        }
+
+        const fetchState = {
+            rerun: false,
+            errorMessage,
+        };
+
+        pendingFetches.set(calendarId, fetchState);
+        setImmediate(async () => {
+            try {
+                const calendar = await models.calendar.getById(calendarId);
+                if (!calendar) {
+                    return;
+                }
+
+                await fetchAndProcessCalendar(calendar.id, calendar.url);
+            } catch (error) {
+                logger.error(fetchState.errorMessage, {
+                    calendar_id: calendarId,
+                    error: error.message,
+                });
+            } finally {
+                pendingFetches.delete(calendarId);
+
+                if (fetchState.rerun) {
+                    queueCalendarFetch(calendarId, fetchState.errorMessage);
+                }
+            }
+        });
+    }
 
     function formatDate(icalTime) {
         if (icalTime.isDate) {
@@ -73,15 +115,24 @@ export function createCalendarService(dependencies = {}) {
 
     function extractEventData(icalEvent) {
         const component = icalEvent.component;
+        const startDate = icalEvent.startDate || component.getFirstPropertyValue("dtstart");
+        const organizerProperty =
+            typeof component.getFirstProperty === "function"
+                ? component.getFirstProperty("organizer")
+                : icalEvent.organizer;
+        const attendeeProperties =
+            typeof component.getAllProperties === "function"
+                ? component.getAllProperties("attendee")
+                : icalEvent.attendees;
 
         return {
             uid: icalEvent.uid,
             title: icalEvent.summary || "Untitled Event",
             description: icalEvent.description || "",
             location: icalEvent.location || "",
-            allDay: icalEvent.startDate.isDate,
-            organizer: parseOrganizer(icalEvent.organizer),
-            attendees: icalEvent.attendees?.map(parseAttendee) || null,
+            allDay: Boolean(startDate?.isDate),
+            organizer: parseOrganizer(organizerProperty),
+            attendees: attendeeProperties?.map(parseAttendee) || null,
             created: getPropertyValue(component, "created"),
             lastModified: getPropertyValue(component, "last-modified"),
             dtStamp: getPropertyValue(component, "dtstamp"),
@@ -103,57 +154,250 @@ export function createCalendarService(dependencies = {}) {
         return event;
     }
 
-    function createEventFromOccurrence(icalEvent, occurrenceDate) {
+    function eventHasProperty(icalEvent, propertyName) {
+        return Boolean(
+            icalEvent?.component && typeof icalEvent.component.hasProperty === "function"
+                ? icalEvent.component.hasProperty(propertyName)
+                : false,
+        );
+    }
+
+    function mergeEventData(masterEvent, overrideEvent) {
+        const masterData = extractEventData(masterEvent);
+        if (!overrideEvent || overrideEvent === masterEvent) {
+            return masterData;
+        }
+
+        const overrideData = extractEventData(overrideEvent);
+        const mergedData = { ...masterData };
+
+        if (eventHasProperty(overrideEvent, "summary")) {
+            mergedData.title = overrideData.title;
+        }
+        if (eventHasProperty(overrideEvent, "description")) {
+            mergedData.description = overrideData.description;
+        }
+        if (eventHasProperty(overrideEvent, "location")) {
+            mergedData.location = overrideData.location;
+        }
+        if (eventHasProperty(overrideEvent, "organizer")) {
+            mergedData.organizer = overrideData.organizer;
+        }
+        if (eventHasProperty(overrideEvent, "attendee")) {
+            mergedData.attendees = overrideData.attendees;
+        }
+        if (eventHasProperty(overrideEvent, "created")) {
+            mergedData.created = overrideData.created;
+        }
+        if (eventHasProperty(overrideEvent, "last-modified")) {
+            mergedData.lastModified = overrideData.lastModified;
+        }
+        if (eventHasProperty(overrideEvent, "dtstamp")) {
+            mergedData.dtStamp = overrideData.dtStamp;
+        }
+        if (eventHasProperty(overrideEvent, "status")) {
+            mergedData.status = overrideData.status;
+        }
+        if (eventHasProperty(overrideEvent, "transp")) {
+            mergedData.transparency = overrideData.transparency;
+        }
+        if (eventHasProperty(overrideEvent, "sequence")) {
+            mergedData.sequence = overrideData.sequence;
+        }
+        if (eventHasProperty(overrideEvent, "url")) {
+            mergedData.url = overrideData.url;
+        }
+
+        return mergedData;
+    }
+
+    function createFallbackOccurrenceDetails(masterEvent, occurrence, exceptionComponent) {
+        const exceptionEvent = new ICAL.Event(exceptionComponent);
+        const recurrenceId =
+            exceptionComponent.getFirstPropertyValue("recurrence-id") || occurrence;
+
+        return {
+            recurrenceId,
+            item: exceptionEvent,
+            startDate: occurrence,
+            endDate: null,
+        };
+    }
+
+    function getOccurrenceEndDate(masterEvent, occurrenceDetails) {
+        const item = occurrenceDetails.item;
+
+        if (
+            item &&
+            item !== masterEvent &&
+            !eventHasProperty(item, "dtend") &&
+            !eventHasProperty(item, "duration") &&
+            masterEvent.duration
+        ) {
+            const inheritedEndDate = occurrenceDetails.startDate.clone();
+            inheritedEndDate.addDuration(masterEvent.duration);
+            return inheritedEndDate;
+        }
+
+        return occurrenceDetails.endDate || null;
+    }
+
+    function createEventFromOccurrenceDetails(masterEvent, occurrenceDetails) {
+        const item = occurrenceDetails.item || masterEvent;
+        const recurrenceId = occurrenceDetails.recurrenceId || occurrenceDetails.startDate;
+        const endDate = getOccurrenceEndDate(masterEvent, occurrenceDetails);
+
         const event = {
-            ...extractEventData(icalEvent),
-            uid: `${icalEvent.uid}_${occurrenceDate.toJSDate().getTime()}`,
-            start: formatDate(occurrenceDate),
-            allDay: occurrenceDate.isDate,
+            ...mergeEventData(masterEvent, item),
+            uid: recurrenceId ? `${masterEvent.uid}_${recurrenceId.toString()}` : item.uid,
+            start: formatDate(occurrenceDetails.startDate),
+            allDay: occurrenceDetails.startDate.isDate,
         };
 
-        // Calculate end time from duration
-        if (icalEvent.endDate && icalEvent.startDate) {
-            const durationMs = icalEvent.endDate.toJSDate() - icalEvent.startDate.toJSDate();
-            const endDate = occurrenceDate.clone();
-            endDate.addDuration(ICAL.Duration.fromSeconds(durationMs / 1000));
+        if (endDate) {
             event.end = formatDate(endDate);
         }
 
         return event;
     }
 
+    function getExceptionComponentsByUid(vevents) {
+        const exceptionsByUid = new Map();
+
+        for (const vevent of vevents) {
+            if (!vevent.hasProperty("recurrence-id")) {
+                continue;
+            }
+
+            const uid = vevent.getFirstPropertyValue("uid");
+            if (!uid) {
+                continue;
+            }
+
+            if (!exceptionsByUid.has(uid)) {
+                exceptionsByUid.set(uid, {
+                    components: [],
+                    byRecurrenceId: new Map(),
+                });
+            }
+
+            const exceptionState = exceptionsByUid.get(uid);
+            exceptionState.components.push(vevent);
+
+            const recurrenceId = vevent.getFirstPropertyValue("recurrence-id");
+            if (recurrenceId) {
+                exceptionState.byRecurrenceId.set(recurrenceId.toString(), vevent);
+
+                if (recurrenceId.zone) {
+                    exceptionState.byRecurrenceId.set(
+                        recurrenceId.convertToZone(ICAL.Timezone.utcTimezone).toString(),
+                        vevent,
+                    );
+                }
+            }
+        }
+
+        return exceptionsByUid;
+    }
+
+    function isCancelledEvent(icalEvent) {
+        const status = icalEvent?.component?.getFirstPropertyValue("status");
+        return typeof status === "string" && status.toUpperCase() === "CANCELLED";
+    }
+
+    function isCancelledExceptionComponent(exceptionComponent) {
+        const status = exceptionComponent?.getFirstPropertyValue("status");
+        return typeof status === "string" && status.toUpperCase() === "CANCELLED";
+    }
+
+    function getDirectExceptionComponent(exceptionState, occurrence) {
+        if (!exceptionState) {
+            return null;
+        }
+
+        const directException =
+            exceptionState.byRecurrenceId.get(occurrence.toString()) ||
+            exceptionState.byRecurrenceId.get(
+                occurrence.convertToZone(ICAL.Timezone.utcTimezone).toString(),
+            );
+
+        return directException || null;
+    }
+
     function parseICalToEvents(icalData) {
         const jCalData = ICAL.parse(icalData);
         const comp = new ICAL.Component(jCalData);
         const vevents = comp.getAllSubcomponents("vevent");
+        const exceptionComponentsByUid = getExceptionComponentsByUid(vevents);
         const events = [];
         let recurringCount = 0;
         let singleCount = 0;
         let skippedExceptions = 0;
+        let cancelledOccurrences = 0;
         let parseErrors = 0;
 
         for (const vevent of vevents) {
             try {
-                const event = new ICAL.Event(vevent);
-
-                // Skip recurrence exceptions - master event expansion handles occurrences
-                if (event.isRecurrenceException()) {
+                if (vevent.hasProperty("recurrence-id")) {
                     skippedExceptions++;
                     continue;
                 }
 
+                const uid = vevent.getFirstPropertyValue("uid");
+                const exceptionState = uid ? exceptionComponentsByUid.get(uid) || null : null;
+                const exceptionComponents = exceptionState?.components || [];
+                const event = new ICAL.Event(vevent, {
+                    exceptions: exceptionComponents,
+                    strictExceptions: true,
+                });
+
                 if (event.isRecurring()) {
                     recurringCount++;
-                    const expand = new ICAL.RecurExpansion({
-                        component: vevent,
-                        dtstart: vevent.getFirstPropertyValue("dtstart"),
-                    });
+                    const expand = event.iterator();
 
                     let next;
                     let count = 0;
                     // Limit: ~1 year of daily, ~7 years of weekly, ~30 years of monthly
                     while ((next = expand.next()) && count < 365) {
-                        events.push(createEventFromOccurrence(event, next));
+                        const directException = getDirectExceptionComponent(exceptionState, next);
+                        if (
+                            directException &&
+                            isCancelledExceptionComponent(directException) &&
+                            !directException.hasProperty("dtstart")
+                        ) {
+                            cancelledOccurrences++;
+                            count++;
+                            continue;
+                        }
+
+                        let occurrenceDetails;
+                        try {
+                            occurrenceDetails = event.getOccurrenceDetails(next);
+                        } catch (error) {
+                            if (directException && isCancelledExceptionComponent(directException)) {
+                                cancelledOccurrences++;
+                                count++;
+                                continue;
+                            }
+
+                            if (directException && !directException.hasProperty("dtstart")) {
+                                occurrenceDetails = createFallbackOccurrenceDetails(
+                                    event,
+                                    next,
+                                    directException,
+                                );
+                            } else {
+                                throw error;
+                            }
+                        }
+
+                        if (isCancelledEvent(occurrenceDetails.item)) {
+                            cancelledOccurrences++;
+                            count++;
+                            continue;
+                        }
+
+                        events.push(createEventFromOccurrenceDetails(event, occurrenceDetails));
                         count++;
                     }
                 } else {
@@ -174,6 +418,7 @@ export function createCalendarService(dependencies = {}) {
             recurring_events: recurringCount,
             single_events: singleCount,
             skipped_exceptions: skippedExceptions,
+            cancelled_occurrences: cancelledOccurrences,
             parse_errors: parseErrors,
         });
 
@@ -436,6 +681,29 @@ export function createCalendarService(dependencies = {}) {
         };
     }
 
+    async function create(calendarData) {
+        const calendar = await models.calendar.create(calendarData);
+
+        queueCalendarFetch(calendar.id, "background calendar fetch failed");
+
+        return calendar;
+    }
+
+    async function update(id, updateData) {
+        const updatedCalendar = await models.calendar.update(id, updateData);
+
+        if (
+            updatedCalendar &&
+            (updateData.url !== undefined ||
+                updateData.visible_to_public !== undefined ||
+                updateData.show_details_to_public !== undefined)
+        ) {
+            queueCalendarFetch(updatedCalendar.id, "background calendar reprocessing failed");
+        }
+
+        return updatedCalendar;
+    }
+
     async function importCalendars(calendarsData, utils) {
         if (!Array.isArray(calendarsData)) {
             throw new ValidationError({ calendarsData: "Calendars must be an array" });
@@ -471,13 +739,14 @@ export function createCalendarService(dependencies = {}) {
                     continue;
                 }
 
-                await models.calendar.create({
+                const calendar = await models.calendar.create({
                     name,
                     url: data.url,
                     color: data.color || utils.generateRandomColor(),
                     visible_to_public: data.visible_to_public ?? true,
                     show_details_to_public: data.show_details_to_public ?? true,
                 });
+                queueCalendarFetch(calendar.id, "background imported calendar fetch failed");
                 results.imported++;
             } catch (error) {
                 results.errors.push({ calendar: data, message: error.message });
@@ -494,7 +763,7 @@ export function createCalendarService(dependencies = {}) {
     }
 
     function combineCalendarsToIcal(calendars) {
-        const lines = [
+        const sections = [
             "BEGIN:VCALENDAR",
             "VERSION:2.0",
             "PRODID:-//Calendar App//Combined Feed//EN",
@@ -502,45 +771,65 @@ export function createCalendarService(dependencies = {}) {
             "METHOD:PUBLISH",
             "X-WR-CALNAME:Combined Calendar Feed",
         ];
+        const seenTimezones = new Set();
 
         for (const calendar of calendars) {
             if (!calendar.ical_data) continue;
-            const vevents = extractVEvents(calendar.ical_data);
-            lines.push(...vevents);
-        }
 
-        lines.push("END:VCALENDAR");
-        return lines.join("\r\n");
-    }
+            const timezones = extractComponentBlocks(calendar.ical_data, "VTIMEZONE");
+            for (const timezone of timezones) {
+                if (seenTimezones.has(timezone)) {
+                    continue;
+                }
 
-    function extractVEvents(icalData) {
-        const events = [];
-        const lines = icalData.split(/\r?\n/);
-        let inEvent = false;
-        let currentEvent = [];
-
-        for (const line of lines) {
-            if (line === "BEGIN:VEVENT") {
-                inEvent = true;
-                currentEvent = [line];
-            } else if (line === "END:VEVENT") {
-                currentEvent.push(line);
-                events.push(...currentEvent);
-                inEvent = false;
-                currentEvent = [];
-            } else if (inEvent) {
-                currentEvent.push(line);
+                seenTimezones.add(timezone);
+                sections.push(timezone);
             }
         }
 
-        return events;
+        for (const calendar of calendars) {
+            if (!calendar.ical_data) continue;
+
+            const vevents = extractComponentBlocks(calendar.ical_data, "VEVENT");
+            sections.push(...vevents);
+        }
+
+        sections.push("END:VCALENDAR");
+        return sections.join("\r\n");
+    }
+
+    function extractComponentBlocks(icalData, componentName) {
+        const blocks = [];
+        const lines = icalData.split(/\r?\n/);
+        const beginMarker = `BEGIN:${componentName}`;
+        const endMarker = `END:${componentName}`;
+        let currentBlock = null;
+
+        for (const line of lines) {
+            if (line === beginMarker) {
+                currentBlock = [line];
+                continue;
+            }
+
+            if (currentBlock) {
+                currentBlock.push(line);
+                if (line === endMarker) {
+                    blocks.push(currentBlock.join("\r\n"));
+                    currentBlock = null;
+                }
+            }
+        }
+
+        return blocks;
     }
 
     return {
-        exportCalendars,
-        importCalendars,
+        create,
+        export: exportCalendars,
+        import: importCalendars,
         refetchAllCalendars,
         fetchAndProcessCalendar,
         combineCalendarsToIcal,
+        update,
     };
 }

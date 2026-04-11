@@ -50,6 +50,22 @@ const sampleCalendar = {
     show_details_to_public: true,
 };
 
+async function flushBackgroundFetch() {
+    await new Promise((resolve) => setImmediate(resolve));
+    await Promise.resolve();
+}
+
+function createDeferred() {
+    let resolve;
+    let reject;
+    const promise = new Promise((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+
+    return { promise, resolve, reject };
+}
+
 describe("Calendar Service", () => {
     let testServer;
     let calendarService;
@@ -401,6 +417,10 @@ describe("Calendar Service", () => {
                 (event) => event.title === "Test Event 1",
             );
             expect(eventWithDetails.extendedProps).toHaveProperty(
+                "organizerName",
+                "Test Organizer",
+            );
+            expect(eventWithDetails.extendedProps).toHaveProperty(
                 "organizerEmail",
                 "organizer@example.com",
             );
@@ -566,7 +586,7 @@ END:VCALENDAR`;
         });
     });
 
-    describe("exportCalendars", () => {
+    describe("export", () => {
         it("should export calendar configurations", async () => {
             await testServer.ctx.models.calendar.create({
                 name: "Cal 1",
@@ -584,7 +604,7 @@ END:VCALENDAR`;
                 show_details_to_public: false,
             });
 
-            const result = await calendarService.exportCalendars();
+            const result = await calendarService.export();
 
             expect(result.calendars).toHaveLength(2);
             expect(result.calendars[0]).toMatchObject({
@@ -606,7 +626,200 @@ END:VCALENDAR`;
         });
     });
 
-    describe("importCalendars", () => {
+    describe("create", () => {
+        it("should queue background sync after creating a calendar outside test env", async () => {
+            const previousEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "development";
+
+            const backgroundICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:created-background@example.com
+DTSTART:20250110T100000Z
+DTEND:20250110T110000Z
+SUMMARY:Created Background Event
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(backgroundICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            try {
+                const calendar = await calendarService.create({
+                    name: "Created Calendar",
+                    url: "https://example.com/created-background.ics",
+                    color: "#447dfc",
+                    visible_to_public: true,
+                    show_details_to_public: true,
+                });
+
+                await flushBackgroundFetch();
+
+                const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+                expect(updatedCalendar.ical_data).toContain("Created Background Event");
+
+                const events = JSON.parse(updatedCalendar.events_processed);
+                expect(events).toHaveLength(1);
+                expect(events[0].title).toBe("Created Background Event");
+            } finally {
+                process.env.NODE_ENV = previousEnv;
+            }
+        });
+    });
+
+    describe("update", () => {
+        it("should reprocess events when the source URL changes outside test env", async () => {
+            const previousEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "development";
+
+            const updatedICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:updated-background@example.com
+DTSTART:20250111T100000Z
+DTEND:20250111T110000Z
+SUMMARY:Updated Background Event
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(updatedICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            try {
+                const calendar = await testServer.ctx.models.calendar.create({
+                    name: "Needs URL Update",
+                    url: "https://example.com/original-background.ics",
+                    color: "#447dfc",
+                    visible_to_public: true,
+                    show_details_to_public: true,
+                });
+
+                await calendarService.update(calendar.id, {
+                    url: "https://example.com/updated-background.ics",
+                });
+
+                await flushBackgroundFetch();
+
+                const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+                expect(updatedCalendar.url).toBe("https://example.com/updated-background.ics");
+                expect(updatedCalendar.ical_data).toContain("Updated Background Event");
+
+                const events = JSON.parse(updatedCalendar.events_processed);
+                expect(events).toHaveLength(1);
+                expect(events[0].title).toBe("Updated Background Event");
+            } finally {
+                process.env.NODE_ENV = previousEnv;
+            }
+        });
+
+        it("should rerun background sync with the latest URL when a previous sync is still pending", async () => {
+            const previousEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "development";
+
+            const originalUrl = "https://example.com/original-pending.ics";
+            const updatedUrl = "https://example.com/updated-pending.ics";
+            const originalFetch = createDeferred();
+
+            const originalICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:original-background@example.com
+DTSTART:20250112T100000Z
+DTEND:20250112T110000Z
+SUMMARY:Original Background Event
+END:VEVENT
+END:VCALENDAR`;
+
+            const updatedICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:updated-background@example.com
+DTSTART:20250113T100000Z
+DTEND:20250113T110000Z
+SUMMARY:Updated Background Event
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockImplementation((url) => {
+                if (url === originalUrl) {
+                    return originalFetch.promise;
+                }
+
+                if (url === updatedUrl) {
+                    return Promise.resolve({
+                        ok: true,
+                        text: () => Promise.resolve(updatedICalData),
+                        headers: { get: () => "text/calendar" },
+                    });
+                }
+
+                throw new Error(`Unexpected fetch URL: ${url}`);
+            });
+
+            try {
+                const calendar = await calendarService.create({
+                    name: "Pending Calendar",
+                    url: originalUrl,
+                    color: "#447dfc",
+                    visible_to_public: true,
+                    show_details_to_public: true,
+                });
+
+                await flushBackgroundFetch();
+
+                await calendarService.update(calendar.id, {
+                    url: updatedUrl,
+                });
+
+                originalFetch.resolve({
+                    ok: true,
+                    text: () => Promise.resolve(originalICalData),
+                    headers: { get: () => "text/calendar" },
+                });
+
+                await flushBackgroundFetch();
+                await flushBackgroundFetch();
+
+                const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+                expect(updatedCalendar.url).toBe(updatedUrl);
+                expect(updatedCalendar.ical_data).toContain("Updated Background Event");
+
+                const events = JSON.parse(updatedCalendar.events_processed);
+                expect(events).toHaveLength(1);
+                expect(events[0].title).toBe("Updated Background Event");
+                expect(global.fetch).toHaveBeenCalledWith(
+                    originalUrl,
+                    expect.objectContaining({
+                        headers: expect.objectContaining({
+                            Accept: "text/calendar, application/calendar, text/plain",
+                        }),
+                    }),
+                );
+                expect(global.fetch).toHaveBeenCalledWith(
+                    updatedUrl,
+                    expect.objectContaining({
+                        headers: expect.objectContaining({
+                            Accept: "text/calendar, application/calendar, text/plain",
+                        }),
+                    }),
+                );
+            } finally {
+                process.env.NODE_ENV = previousEnv;
+            }
+        });
+    });
+
+    describe("import", () => {
         it("should import valid calendar configurations", async () => {
             const calendarsData = [
                 {
@@ -618,10 +831,7 @@ END:VCALENDAR`;
                 },
             ];
 
-            const result = await calendarService.importCalendars(
-                calendarsData,
-                testServer.ctx.utils,
-            );
+            const result = await calendarService.import(calendarsData, testServer.ctx.utils);
 
             expect(result.imported).toBe(1);
             expect(result.skipped).toBe(0);
@@ -654,10 +864,7 @@ END:VCALENDAR`;
                 },
             ];
 
-            const result = await calendarService.importCalendars(
-                calendarsData,
-                testServer.ctx.utils,
-            );
+            const result = await calendarService.import(calendarsData, testServer.ctx.utils);
 
             expect(result.imported).toBe(0);
             expect(result.skipped).toBe(1);
@@ -677,10 +884,7 @@ END:VCALENDAR`;
                 { name: "Another Cal" },
             ];
 
-            const result = await calendarService.importCalendars(
-                calendarsData,
-                testServer.ctx.utils,
-            );
+            const result = await calendarService.import(calendarsData, testServer.ctx.utils);
 
             expect(result.imported).toBe(1);
             expect(result.skipped).toBe(0);
@@ -698,8 +902,58 @@ END:VCALENDAR`;
 
         it("should throw ValidationError for non-array input", async () => {
             await expect(
-                calendarService.importCalendars("not an array", testServer.ctx.utils),
+                calendarService.import("not an array", testServer.ctx.utils),
             ).rejects.toThrow("Calendars must be an array");
+        });
+
+        it("should queue imported calendars for background sync outside test env", async () => {
+            const previousEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = "development";
+
+            const importedICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:imported-background@example.com
+DTSTART:20250112T100000Z
+DTEND:20250112T110000Z
+SUMMARY:Imported Background Event
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(importedICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            try {
+                const result = await calendarService.import(
+                    [
+                        {
+                            name: "Imported With Sync",
+                            url: "https://example.com/imported-background.ics",
+                            color: "#00ff00",
+                        },
+                    ],
+                    testServer.ctx.utils,
+                );
+
+                expect(result.imported).toBe(1);
+
+                await flushBackgroundFetch();
+
+                const importedCalendar = await testServer.ctx.models.calendar.getByUrl(
+                    "https://example.com/imported-background.ics",
+                );
+                expect(importedCalendar.ical_data).toContain("Imported Background Event");
+
+                const events = JSON.parse(importedCalendar.events_processed);
+                expect(events).toHaveLength(1);
+                expect(events[0].title).toBe("Imported Background Event");
+            } finally {
+                process.env.NODE_ENV = previousEnv;
+            }
         });
     });
 
@@ -1046,6 +1300,7 @@ END:VCALENDAR`;
             expect(extendedProps).toHaveProperty("duration", "");
             expect(extendedProps).toHaveProperty("transparency", "OPAQUE");
 
+            expect(extendedProps).toHaveProperty("organizerName", "Test Organizer");
             expect(extendedProps).toHaveProperty("organizerEmail", "organizer@example.com");
 
             expect(extendedProps).toHaveProperty("attendeeNames", "Test Attendee");
@@ -1059,7 +1314,7 @@ END:VCALENDAR`;
     });
 
     describe("recurring events with RECURRENCE-ID", () => {
-        it("should not duplicate events when RECURRENCE-ID exceptions exist", async () => {
+        it("should apply modified RECURRENCE-ID instances to the recurring series", async () => {
             // This iCal data simulates Google Calendar's pattern where:
             // 1. A master recurring event has an RRULE
             // 2. Modified instances have RECURRENCE-ID pointing to the original occurrence
@@ -1096,13 +1351,146 @@ END:VCALENDAR`;
             const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
             const events = JSON.parse(updatedCalendar.events_processed);
 
-            // Should have exactly 4 events (from RRULE COUNT=4), not 5
-            // The RECURRENCE-ID event should NOT be added as a separate event
             expect(events).toHaveLength(4);
 
-            // All events should be from the master recurring expansion
-            const titles = events.map((e) => e.title);
-            expect(titles.every((t) => t === "Weekly Meeting")).toBe(true);
+            const modifiedEvent = events.find(
+                (event) => event.start === "2025-12-08T15:00:00.000Z",
+            );
+            expect(modifiedEvent).toMatchObject({
+                title: "Weekly Meeting (Rescheduled)",
+                description: "This instance was moved to a different time",
+                end: "2025-12-08T16:00:00.000Z",
+            });
+
+            const originalOccurrence = events.find(
+                (event) => event.start === "2025-12-08T14:00:00.000Z",
+            );
+            expect(originalOccurrence).toBeUndefined();
+        });
+
+        it("should inherit master event data for partial RECURRENCE-ID overrides", async () => {
+            const partialOverrideICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:partial-override@example.com
+DTSTART:20251201T140000Z
+DTEND:20251201T150000Z
+RRULE:FREQ=WEEKLY;COUNT=3
+SUMMARY:Weekly Meeting
+DESCRIPTION:Master description
+LOCATION:Room 101
+ORGANIZER;CN=Team Lead:mailto:lead@example.com
+ATTENDEE;CN=Member One:mailto:member@example.com
+URL:https://example.com/master-event
+END:VEVENT
+BEGIN:VEVENT
+UID:partial-override@example.com
+RECURRENCE-ID:20251208T140000Z
+DTSTART:20251208T160000Z
+LAST-MODIFIED:20251202T090000Z
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(partialOverrideICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create({
+                ...sampleCalendar,
+                url: "https://example.com/partial-override.ics",
+            });
+            await calendarService.fetchAndProcessCalendar(calendar.id, calendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            expect(events).toHaveLength(3);
+
+            const modifiedEvent = events.find(
+                (event) => event.start === "2025-12-08T16:00:00.000Z",
+            );
+
+            expect(modifiedEvent).toMatchObject({
+                title: "Weekly Meeting",
+                description: "Master description",
+                location: "Room 101",
+                end: "2025-12-08T17:00:00.000Z",
+                url: "https://example.com/master-event",
+                organizer: {
+                    name: "Team Lead",
+                    email: "lead@example.com",
+                },
+                lastModified: "2025-12-02T09:00:00.000Z",
+            });
+            expect(modifiedEvent.attendees).toEqual([
+                expect.objectContaining({
+                    email: "member@example.com",
+                    name: "Member One",
+                }),
+            ]);
+
+            const originalOccurrence = events.find(
+                (event) => event.start === "2025-12-08T14:00:00.000Z",
+            );
+            expect(originalOccurrence).toBeUndefined();
+        });
+
+        it("should fall back to the master schedule for metadata-only RECURRENCE-ID overrides without DTSTART", async () => {
+            const metadataOnlyOverrideICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:metadata-only@example.com
+DTSTART:20251201T140000Z
+DTEND:20251201T150000Z
+RRULE:FREQ=WEEKLY;COUNT=3
+SUMMARY:Weekly Meeting
+DESCRIPTION:Master description
+END:VEVENT
+BEGIN:VEVENT
+UID:metadata-only@example.com
+RECURRENCE-ID:20251208T140000Z
+SUMMARY:Weekly Meeting (Metadata Override)
+DESCRIPTION:This occurrence changed metadata only
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(metadataOnlyOverrideICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create({
+                ...sampleCalendar,
+                url: "https://example.com/metadata-only-override.ics",
+            });
+            await calendarService.fetchAndProcessCalendar(calendar.id, calendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            expect(events).toHaveLength(3);
+
+            const overriddenOccurrence = events.find(
+                (event) => event.start === "2025-12-08T14:00:00.000Z",
+            );
+            expect(overriddenOccurrence).toMatchObject({
+                title: "Weekly Meeting (Metadata Override)",
+                description: "This occurrence changed metadata only",
+                end: "2025-12-08T15:00:00.000Z",
+            });
+
+            expect(
+                events.find((event) => event.start === "2025-12-15T14:00:00.000Z"),
+            ).toMatchObject({
+                title: "Weekly Meeting",
+                description: "Master description",
+                end: "2025-12-15T15:00:00.000Z",
+            });
         });
 
         it("should skip standalone events with RECURRENCE-ID", async () => {
@@ -1196,7 +1584,7 @@ END:VCALENDAR`;
             expect(thirdWedEvents).toHaveLength(3);
         });
 
-        it("should not create duplicates with Google Calendar style split UIDs", async () => {
+        it("should apply Google Calendar style modified instances without duplicating them", async () => {
             // Google Calendar creates UIDs with _R suffixes for "split" recurring events
             // This tests that we handle them correctly
             const googleStyleICalData = `BEGIN:VCALENDAR
@@ -1233,9 +1621,59 @@ END:VCALENDAR`;
             const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
             const events = JSON.parse(updatedCalendar.events_processed);
 
-            // Should have exactly 2 events from the recurring rule, not 3
-            // The RECURRENCE-ID event should be skipped
             expect(events).toHaveLength(2);
+
+            const modifiedEvent = events.find(
+                (event) => event.start === "2025-12-03T16:45:00.000Z",
+            );
+            expect(modifiedEvent).toMatchObject({
+                title: "Google Style Recurring (Modified)",
+                end: "2025-12-03T17:15:00.000Z",
+            });
+        });
+
+        it("should suppress minimally-defined cancelled recurring instances without truncating later occurrences", async () => {
+            const cancelledOccurrenceICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:cancelled-master@example.com
+DTSTART:20251201T140000Z
+DTEND:20251201T150000Z
+RRULE:FREQ=WEEKLY;COUNT=3
+SUMMARY:Weekly Meeting
+END:VEVENT
+BEGIN:VEVENT
+UID:cancelled-master@example.com
+RECURRENCE-ID:20251208T140000Z
+STATUS:CANCELLED
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(cancelledOccurrenceICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const calendar = await testServer.ctx.models.calendar.create({
+                ...sampleCalendar,
+                url: "https://example.com/cancelled-occurrence.ics",
+            });
+            await calendarService.fetchAndProcessCalendar(calendar.id, calendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            expect(events).toHaveLength(2);
+            expect(
+                events.find((event) => event.start === "2025-12-08T14:00:00.000Z"),
+            ).toBeUndefined();
+            expect(
+                events.find((event) => event.start === "2025-12-15T14:00:00.000Z"),
+            ).toMatchObject({
+                title: "Weekly Meeting",
+            });
         });
     });
 
@@ -1381,6 +1819,63 @@ END:VCALENDAR`,
             expect(result).toContain("Second Event");
             expect(result).toContain("Third Event");
             expect((result.match(/BEGIN:VEVENT/g) || []).length).toBe(3);
+        });
+
+        it("should preserve VTIMEZONE blocks in the combined feed", async () => {
+            const timezoneBlock = `BEGIN:VTIMEZONE
+TZID:America/Chicago
+BEGIN:STANDARD
+DTSTART:20241103T020000
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0600
+TZNAME:CST
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:20240310T020000
+TZOFFSETFROM:-0600
+TZOFFSETTO:-0500
+TZNAME:CDT
+END:DAYLIGHT
+END:VTIMEZONE`;
+
+            const calendars = [
+                {
+                    id: 1,
+                    name: "Timezone calendar",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+${timezoneBlock}
+BEGIN:VEVENT
+UID:tz-event-1@example.com
+DTSTART;TZID=America/Chicago:20250101T090000
+DTEND;TZID=America/Chicago:20250101T100000
+SUMMARY:Timezone Event 1
+END:VEVENT
+END:VCALENDAR`,
+                },
+                {
+                    id: 2,
+                    name: "Timezone calendar 2",
+                    ical_data: `BEGIN:VCALENDAR
+VERSION:2.0
+${timezoneBlock}
+BEGIN:VEVENT
+UID:tz-event-2@example.com
+DTSTART;TZID=America/Chicago:20250102T090000
+DTEND;TZID=America/Chicago:20250102T100000
+SUMMARY:Timezone Event 2
+END:VEVENT
+END:VCALENDAR`,
+                },
+            ];
+
+            const result = calendarService.combineCalendarsToIcal(calendars);
+
+            expect(result).toContain("BEGIN:VTIMEZONE");
+            expect(result).toContain("TZID:America/Chicago");
+            expect((result.match(/BEGIN:VTIMEZONE/g) || []).length).toBe(1);
+            expect(result).toContain("DTSTART;TZID=America/Chicago:20250101T090000");
+            expect(result).toContain("DTSTART;TZID=America/Chicago:20250102T090000");
         });
     });
 

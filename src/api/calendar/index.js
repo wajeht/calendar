@@ -1,7 +1,5 @@
 import express from "express";
 
-const pendingFetches = new Set();
-
 export function createCalendarRouter(dependencies = {}) {
     const { models, services, middleware, utils, logger, errors, validators } = dependencies;
 
@@ -34,7 +32,7 @@ export function createCalendarRouter(dependencies = {}) {
     });
 
     router.get("/export", requireAuth, async (_req, res) => {
-        const exportData = await services.calendar.exportCalendars();
+        const exportData = await services.calendar.export();
 
         res.json({
             success: true,
@@ -49,7 +47,7 @@ export function createCalendarRouter(dependencies = {}) {
 
         const { calendars } = req.body;
 
-        const results = await services.calendar.importCalendars(calendars, utils);
+        const results = await services.calendar.import(calendars, utils);
 
         res.json({
             success: true,
@@ -103,25 +101,9 @@ export function createCalendarRouter(dependencies = {}) {
             color: color || utils.generateRandomColor(),
         };
 
-        const calendar = await models.calendar.create(calendarData);
+        const calendar = await services.calendar.create(calendarData);
 
         logger.info("calendar created", { name: calendar.name, id: calendar.id });
-
-        if (process.env.NODE_ENV !== "test" && !pendingFetches.has(calendar.id)) {
-            pendingFetches.add(calendar.id);
-            setImmediate(async () => {
-                try {
-                    await services.calendar.fetchAndProcessCalendar(calendar.id, calendar.url);
-                } catch (error) {
-                    logger.error("background calendar fetch failed", {
-                        calendar_id: calendar.id,
-                        error: error.message,
-                    });
-                } finally {
-                    pendingFetches.delete(calendar.id);
-                }
-            });
-        }
 
         res.status(201).json({
             success: true,
@@ -153,38 +135,10 @@ export function createCalendarRouter(dependencies = {}) {
             }
         }
 
-        const updatedCalendar = await models.calendar.update(id, updateData);
+        const updatedCalendar = await services.calendar.update(id, updateData);
 
         if (!updatedCalendar) {
             throw new NotFoundError("Calendar");
-        }
-
-        if (
-            updateData.visible_to_public !== undefined ||
-            updateData.show_details_to_public !== undefined
-        ) {
-            if (process.env.NODE_ENV !== "test" && !pendingFetches.has(updatedCalendar.id)) {
-                pendingFetches.add(updatedCalendar.id);
-                setImmediate(async () => {
-                    try {
-                        await services.calendar.fetchAndProcessCalendar(
-                            updatedCalendar.id,
-                            updatedCalendar.url,
-                        );
-                        logger.info("calendar events reprocessed", {
-                            name: updatedCalendar.name,
-                            id: updatedCalendar.id,
-                        });
-                    } catch (error) {
-                        logger.error("background calendar reprocessing failed", {
-                            calendar_id: updatedCalendar.id,
-                            error: error.message,
-                        });
-                    } finally {
-                        pendingFetches.delete(updatedCalendar.id);
-                    }
-                });
-            }
         }
 
         logger.info("calendar updated", { name: updatedCalendar.name, id: updatedCalendar.id });
