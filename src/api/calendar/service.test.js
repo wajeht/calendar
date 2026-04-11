@@ -78,7 +78,6 @@ describe("Calendar Service", () => {
             models: testServer.ctx.models,
             errors: testServer.ctx.errors,
             utils: testServer.ctx.utils,
-            backgroundFetchEnabled: false,
             ...overrides,
         });
     }
@@ -637,11 +636,7 @@ END:VCALENDAR`;
     });
 
     describe("create", () => {
-        it("should queue background sync after creating a calendar when background sync is enabled", async () => {
-            const backgroundCalendarService = buildCalendarService({
-                backgroundFetchEnabled: true,
-            });
-
+        it("should queue background sync after creating a calendar", async () => {
             const backgroundICalData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -659,7 +654,7 @@ END:VCALENDAR`;
                 headers: { get: () => "text/calendar" },
             });
 
-            const calendar = await backgroundCalendarService.create({
+            const calendar = await calendarService.create({
                 name: "Created Calendar",
                 url: "https://example.com/created-background.ics",
                 color: "#447dfc",
@@ -679,11 +674,7 @@ END:VCALENDAR`;
     });
 
     describe("update", () => {
-        it("should reprocess events when the source URL changes and background sync is enabled", async () => {
-            const backgroundCalendarService = buildCalendarService({
-                backgroundFetchEnabled: true,
-            });
-
+        it("should reprocess events when the source URL changes", async () => {
             const updatedICalData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -709,7 +700,7 @@ END:VCALENDAR`;
                 show_details_to_public: true,
             });
 
-            await backgroundCalendarService.update(calendar.id, {
+            await calendarService.update(calendar.id, {
                 url: "https://example.com/updated-background.ics",
             });
 
@@ -725,10 +716,6 @@ END:VCALENDAR`;
         });
 
         it("should rerun background sync with the latest URL when a previous sync is still pending", async () => {
-            const backgroundCalendarService = buildCalendarService({
-                backgroundFetchEnabled: true,
-            });
-
             const originalUrl = "https://example.com/original-pending.ics";
             const updatedUrl = "https://example.com/updated-pending.ics";
             const originalFetch = createDeferred();
@@ -771,7 +758,7 @@ END:VCALENDAR`;
                 throw new Error(`Unexpected fetch URL: ${url}`);
             });
 
-            const calendar = await backgroundCalendarService.create({
+            const calendar = await calendarService.create({
                 name: "Pending Calendar",
                 url: originalUrl,
                 color: "#447dfc",
@@ -781,7 +768,7 @@ END:VCALENDAR`;
 
             await flushBackgroundFetch();
 
-            await backgroundCalendarService.update(calendar.id, {
+            await calendarService.update(calendar.id, {
                 url: updatedUrl,
             });
 
@@ -907,11 +894,7 @@ END:VCALENDAR`;
             ).rejects.toThrow("Calendars must be an array");
         });
 
-        it("should queue imported calendars for background sync when background sync is enabled", async () => {
-            const backgroundCalendarService = buildCalendarService({
-                backgroundFetchEnabled: true,
-            });
-
+        it("should queue imported calendars for background sync", async () => {
             const importedICalData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -929,7 +912,7 @@ END:VCALENDAR`;
                 headers: { get: () => "text/calendar" },
             });
 
-            const result = await backgroundCalendarService.import(
+            const result = await calendarService.import(
                 [
                     {
                         name: "Imported With Sync",

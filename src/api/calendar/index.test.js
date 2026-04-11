@@ -1,5 +1,10 @@
-import { describe, it, beforeAll, expect } from "vite-plus/test";
-import { setupAuthenticatedTestServer } from "../../utils/test-utils.js";
+import { describe, it, beforeAll, afterAll, afterEach, expect, vi } from "vite-plus/test";
+import { createTestServer, setupAuthenticatedTestServer } from "../../utils/test-utils.js";
+
+async function flushBackgroundFetch() {
+    await new Promise((resolve) => setImmediate(resolve));
+    await Promise.resolve();
+}
 
 describe("Calendar", () => {
     const server = setupAuthenticatedTestServer();
@@ -350,6 +355,65 @@ describe("Calendar", () => {
             expect(response.status).toBe(401);
 
             await server.login();
+        });
+    });
+
+    describe("Background Sync", () => {
+        let backgroundServer;
+
+        beforeAll(async () => {
+            backgroundServer = await createTestServer();
+            await backgroundServer.cleanDatabase();
+            await backgroundServer.login();
+        });
+
+        afterAll(async () => {
+            if (backgroundServer) {
+                await backgroundServer.stop();
+            }
+        });
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it("should allow enabling background sync in the test server", async () => {
+            const backgroundICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:background-route@example.com
+DTSTART:20250120T100000Z
+DTEND:20250120T110000Z
+SUMMARY:Background Route Event
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(backgroundICalData),
+                headers: { get: () => "text/calendar" },
+            });
+
+            const response = await backgroundServer.post("/api/calendars", {
+                name: "Background Sync Calendar",
+                url: "https://example.com/background-route.ics",
+                color: "#447dfc",
+            });
+
+            expect(response.status).toBe(201);
+
+            await flushBackgroundFetch();
+
+            const calendar = await backgroundServer.ctx.models.calendar.getByUrl(
+                "https://example.com/background-route.ics",
+            );
+            expect(calendar.ical_data).toContain("Background Route Event");
+            expect(JSON.parse(calendar.events_processed)).toEqual([
+                expect.objectContaining({
+                    title: "Background Route Event",
+                }),
+            ]);
         });
     });
 });

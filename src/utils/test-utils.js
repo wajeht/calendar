@@ -1,9 +1,19 @@
 import request from "supertest";
 import { beforeAll, afterAll } from "vite-plus/test";
 
+const emptyCalendarIcs = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Empty Calendar//EN
+END:VCALENDAR`;
+
 export async function createTestServer() {
     process.env.NODE_ENV = "test";
     process.env.LOG_LEVEL = "silent";
+    global.fetch = async () => ({
+        ok: true,
+        text: async () => emptyCalendarIcs,
+        headers: { get: () => "text/calendar" },
+    });
     const { createApp } = await import("../app.js");
     const { app, ctx } = await createApp();
 

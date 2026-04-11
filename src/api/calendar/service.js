@@ -1,5 +1,5 @@
 export function createCalendarService(dependencies = {}) {
-    const { ICAL, logger, models, errors, utils, config, backgroundFetchEnabled } = dependencies;
+    const { ICAL, logger, models, errors, utils, config } = dependencies;
 
     if (!errors) throw new Error("Errors required for calendar service");
     const {
@@ -17,14 +17,9 @@ export function createCalendarService(dependencies = {}) {
     if (!utils) throw new ConfigurationError("Utils required for calendar service");
 
     const fetchTimeout = config?.timeouts?.calendarFetch || 30000;
-    const shouldQueueBackgroundFetch = backgroundFetchEnabled ?? config?.app?.env !== "test";
     const pendingFetches = new Map();
 
     function queueCalendarFetch(calendarId, errorMessage) {
-        if (!shouldQueueBackgroundFetch) {
-            return;
-        }
-
         const existingFetch = pendingFetches.get(calendarId);
         if (existingFetch) {
             existingFetch.rerun = true;
