@@ -149,10 +149,11 @@ function handleEventSourceFailure(error) {
 
 async function handleAuthenticated() {
     showPasswordModal.value = false;
-    const { calendars: data } = await auth.initialize();
+    showSettingsModal.value = false;
+    const { calendars: data } = await auth.refresh();
     calendars.value = data;
     updateCalendarSources(data);
-    if (showSettingsModal.value) settingsInitialTab.value = "calendars";
+    settingsInitialTab.value = "calendars";
 }
 
 function updateCalendarSources(calendarData) {
@@ -183,7 +184,7 @@ function updateCalendarSources(calendarData) {
 
 async function reloadCalendars() {
     try {
-        const { calendars: data } = await auth.initialize();
+        const { calendars: data } = await auth.refresh();
         calendars.value = data;
         updateCalendarSources(data);
     } catch (error) {

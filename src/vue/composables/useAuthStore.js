@@ -41,6 +41,12 @@ function setCache(data) {
     } catch {}
 }
 
+function clearCache() {
+    try {
+        localStorage.removeItem(CACHE_KEY);
+    } catch {}
+}
+
 function applyData(data) {
     state.isAuthenticated = Boolean(data.isAuthenticated);
     state.isPasswordConfigured = Boolean(data.isPasswordConfigured);
@@ -49,8 +55,21 @@ function applyData(data) {
     state.feedToken = data.feedToken || null;
 }
 
+function resetState() {
+    state.isAuthenticated = false;
+    state.isPasswordConfigured = null;
+    state.cronSettings = null;
+    state.theme = "system";
+    state.feedToken = null;
+}
+
 export function useAuthStore() {
     const toast = useToast();
+
+    async function refresh() {
+        const calendars = await fetchFreshData();
+        return { calendars };
+    }
 
     async function initialize() {
         logger.log("Initialize started");
@@ -61,11 +80,11 @@ export function useAuthStore() {
             return {
                 calendars: cached.calendars || [],
                 fromCache: true,
-                sync: () => fetchFreshData(),
+                sync: refresh,
             };
         }
 
-        const calendars = await fetchFreshData();
+        const { calendars } = await refresh();
         return { calendars, fromCache: false };
     }
 
@@ -95,11 +114,8 @@ export function useAuthStore() {
         try {
             const result = await api.auth.logout();
             if (result.success) {
-                state.isAuthenticated = false;
-                state.isPasswordConfigured = null;
-                state.cronSettings = null;
-                state.theme = "system";
-                state.feedToken = null;
+                clearCache();
+                resetState();
                 toast.success(result.message || "Logged out successfully");
                 return true;
             } else {
@@ -130,6 +146,7 @@ export function useAuthStore() {
         feedToken: toRef(state, "feedToken"),
         isSyncing: toRef(state, "isSyncing"),
         initialize,
+        refresh,
         logout,
         setPasswordConfigured: (value) => (state.isPasswordConfigured = value),
         setTheme: (value) => (state.theme = value),

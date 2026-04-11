@@ -279,7 +279,7 @@ async function changePassword() {
             passwordForm.currentPassword = "";
             passwordForm.newPassword = "";
             passwordForm.confirmPassword = "";
-            await auth.initialize();
+            await auth.refresh();
             toast.success(result.message || "Password changed successfully");
         } else {
             toast.error(result.message || "Failed to change password");
