@@ -69,17 +69,27 @@ function createDeferred() {
 describe("Calendar Service", () => {
     let testServer;
     let calendarService;
+    let icalLibrary;
 
-    beforeAll(async () => {
-        testServer = await createTestServer();
-        await testServer.cleanDatabase();
-
-        calendarService = createCalendarService({
-            ICAL: testServer.ctx.ICAL || (await import("ical.js")).default,
+    function buildCalendarService(overrides = {}) {
+        return createCalendarService({
+            ICAL: icalLibrary,
             logger: testServer.ctx.logger,
             models: testServer.ctx.models,
             errors: testServer.ctx.errors,
             utils: testServer.ctx.utils,
+            backgroundFetchEnabled: false,
+            ...overrides,
+        });
+    }
+
+    beforeAll(async () => {
+        testServer = await createTestServer();
+        await testServer.cleanDatabase();
+        icalLibrary = testServer.ctx.ICAL || (await import("ical.js")).default;
+
+        calendarService = buildCalendarService({
+            ICAL: icalLibrary,
         });
     });
 
@@ -627,9 +637,10 @@ END:VCALENDAR`;
     });
 
     describe("create", () => {
-        it("should queue background sync after creating a calendar outside test env", async () => {
-            const previousEnv = process.env.NODE_ENV;
-            process.env.NODE_ENV = "development";
+        it("should queue background sync after creating a calendar when background sync is enabled", async () => {
+            const backgroundCalendarService = buildCalendarService({
+                backgroundFetchEnabled: true,
+            });
 
             const backgroundICalData = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -648,33 +659,30 @@ END:VCALENDAR`;
                 headers: { get: () => "text/calendar" },
             });
 
-            try {
-                const calendar = await calendarService.create({
-                    name: "Created Calendar",
-                    url: "https://example.com/created-background.ics",
-                    color: "#447dfc",
-                    visible_to_public: true,
-                    show_details_to_public: true,
-                });
+            const calendar = await backgroundCalendarService.create({
+                name: "Created Calendar",
+                url: "https://example.com/created-background.ics",
+                color: "#447dfc",
+                visible_to_public: true,
+                show_details_to_public: true,
+            });
 
-                await flushBackgroundFetch();
+            await flushBackgroundFetch();
 
-                const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
-                expect(updatedCalendar.ical_data).toContain("Created Background Event");
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            expect(updatedCalendar.ical_data).toContain("Created Background Event");
 
-                const events = JSON.parse(updatedCalendar.events_processed);
-                expect(events).toHaveLength(1);
-                expect(events[0].title).toBe("Created Background Event");
-            } finally {
-                process.env.NODE_ENV = previousEnv;
-            }
+            const events = JSON.parse(updatedCalendar.events_processed);
+            expect(events).toHaveLength(1);
+            expect(events[0].title).toBe("Created Background Event");
         });
     });
 
     describe("update", () => {
-        it("should reprocess events when the source URL changes outside test env", async () => {
-            const previousEnv = process.env.NODE_ENV;
-            process.env.NODE_ENV = "development";
+        it("should reprocess events when the source URL changes and background sync is enabled", async () => {
+            const backgroundCalendarService = buildCalendarService({
+                backgroundFetchEnabled: true,
+            });
 
             const updatedICalData = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -693,36 +701,33 @@ END:VCALENDAR`;
                 headers: { get: () => "text/calendar" },
             });
 
-            try {
-                const calendar = await testServer.ctx.models.calendar.create({
-                    name: "Needs URL Update",
-                    url: "https://example.com/original-background.ics",
-                    color: "#447dfc",
-                    visible_to_public: true,
-                    show_details_to_public: true,
-                });
+            const calendar = await testServer.ctx.models.calendar.create({
+                name: "Needs URL Update",
+                url: "https://example.com/original-background.ics",
+                color: "#447dfc",
+                visible_to_public: true,
+                show_details_to_public: true,
+            });
 
-                await calendarService.update(calendar.id, {
-                    url: "https://example.com/updated-background.ics",
-                });
+            await backgroundCalendarService.update(calendar.id, {
+                url: "https://example.com/updated-background.ics",
+            });
 
-                await flushBackgroundFetch();
+            await flushBackgroundFetch();
 
-                const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
-                expect(updatedCalendar.url).toBe("https://example.com/updated-background.ics");
-                expect(updatedCalendar.ical_data).toContain("Updated Background Event");
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            expect(updatedCalendar.url).toBe("https://example.com/updated-background.ics");
+            expect(updatedCalendar.ical_data).toContain("Updated Background Event");
 
-                const events = JSON.parse(updatedCalendar.events_processed);
-                expect(events).toHaveLength(1);
-                expect(events[0].title).toBe("Updated Background Event");
-            } finally {
-                process.env.NODE_ENV = previousEnv;
-            }
+            const events = JSON.parse(updatedCalendar.events_processed);
+            expect(events).toHaveLength(1);
+            expect(events[0].title).toBe("Updated Background Event");
         });
 
         it("should rerun background sync with the latest URL when a previous sync is still pending", async () => {
-            const previousEnv = process.env.NODE_ENV;
-            process.env.NODE_ENV = "development";
+            const backgroundCalendarService = buildCalendarService({
+                backgroundFetchEnabled: true,
+            });
 
             const originalUrl = "https://example.com/original-pending.ics";
             const updatedUrl = "https://example.com/updated-pending.ics";
@@ -766,56 +771,52 @@ END:VCALENDAR`;
                 throw new Error(`Unexpected fetch URL: ${url}`);
             });
 
-            try {
-                const calendar = await calendarService.create({
-                    name: "Pending Calendar",
-                    url: originalUrl,
-                    color: "#447dfc",
-                    visible_to_public: true,
-                    show_details_to_public: true,
-                });
+            const calendar = await backgroundCalendarService.create({
+                name: "Pending Calendar",
+                url: originalUrl,
+                color: "#447dfc",
+                visible_to_public: true,
+                show_details_to_public: true,
+            });
 
-                await flushBackgroundFetch();
+            await flushBackgroundFetch();
 
-                await calendarService.update(calendar.id, {
-                    url: updatedUrl,
-                });
+            await backgroundCalendarService.update(calendar.id, {
+                url: updatedUrl,
+            });
 
-                originalFetch.resolve({
-                    ok: true,
-                    text: () => Promise.resolve(originalICalData),
-                    headers: { get: () => "text/calendar" },
-                });
+            originalFetch.resolve({
+                ok: true,
+                text: () => Promise.resolve(originalICalData),
+                headers: { get: () => "text/calendar" },
+            });
 
-                await flushBackgroundFetch();
-                await flushBackgroundFetch();
+            await flushBackgroundFetch();
+            await flushBackgroundFetch();
 
-                const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
-                expect(updatedCalendar.url).toBe(updatedUrl);
-                expect(updatedCalendar.ical_data).toContain("Updated Background Event");
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            expect(updatedCalendar.url).toBe(updatedUrl);
+            expect(updatedCalendar.ical_data).toContain("Updated Background Event");
 
-                const events = JSON.parse(updatedCalendar.events_processed);
-                expect(events).toHaveLength(1);
-                expect(events[0].title).toBe("Updated Background Event");
-                expect(global.fetch).toHaveBeenCalledWith(
-                    originalUrl,
-                    expect.objectContaining({
-                        headers: expect.objectContaining({
-                            Accept: "text/calendar, application/calendar, text/plain",
-                        }),
+            const events = JSON.parse(updatedCalendar.events_processed);
+            expect(events).toHaveLength(1);
+            expect(events[0].title).toBe("Updated Background Event");
+            expect(global.fetch).toHaveBeenCalledWith(
+                originalUrl,
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Accept: "text/calendar, application/calendar, text/plain",
                     }),
-                );
-                expect(global.fetch).toHaveBeenCalledWith(
-                    updatedUrl,
-                    expect.objectContaining({
-                        headers: expect.objectContaining({
-                            Accept: "text/calendar, application/calendar, text/plain",
-                        }),
+                }),
+            );
+            expect(global.fetch).toHaveBeenCalledWith(
+                updatedUrl,
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Accept: "text/calendar, application/calendar, text/plain",
                     }),
-                );
-            } finally {
-                process.env.NODE_ENV = previousEnv;
-            }
+                }),
+            );
         });
     });
 
@@ -906,9 +907,10 @@ END:VCALENDAR`;
             ).rejects.toThrow("Calendars must be an array");
         });
 
-        it("should queue imported calendars for background sync outside test env", async () => {
-            const previousEnv = process.env.NODE_ENV;
-            process.env.NODE_ENV = "development";
+        it("should queue imported calendars for background sync when background sync is enabled", async () => {
+            const backgroundCalendarService = buildCalendarService({
+                backgroundFetchEnabled: true,
+            });
 
             const importedICalData = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -927,33 +929,29 @@ END:VCALENDAR`;
                 headers: { get: () => "text/calendar" },
             });
 
-            try {
-                const result = await calendarService.import(
-                    [
-                        {
-                            name: "Imported With Sync",
-                            url: "https://example.com/imported-background.ics",
-                            color: "#00ff00",
-                        },
-                    ],
-                    testServer.ctx.utils,
-                );
+            const result = await backgroundCalendarService.import(
+                [
+                    {
+                        name: "Imported With Sync",
+                        url: "https://example.com/imported-background.ics",
+                        color: "#00ff00",
+                    },
+                ],
+                testServer.ctx.utils,
+            );
 
-                expect(result.imported).toBe(1);
+            expect(result.imported).toBe(1);
 
-                await flushBackgroundFetch();
+            await flushBackgroundFetch();
 
-                const importedCalendar = await testServer.ctx.models.calendar.getByUrl(
-                    "https://example.com/imported-background.ics",
-                );
-                expect(importedCalendar.ical_data).toContain("Imported Background Event");
+            const importedCalendar = await testServer.ctx.models.calendar.getByUrl(
+                "https://example.com/imported-background.ics",
+            );
+            expect(importedCalendar.ical_data).toContain("Imported Background Event");
 
-                const events = JSON.parse(importedCalendar.events_processed);
-                expect(events).toHaveLength(1);
-                expect(events[0].title).toBe("Imported Background Event");
-            } finally {
-                process.env.NODE_ENV = previousEnv;
-            }
+            const events = JSON.parse(importedCalendar.events_processed);
+            expect(events).toHaveLength(1);
+            expect(events[0].title).toBe("Imported Background Event");
         });
     });
 
