@@ -97,8 +97,14 @@ const calendarOptions = ref({
     eventSources: [],
     eventClick: handleEventClick,
     eventSourceFailure: handleEventSourceFailure,
+    eventClassNames: getEventClassNames,
     datesSet: updateURL,
 });
+
+function getEventClassNames(arg) {
+    const end = arg.event.end ?? arg.event.start;
+    return end && end < new Date() ? ["fc-event-past"] : [];
+}
 
 async function handleSettingsClick() {
     if (auth.isPasswordConfigured.value === false) {
@@ -355,5 +361,9 @@ onUnmounted(() => {
     padding-left: 10px;
     padding-top: 10px;
     padding-right: 10px;
+}
+
+.fc .fc-event-past {
+    opacity: 0.45;
 }
 </style>
