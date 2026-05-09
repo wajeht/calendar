@@ -123,3 +123,4 @@ coverage
 
 *.tsbuildinfo
 .mcp.json
+dcdb.sh
