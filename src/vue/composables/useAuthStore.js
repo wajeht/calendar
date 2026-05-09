@@ -4,15 +4,36 @@ import { useToast } from "./useToast.js";
 import { useLogger } from "./useLogger.js";
 
 const CACHE_KEY = "calendar:cache";
+const THEME_KEY = "calendar:theme";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const logger = useLogger("AuthStore");
+
+function normalizeTheme(value) {
+    return value === "light" || value === "dark" || value === "system" ? value : null;
+}
+
+function getStoredTheme() {
+    try {
+        return normalizeTheme(localStorage.getItem(THEME_KEY)) || "system";
+    } catch {
+        return "system";
+    }
+}
+
+function setStoredTheme(value) {
+    const theme = normalizeTheme(value) || "system";
+
+    try {
+        localStorage.setItem(THEME_KEY, theme);
+    } catch {}
+}
 
 const state = reactive({
     isAuthenticated: false,
     isPasswordConfigured: null,
     cronSettings: null,
-    theme: "system",
+    theme: getStoredTheme(),
     feedToken: null,
     isSyncing: false,
 });
@@ -47,13 +68,15 @@ function setCache(data) {
     try {
         const { feedToken: _feedToken, notModified: _notModified, ...cacheData } = data;
         const access = cacheData.access || (cacheData.isAuthenticated ? "auth" : "public");
+        const theme = normalizeTheme(cacheData.theme) || getStoredTheme();
+
         localStorage.setItem(
             CACHE_KEY,
             JSON.stringify({
                 access,
                 version: cacheData.version || null,
-                theme: cacheData.theme || "system",
-                data: cacheData,
+                theme,
+                data: { ...cacheData, theme },
                 _cachedAt: Date.now(),
             }),
         );
@@ -70,15 +93,19 @@ function applyData(data) {
     state.isAuthenticated = Boolean(data.isAuthenticated);
     state.isPasswordConfigured = Boolean(data.isPasswordConfigured);
     state.cronSettings = data.cronSettings || null;
-    state.theme = data.theme || "system";
+    state.theme = normalizeTheme(data.theme) || getStoredTheme();
     state.feedToken = data.feedToken || null;
+
+    if (data.theme) {
+        setStoredTheme(data.theme);
+    }
 }
 
 function resetState() {
     state.isAuthenticated = false;
     state.isPasswordConfigured = null;
     state.cronSettings = null;
-    state.theme = "system";
+    state.theme = getStoredTheme();
     state.feedToken = null;
 }
 
@@ -181,7 +208,10 @@ export function useAuthStore() {
         refresh,
         logout,
         setPasswordConfigured: (value) => (state.isPasswordConfigured = value),
-        setTheme: (value) => (state.theme = value),
+        setTheme: (value) => {
+            state.theme = normalizeTheme(value) || "system";
+            setStoredTheme(state.theme);
+        },
         setFeedToken,
         setFeedCalendars,
     };

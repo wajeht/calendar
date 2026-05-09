@@ -19,6 +19,8 @@ function applyTheme(themeValue) {
     } else {
         root.classList.remove("dark");
     }
+
+    root.style.colorScheme = effectiveTheme;
 }
 
 function setupMediaQueryListener(authStore) {
