@@ -92,8 +92,12 @@ async function request(url, options = {}) {
 
 export const api = {
     auth: {
-        async me() {
-            return request("/api/auth/me");
+        async me(options = {}) {
+            return request("/api/auth/me", {
+                params: {
+                    version: options.version,
+                },
+            });
         },
 
         async login(password) {

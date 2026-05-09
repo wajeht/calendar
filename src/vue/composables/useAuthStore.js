@@ -22,12 +22,22 @@ function getCache() {
         const raw = localStorage.getItem(CACHE_KEY);
         if (!raw) return null;
 
-        const cached = JSON.parse(raw);
-        if (Date.now() - cached._cachedAt > CACHE_TTL) {
+        const parsed = JSON.parse(raw);
+        const data = parsed.data && typeof parsed.data === "object" ? parsed.data : parsed;
+        const cachedAt = parsed._cachedAt || data._cachedAt;
+
+        if (!cachedAt || Date.now() - cachedAt > CACHE_TTL) {
             localStorage.removeItem(CACHE_KEY);
             return null;
         }
-        return cached;
+
+        return {
+            access: parsed.access || data.access || (data.isAuthenticated ? "auth" : "public"),
+            version: parsed.version || data.version || null,
+            theme: parsed.theme || data.theme || "system",
+            data,
+            _cachedAt: cachedAt,
+        };
     } catch {
         return null;
     }
@@ -35,9 +45,18 @@ function getCache() {
 
 function setCache(data) {
     try {
-        const { feedToken: _feedToken, ...rest } = data;
-        rest._cachedAt = Date.now();
-        localStorage.setItem(CACHE_KEY, JSON.stringify(rest));
+        const { feedToken: _feedToken, notModified: _notModified, ...cacheData } = data;
+        const access = cacheData.access || (cacheData.isAuthenticated ? "auth" : "public");
+        localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({
+                access,
+                version: cacheData.version || null,
+                theme: cacheData.theme || "system",
+                data: cacheData,
+                _cachedAt: Date.now(),
+            }),
+        );
     } catch {}
 }
 
@@ -67,7 +86,7 @@ export function useAuthStore() {
     const toast = useToast();
 
     async function refresh() {
-        const calendars = await fetchFreshData();
+        const calendars = await fetchFreshData({ cache: getCache() });
         return { calendars };
     }
 
@@ -75,29 +94,42 @@ export function useAuthStore() {
         logger.log("Initialize started");
         const cached = getCache();
 
-        if (cached) {
-            applyData(cached);
+        if (cached?.access === "public" && cached.data?.isAuthenticated === false) {
+            applyData(cached.data);
             return {
-                calendars: cached.calendars || [],
+                calendars: cached.data.calendars || [],
                 fromCache: true,
-                sync: () => fetchFreshData(),
+                sync: () => fetchFreshData({ cache: cached }),
             };
         }
 
-        const { calendars } = await refresh();
+        const calendars = await fetchFreshData({ cache: cached });
         return { calendars, fromCache: false };
     }
 
-    async function fetchFreshData() {
+    async function fetchFreshData({ cache = null } = {}) {
         logger.log("Fetching fresh data from /me");
         state.isSyncing = true;
         try {
-            const result = await api.auth.me();
+            const result = await api.auth.me({ version: cache?.version });
             if (result?.success) {
-                logger.log("Fresh data received:", Object.keys(result.data));
-                applyData(result.data);
-                setCache(result.data);
-                return result.data.calendars || [];
+                let data = result.data || {};
+
+                if (data.notModified && cache?.data && data.access === cache.access) {
+                    data = {
+                        ...cache.data,
+                        ...data,
+                        calendars: cache.data.calendars || [],
+                        notModified: false,
+                    };
+                } else if (data.notModified) {
+                    data = { ...data, calendars: [], notModified: false };
+                }
+
+                logger.log("Fresh data received:", Object.keys(data));
+                applyData(data);
+                setCache(data);
+                return data.calendars || [];
             }
             logger.error("Fetch failed - success:", result?.success, "status:", result?.status);
             return [];
