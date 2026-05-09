@@ -9,7 +9,8 @@
             (function () {
                 try {
                     var cache = localStorage.getItem("calendar:cache");
-                    var theme = cache ? JSON.parse(cache).theme : "system";
+                    var parsed = cache ? JSON.parse(cache) : null;
+                    var theme = parsed ? parsed.theme || parsed.data?.theme || "system" : "system";
                     var isDark =
                         theme === "dark" ||
                         (theme === "system" &&
@@ -20,12 +21,9 @@
                 }
             })();
         </script>
-      <script type="module" crossorigin src="/assets/index-DcwLM_T-.js"></script>
-      <link rel="modulepreload" crossorigin href="/assets/_plugin-vue_export-helper-S3RvzygF.js">
-      <link rel="modulepreload" crossorigin href="/assets/fullcalendar-BFWQkFoN.js">
-      <link rel="modulepreload" crossorigin href="/assets/api-D0VpYkhE.js">
-      <link rel="modulepreload" crossorigin href="/assets/useTheme-B1Hp8Y8N.js">
-      <link rel="stylesheet" crossorigin href="/assets/index-BfyFfPQt.css">
+      <script type="module" crossorigin src="/assets/index-B-93bZOf.js"></script>
+      <link rel="modulepreload" crossorigin href="/assets/fullcalendar-yeURergo.js">
+      <link rel="stylesheet" crossorigin href="/assets/index-C762PG-L.css">
     </head>
 
     <body>
