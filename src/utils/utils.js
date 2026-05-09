@@ -1,5 +1,14 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { getCookie } from "hono/cookie";
+
+function getRequestPath(c) {
+    return c.req.path;
+}
+
+function getRequestHeader(c, name) {
+    return c.req.header(name);
+}
 
 export function createUtils(dependencies = {}) {
     const { logger, config, errors } = dependencies;
@@ -13,29 +22,27 @@ export function createUtils(dependencies = {}) {
     return {
         /**
          * Check if a request is an API request
-         * @param {Object} req - Express request object
+         * @param {Object} req - Hono context
          * @returns {boolean}
          */
         isApiRequest(req) {
-            if (req.path.startsWith("/api/")) {
+            const path = getRequestPath(req);
+
+            if (path.startsWith("/api/")) {
                 return true;
             }
 
-            const acceptHeader = req.get("Accept") || "";
+            const acceptHeader = getRequestHeader(req, "Accept") || "";
             if (acceptHeader.includes("application/json")) {
                 return true;
             }
 
-            const contentType = req.get("Content-Type") || "";
+            const contentType = getRequestHeader(req, "Content-Type") || "";
             if (contentType.includes("application/json")) {
                 return true;
             }
 
-            if (req.xhr) {
-                return true;
-            }
-
-            if (req.get("X-Requested-With") === "XMLHttpRequest") {
+            if (getRequestHeader(req, "X-Requested-With") === "XMLHttpRequest") {
                 return true;
             }
 
@@ -176,12 +183,12 @@ export function createUtils(dependencies = {}) {
 
         /**
          * Check if request is authenticated via session token
-         * @param {Object} req - Express request object
+         * @param {Object} req - Hono context
          * @returns {boolean} - True if request is authenticated
          */
         isAuthenticated(req) {
-            const token = req.cookies?.session_token || null;
-            const lastActivity = req.cookies?.session_activity || null;
+            const token = getCookie(req, "session_token") || null;
+            const lastActivity = getCookie(req, "session_activity") || null;
             return this.validateSessionToken(token, lastActivity);
         },
 

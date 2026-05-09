@@ -1,4 +1,4 @@
-import express from "express";
+import { Hono } from "hono";
 
 export function createFeedRouter(dependencies = {}) {
     const { models, services, logger, errors } = dependencies;
@@ -10,10 +10,15 @@ export function createFeedRouter(dependencies = {}) {
     if (!models) throw new ConfigurationError("Models required for feed router");
     if (!services) throw new ConfigurationError("Services required for feed router");
 
-    const router = express.Router();
+    const router = new Hono({ strict: false });
 
-    router.get("/:token.ics", async (req, res) => {
-        const { token } = req.params;
+    router.get("/:filename", async (c) => {
+        const filename = c.req.param("filename");
+        if (!filename.endsWith(".ics")) {
+            throw new NotFoundError("Feed");
+        }
+
+        const token = filename.slice(0, -4);
 
         const storedToken = await models.settings.get("feed_token");
 
@@ -37,9 +42,9 @@ export function createFeedRouter(dependencies = {}) {
             ical_bytes: ical.length,
         });
 
-        res.setHeader("Content-Type", "text/calendar; charset=utf-8");
-        res.setHeader("Content-Disposition", 'attachment; filename="calendar.ics"');
-        res.send(ical);
+        c.header("Content-Type", "text/calendar; charset=utf-8");
+        c.header("Content-Disposition", 'attachment; filename="calendar.ics"');
+        return c.body(ical);
     });
 
     return router;

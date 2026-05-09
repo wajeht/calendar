@@ -1,4 +1,3 @@
-import request from "supertest";
 import { beforeAll, afterAll } from "vite-plus/test";
 
 const emptyCalendarIcs = `BEGIN:VCALENDAR
@@ -22,11 +21,99 @@ export async function createTestServer() {
     const hashedPassword = await ctx.utils.hashPassword("test-password");
     await ctx.models.settings.set("app_password", hashedPassword);
 
-    const agent = request.agent(app);
     let sessionToken = null;
+    const cookieJar = new Map();
+
+    function serializeCookies() {
+        return Array.from(cookieJar.entries())
+            .map(([name, value]) => `${name}=${value}`)
+            .join("; ");
+    }
+
+    function storeCookies(setCookies = []) {
+        for (const cookie of setCookies) {
+            const [nameValue, ...attributes] = cookie.split(";");
+            const [name, ...valueParts] = nameValue.split("=");
+            const value = valueParts.join("=");
+            const normalizedAttributes = attributes.map((attr) => attr.trim().toLowerCase());
+            const isExpired = normalizedAttributes.some(
+                (attr) =>
+                    attr === "max-age=0" ||
+                    attr.startsWith("expires=thu, 01 jan 1970") ||
+                    attr.startsWith("expires=thu, 1 jan 1970"),
+            );
+
+            if (isExpired || value === "") {
+                cookieJar.delete(name);
+            } else {
+                cookieJar.set(name, value);
+            }
+        }
+    }
+
+    async function toTestResponse(response) {
+        const setCookies = response.headers.getSetCookie?.() || [];
+        storeCookies(setCookies);
+
+        const headers = {};
+        response.headers.forEach((value, key) => {
+            headers[key] = value;
+        });
+        if (setCookies.length > 0) {
+            headers["set-cookie"] = setCookies;
+        }
+
+        const text = await response.text();
+        const contentType = response.headers.get("content-type") || "";
+        let body = {};
+
+        if (contentType.includes("application/json") && text) {
+            body = JSON.parse(text);
+        }
+
+        return {
+            status: response.status,
+            headers,
+            body,
+            text,
+        };
+    }
+
+    async function executeRequest(method, path, body = null, customHeaders = new Headers()) {
+        const headers = new Headers(customHeaders);
+        let requestBody;
+
+        if (body !== null && body !== undefined) {
+            headers.set("content-type", "application/json");
+            requestBody = JSON.stringify(body);
+        }
+
+        if (cookieJar.size > 0 && !headers.has("cookie")) {
+            headers.set("cookie", serializeCookies());
+        }
+
+        const response = await app.request(path, {
+            method: method.toUpperCase(),
+            headers,
+            body: requestBody,
+        });
+
+        return toTestResponse(response);
+    }
+
+    function requestBuilder(method, path) {
+        const headers = new Headers();
+
+        return {
+            set(name, value) {
+                headers.set(name, value);
+                return executeRequest(method, path, null, headers);
+            },
+        };
+    }
 
     async function login(password = null) {
-        const response = await agent.post("/api/auth").send({
+        const response = await executeRequest("post", "/api/auth", {
             password: password || "test-password",
         });
 
@@ -44,7 +131,7 @@ export async function createTestServer() {
     }
 
     async function logout() {
-        await agent.post("/api/auth/logout");
+        await executeRequest("post", "/api/auth/logout");
         sessionToken = null;
     }
 
@@ -71,11 +158,11 @@ export async function createTestServer() {
         logout,
         cleanDatabase,
         stop,
-        get: (path) => agent.get(path),
-        post: (path, body = null) => (body ? agent.post(path).send(body) : agent.post(path)),
-        put: (path, body = null) => (body ? agent.put(path).send(body) : agent.put(path)),
-        delete: (path) => agent.delete(path),
-        request: (method, path) => agent[method](path),
+        get: (path) => executeRequest("get", path),
+        post: (path, body = null) => executeRequest("post", path, body),
+        put: (path, body = null) => executeRequest("put", path, body),
+        delete: (path) => executeRequest("delete", path),
+        request: (method, path) => requestBuilder(method, path),
     };
 }
 

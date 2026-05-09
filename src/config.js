@@ -46,7 +46,6 @@ export const config = deepFreeze({
         windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
         max: parseInt(process.env.RATE_LIMIT_MAX) || 1000,
         standardHeaders: process.env.RATE_LIMIT_STANDARD_HEADERS !== "false",
-        legacyHeaders: process.env.RATE_LIMIT_LEGACY_HEADERS === "true",
         skipSuccessfulRequests: process.env.RATE_LIMIT_SKIP_SUCCESSFUL === "true",
         skipFailedRequests: process.env.RATE_LIMIT_SKIP_FAILED === "true",
     },

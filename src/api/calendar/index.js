@@ -1,4 +1,5 @@
-import express from "express";
+import { Hono } from "hono";
+import { validator as honoValidator } from "hono/validator";
 
 export function createCalendarRouter(dependencies = {}) {
     const { models, services, middleware, utils, logger, errors, validators } = dependencies;
@@ -14,16 +15,17 @@ export function createCalendarRouter(dependencies = {}) {
 
     const { ValidationError, NotFoundError } = errors;
 
-    const router = express.Router();
+    const router = new Hono({ strict: false });
 
     const requireAuth = middleware.auth.requireAuth();
+    const jsonBody = honoValidator("json", (body) => body);
 
-    router.get("/", async (req, res) => {
-        const isAuthenticated = utils.isAuthenticated(req);
+    router.get("/", async (c) => {
+        const isAuthenticated = utils.isAuthenticated(c);
 
         const calendars = await models.calendar.getAllForAccess(isAuthenticated);
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendars retrieved successfully",
             errors: null,
@@ -31,10 +33,10 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.get("/export", requireAuth, async (_req, res) => {
+    router.get("/export", requireAuth, async (c) => {
         const exportData = await services.calendar.export();
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendars exported successfully",
             errors: null,
@@ -42,14 +44,15 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.post("/import", requireAuth, async (req, res) => {
-        validators.validateBody(req.body);
+    router.post("/import", requireAuth, jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { calendars } = req.body;
+        const { calendars } = body;
 
         const results = await services.calendar.import(calendars, utils);
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendars imported successfully",
             errors: null,
@@ -57,8 +60,8 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.get("/:id", requireAuth, async (req, res) => {
-        const id = validators.validateId(req.params.id);
+    router.get("/:id", requireAuth, async (c) => {
+        const id = validators.validateId(c.req.param("id"));
 
         const calendar = await models.calendar.getById(id);
 
@@ -66,7 +69,7 @@ export function createCalendarRouter(dependencies = {}) {
             throw new NotFoundError("Calendar");
         }
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendar retrieved successfully",
             errors: null,
@@ -74,10 +77,11 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.post("/", requireAuth, async (req, res) => {
-        validators.validateCalendarCreateBatch(req.body);
+    router.post("/", requireAuth, jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateCalendarCreateBatch(body);
 
-        const { name, url, color } = req.body;
+        const { name, url, color } = body;
 
         const sanitizedName = utils.sanitizeString(name);
 
@@ -96,7 +100,7 @@ export function createCalendarRouter(dependencies = {}) {
         }
 
         const calendarData = {
-            ...req.body,
+            ...body,
             name: sanitizedName,
             color: color || utils.generateRandomColor(),
         };
@@ -105,16 +109,19 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info("calendar created", { name: calendar.name, id: calendar.id });
 
-        res.status(201).json({
-            success: true,
-            message: "Calendar created successfully",
-            errors: null,
-            data: calendar,
-        });
+        return c.json(
+            {
+                success: true,
+                message: "Calendar created successfully",
+                errors: null,
+                data: calendar,
+            },
+            201,
+        );
     });
 
-    router.put("/:id", requireAuth, async (req, res) => {
-        const id = validators.validateId(req.params.id);
+    router.put("/:id", requireAuth, jsonBody, async (c) => {
+        const id = validators.validateId(c.req.param("id"));
 
         const calendar = await models.calendar.getById(id);
 
@@ -122,7 +129,8 @@ export function createCalendarRouter(dependencies = {}) {
             throw new NotFoundError("Calendar");
         }
 
-        const updateData = { ...req.body };
+        const body = c.req.valid("json");
+        const updateData = { ...body };
 
         validators.validateCalendarUpdate(updateData);
 
@@ -143,7 +151,7 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info("calendar updated", { name: updatedCalendar.name, id: updatedCalendar.id });
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendar updated successfully",
             errors: null,
@@ -151,8 +159,8 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.delete("/:id", requireAuth, async (req, res) => {
-        const id = validators.validateId(req.params.id);
+    router.delete("/:id", requireAuth, async (c) => {
+        const id = validators.validateId(c.req.param("id"));
 
         const calendar = await models.calendar.delete(id);
 
@@ -162,7 +170,7 @@ export function createCalendarRouter(dependencies = {}) {
 
         logger.info("calendar deleted", { name: calendar.name, id: calendar.id });
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendar deleted successfully",
             errors: null,
@@ -170,14 +178,14 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.post("/refresh", requireAuth, async (_req, res) => {
+    router.post("/refresh", requireAuth, async (c) => {
         logger.set({ trigger: "manual" });
 
         const result = await services.calendar.refetchAllCalendars();
 
         await services.cron.updateLastRun();
 
-        res.json({
+        return c.json({
             success: true,
             message: "Calendars refreshed successfully",
             errors: null,

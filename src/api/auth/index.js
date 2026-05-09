@@ -1,4 +1,7 @@
-import express from "express";
+import { Hono } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { validator as honoValidator } from "hono/validator";
+import { toCookieOptions } from "../http.js";
 
 export function createAuthRouter(dependencies = {}) {
     const { middleware, utils, logger, config, errors, validators, models, services } =
@@ -17,20 +20,22 @@ export function createAuthRouter(dependencies = {}) {
 
     const { ValidationError } = errors;
 
-    const router = express.Router();
+    const router = new Hono({ strict: false });
     const requireAuth = middleware.auth.requireAuth();
+    const jsonBody = honoValidator("json", (body) => body);
 
-    router.post("/", async (req, res) => {
-        validators.validateBody(req.body);
+    router.post("/", jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { password } = req.body;
+        const { password } = body;
 
         if (!password) {
             throw new ValidationError({ password: "Password is required" });
         }
 
-        const failedAttempts = parseInt(req.cookies.failed_attempts || "0");
-        const lockedUntil = parseInt(req.cookies.locked_until || "0");
+        const failedAttempts = parseInt(getCookie(c, "failed_attempts") || "0");
+        const lockedUntil = parseInt(getCookie(c, "locked_until") || "0");
 
         if (lockedUntil && Date.now() < lockedUntil) {
             const timeLeft = Math.ceil((lockedUntil - Date.now()) / 1000 / 60);
@@ -52,33 +57,43 @@ export function createAuthRouter(dependencies = {}) {
 
             if (newFailedAttempts >= 5) {
                 const lockUntil = Date.now() + 15 * 60 * 1000; // 15 minutes
-                res.cookie("locked_until", lockUntil.toString(), {
-                    httpOnly: true,
-                    secure: config.app.env === "production",
-                    sameSite: "strict",
-                    maxAge: 15 * 60 * 1000, // 15 minutes
-                    path: "/",
-                });
+                setCookie(
+                    c,
+                    "locked_until",
+                    lockUntil.toString(),
+                    toCookieOptions({
+                        httpOnly: true,
+                        secure: config.app.env === "production",
+                        sameSite: "strict",
+                        maxAge: 15 * 60 * 1000, // 15 minutes
+                        path: "/",
+                    }),
+                );
                 logger.warn("account locked after failed attempts", { attempts: 5 });
                 throw new ValidationError({
                     password: "Too many failed attempts. Account locked for 15 minutes",
                 });
             }
 
-            res.cookie("failed_attempts", newFailedAttempts.toString(), {
-                httpOnly: true,
-                secure: config.app.env === "production",
-                sameSite: "strict",
-                maxAge: 60 * 60 * 1000, // 1 hour
-                path: "/",
-            });
+            setCookie(
+                c,
+                "failed_attempts",
+                newFailedAttempts.toString(),
+                toCookieOptions({
+                    httpOnly: true,
+                    secure: config.app.env === "production",
+                    sameSite: "strict",
+                    maxAge: 60 * 60 * 1000, // 1 hour
+                    path: "/",
+                }),
+            );
 
             logger.warn("failed login attempt", { attempt: newFailedAttempts, max_attempts: 5 });
             throw new ValidationError({ password: "Invalid password" });
         }
 
-        res.clearCookie("failed_attempts", { path: "/" });
-        res.clearCookie("locked_until", { path: "/" });
+        deleteCookie(c, "failed_attempts", { path: "/" });
+        deleteCookie(c, "locked_until", { path: "/" });
 
         const sessionToken = `${Date.now()}.${utils.generateSecureToken(16)}`;
         const now = Date.now();
@@ -91,17 +106,27 @@ export function createAuthRouter(dependencies = {}) {
             ...(config.auth.cookieDomain && { domain: config.auth.cookieDomain }),
         };
 
-        res.cookie("session_token", sessionToken, {
-            ...cookieOptions,
-            maxAge: config.auth.absoluteTimeout,
-        });
-        res.cookie("session_activity", String(now), {
-            ...cookieOptions,
-            maxAge: config.auth.idleTimeout,
-        });
+        setCookie(
+            c,
+            "session_token",
+            sessionToken,
+            toCookieOptions({
+                ...cookieOptions,
+                maxAge: config.auth.absoluteTimeout,
+            }),
+        );
+        setCookie(
+            c,
+            "session_activity",
+            String(now),
+            toCookieOptions({
+                ...cookieOptions,
+                maxAge: config.auth.idleTimeout,
+            }),
+        );
 
         logger.info("login successful");
-        res.json({
+        return c.json({
             success: true,
             message: "Authentication successful",
             errors: null,
@@ -109,7 +134,7 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.post("/logout", (_req, res) => {
+    router.post("/logout", (c) => {
         const cookieOptions = {
             httpOnly: true,
             secure: config.app.env === "production",
@@ -118,11 +143,11 @@ export function createAuthRouter(dependencies = {}) {
             ...(config.auth.cookieDomain && { domain: config.auth.cookieDomain }),
         };
 
-        res.clearCookie("session_token", cookieOptions);
-        res.clearCookie("session_activity", cookieOptions);
+        deleteCookie(c, "session_token", toCookieOptions(cookieOptions));
+        deleteCookie(c, "session_activity", toCookieOptions(cookieOptions));
 
         logger.info("user logged out");
-        res.json({
+        return c.json({
             success: true,
             message: "Logged out successfully",
             errors: null,
@@ -130,8 +155,8 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.get("/me", async (req, res) => {
-        const isAuthenticated = utils.isAuthenticated(req);
+    router.get("/me", async (c) => {
+        const isAuthenticated = utils.isAuthenticated(c);
 
         const baseResults = await Promise.allSettled([
             models.settings.get("app_password"),
@@ -167,7 +192,7 @@ export function createAuthRouter(dependencies = {}) {
             }
         }
 
-        res.json({
+        return c.json({
             success: true,
             message: "User context retrieved successfully",
             errors: null,
@@ -175,10 +200,11 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.post("/password", async (req, res) => {
-        validators.validateBody(req.body);
+    router.post("/password", jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { password, confirmPassword } = req.body;
+        const { password, confirmPassword } = body;
 
         if (!password) {
             throw new ValidationError({
@@ -216,7 +242,7 @@ export function createAuthRouter(dependencies = {}) {
 
         logger.info("initial password configured");
 
-        res.json({
+        return c.json({
             success: true,
             message: "Password configured successfully",
             errors: null,
@@ -224,10 +250,11 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.put("/password", requireAuth, async (req, res) => {
-        validators.validateBody(req.body);
+    router.put("/password", requireAuth, jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { currentPassword, newPassword, confirmPassword } = req.body;
+        const { currentPassword, newPassword, confirmPassword } = body;
 
         if (!currentPassword || !newPassword) {
             throw new ValidationError({
@@ -276,7 +303,7 @@ export function createAuthRouter(dependencies = {}) {
 
         logger.info("password changed");
 
-        res.json({
+        return c.json({
             success: true,
             message: "Password changed successfully",
             errors: null,

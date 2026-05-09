@@ -137,7 +137,7 @@ const fetchUserData = () => {};
 
 ```javascript
 // Use ES modules
-import express from "express";
+import { Hono } from "hono";
 
 // Use async/await
 async function fetchCalendar(url) {

@@ -29,7 +29,7 @@ The app will be available at `http://localhost:3000`
 
 ```
 src/
-├── api/                    # Express.js API routes
+├── api/                    # Hono API routes
 │   ├── auth/              # Authentication routes & middleware
 │   ├── calendar/          # Calendar CRUD & iCal processing
 │   └── settings/          # App configuration routes
@@ -42,7 +42,7 @@ src/
 │   ├── pages/            # Page components
 │   └── router.js         # Vue Router config
 ├── utils/                 # Shared utilities
-├── app.js                # Express app setup
+├── app.js                # Hono app setup
 ├── server.js             # Server entry point
 ├── cron.js               # Background sync jobs
 └── config.js             # App configuration
@@ -53,10 +53,10 @@ src/
 ### Development
 
 ```bash
-npm run dev              # Start both Vue & Express in watch mode
-npm run dev:server       # Start only Express server with --watch
+npm run dev              # Start both Vue & Hono in watch mode
+npm run dev:server       # Start only Hono server with --watch
 npm run dev:vue          # Start only Vite dev server
-npm run dev:serve        # Build Vue & watch + start Express
+npm run dev:serve        # Build Vue & watch + start Hono
 ```
 
 ### Production
@@ -138,11 +138,12 @@ npm run db:migrate:latest
 
 **Tech Stack:**
 
-- **Express.js 5** with ES modules
+- **Hono** with ES modules
 - **Better-SQLite3** for database
 - **ICAL.js** for calendar parsing
 - **node-cron** for background sync
-- **Helmet** & security middleware
+- **Hono built-in security, compression, body limit, ETag, logger, context storage, pretty JSON, and CORS middleware**
+- **hono-rate-limiter** for Hono-native rate limiting
 
 **Key patterns:**
 
@@ -153,7 +154,7 @@ npm run db:migrate:latest
 
 ## 🧪 Testing
 
-Tests use **Vitest** and **Supertest**:
+Tests use **Vitest** and Hono's `app.request()` testing API:
 
 ```bash
 # Run specific test file

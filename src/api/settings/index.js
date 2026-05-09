@@ -1,4 +1,5 @@
-import express from "express";
+import { Hono } from "hono";
+import { validator as honoValidator } from "hono/validator";
 
 export function createSettingsRouter(dependencies = {}) {
     const { services, middleware, utils, logger, errors, validators, models } = dependencies;
@@ -15,13 +16,14 @@ export function createSettingsRouter(dependencies = {}) {
 
     const { ValidationError } = errors;
 
-    const router = express.Router();
+    const router = new Hono({ strict: false });
 
     const requireAuth = middleware.auth.requireAuth();
+    const jsonBody = honoValidator("json", (body) => body);
 
-    router.get("/cron", requireAuth, async (_req, res) => {
+    router.get("/cron", requireAuth, async (c) => {
         const status = services.cron.getStatus();
-        res.json({
+        return c.json({
             success: true,
             message: "Cron settings retrieved successfully",
             errors: null,
@@ -29,10 +31,11 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.put("/cron", requireAuth, async (req, res) => {
-        validators.validateBody(req.body);
+    router.put("/cron", requireAuth, jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { enabled, schedule } = req.body;
+        const { enabled, schedule } = body;
 
         if (typeof enabled !== "boolean") {
             throw new ValidationError({
@@ -60,7 +63,7 @@ export function createSettingsRouter(dependencies = {}) {
 
         logger.info("cron settings updated", { enabled, schedule });
 
-        res.json({
+        return c.json({
             success: true,
             message: "Cron settings updated successfully",
             errors: null,
@@ -68,10 +71,11 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.put("/theme", requireAuth, async (req, res) => {
-        validators.validateBody(req.body);
+    router.put("/theme", requireAuth, jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { theme } = req.body;
+        const { theme } = body;
 
         if (!theme || !["light", "dark", "system"].includes(theme)) {
             throw new ValidationError({
@@ -83,7 +87,7 @@ export function createSettingsRouter(dependencies = {}) {
 
         logger.info("theme updated", { theme });
 
-        res.json({
+        return c.json({
             success: true,
             message: "Theme updated successfully",
             errors: null,
@@ -91,22 +95,21 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.get("/feed-token", requireAuth, async (_req, res) => {
+    router.get("/feed-token", requireAuth, async (c) => {
         const token = await models.settings.get("feed_token");
 
         if (!token) {
-            res.json({
+            return c.json({
                 success: true,
                 message: "No feed token configured",
                 errors: null,
                 data: null,
             });
-            return;
         }
 
         const feedCalendars = (await models.settings.get("feed_calendars")) || [];
 
-        res.json({
+        return c.json({
             success: true,
             message: "Feed token retrieved successfully",
             errors: null,
@@ -118,7 +121,7 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.post("/feed-token/regenerate", requireAuth, async (_req, res) => {
+    router.post("/feed-token/regenerate", requireAuth, async (c) => {
         const token = utils.generateSecureToken(48);
         await models.settings.set("feed_token", token);
 
@@ -126,7 +129,7 @@ export function createSettingsRouter(dependencies = {}) {
 
         logger.info("feed token regenerated");
 
-        res.json({
+        return c.json({
             success: true,
             message: "Feed token regenerated successfully",
             errors: null,
@@ -138,10 +141,11 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.put("/feed-token/calendars", requireAuth, async (req, res) => {
-        validators.validateBody(req.body);
+    router.put("/feed-token/calendars", requireAuth, jsonBody, async (c) => {
+        const body = c.req.valid("json");
+        validators.validateBody(body);
 
-        const { calendars } = req.body;
+        const { calendars } = body;
 
         if (!Array.isArray(calendars)) {
             throw new ValidationError({
@@ -156,7 +160,7 @@ export function createSettingsRouter(dependencies = {}) {
             calendar_ids: calendars,
         });
 
-        res.json({
+        return c.json({
             success: true,
             message: "Feed calendars updated successfully",
             errors: null,

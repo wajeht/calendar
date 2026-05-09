@@ -1,3 +1,6 @@
+import { getCookie, setCookie } from "hono/cookie";
+import { toCookieOptions } from "../http.js";
+
 export function createAuthMiddleware(dependencies = {}) {
     const { utils, errors, config } = dependencies;
 
@@ -17,9 +20,9 @@ export function createAuthMiddleware(dependencies = {}) {
 
     return {
         requireAuth() {
-            return (req, res, next) => {
-                const token = req.cookies?.session_token || null;
-                const lastActivity = req.cookies?.session_activity || null;
+            return async (c, next) => {
+                const token = getCookie(c, "session_token") || null;
+                const lastActivity = getCookie(c, "session_activity") || null;
 
                 if (!token || !utils.validateSessionToken(token, lastActivity)) {
                     throw new AuthenticationError();
@@ -27,16 +30,26 @@ export function createAuthMiddleware(dependencies = {}) {
 
                 // Sliding session: extend cookies on each authenticated request
                 const now = Date.now();
-                res.cookie("session_token", token, {
-                    ...cookieOptions,
-                    maxAge: config.auth.absoluteTimeout,
-                });
-                res.cookie("session_activity", String(now), {
-                    ...cookieOptions,
-                    maxAge: config.auth.idleTimeout,
-                });
+                setCookie(
+                    c,
+                    "session_token",
+                    token,
+                    toCookieOptions({
+                        ...cookieOptions,
+                        maxAge: config.auth.absoluteTimeout,
+                    }),
+                );
+                setCookie(
+                    c,
+                    "session_activity",
+                    String(now),
+                    toCookieOptions({
+                        ...cookieOptions,
+                        maxAge: config.auth.idleTimeout,
+                    }),
+                );
 
-                next();
+                await next();
             };
         },
     };

@@ -1,124 +1,180 @@
-import cors from "cors";
-import helmet from "helmet";
-import express from "express";
-import compression from "compression";
-import cookieParser from "cookie-parser";
+import { Hono } from "hono";
 import { createContext } from "./context.js";
-import { createRouter } from "./api/index.js";
-import { rateLimit } from "express-rate-limit";
+import { bodyLimit } from "hono/body-limit";
+import { compress } from "hono/compress";
+import { contextStorage } from "hono/context-storage";
+import { cors } from "hono/cors";
+import { etag } from "hono/etag";
+import { HTTPException } from "hono/http-exception";
+import { logger as honoLogger } from "hono/logger";
+import { prettyJSON } from "hono/pretty-json";
+import { requestId } from "hono/request-id";
+import { secureHeaders } from "hono/secure-headers";
+import { timeout } from "hono/timeout";
+import { createAdaptorServer } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { rateLimiter } from "hono-rate-limiter";
+import { createRouter, errorHandler, notFoundHandler } from "./api/index.js";
+import { parseByteLimit } from "./api/http.js";
+
+function createSecurityHeaders(config) {
+    return secureHeaders({
+        ...(config.security?.contentSecurityPolicy !== false && {
+            contentSecurityPolicy: {
+                defaultSrc: ["'self'"],
+                scriptSrc: [
+                    "'self'",
+                    "'unsafe-inline'",
+                    "'unsafe-eval'",
+                    "cdn.jsdelivr.net",
+                    "static.cloudflareinsights.com",
+                ],
+                scriptSrcAttr: ["'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+                imgSrc: ["'self'", "data:", "https:"],
+                connectSrc: ["'self'", "cloudflareinsights.com"],
+                fontSrc: ["'self'", "data:", "cdn.jsdelivr.net"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                frameSrc: ["'none'"],
+            },
+        }),
+        strictTransportSecurity: "max-age=31536000; includeSubDomains; preload",
+        xContentTypeOptions: "nosniff",
+        xFrameOptions: "DENY",
+        xXssProtection: "1; mode=block",
+        referrerPolicy: "strict-origin-when-cross-origin",
+        crossOriginEmbedderPolicy: false,
+    });
+}
 
 export async function createApp(customConfig = {}) {
     const ctx = createContext(customConfig);
 
-    const app = express()
-        .use(cors(ctx.config.cors || {}))
-        .use(
-            helmet({
-                ...ctx.config.security,
-                contentSecurityPolicy: {
-                    directives: {
-                        defaultSrc: ["'self'"],
-                        scriptSrc: [
-                            "'self'",
-                            "'unsafe-inline'",
-                            "'unsafe-eval'",
-                            "cdn.jsdelivr.net",
-                            "static.cloudflareinsights.com",
-                        ],
-                        scriptSrcAttr: ["'unsafe-inline'"],
-                        styleSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
-                        imgSrc: ["'self'", "data:", "https:"],
-                        connectSrc: ["'self'", "cloudflareinsights.com"],
-                        fontSrc: ["'self'", "data:", "cdn.jsdelivr.net"],
-                        objectSrc: ["'none'"],
-                        mediaSrc: ["'self'"],
-                        frameSrc: ["'none'"],
-                    },
-                },
-                hsts: {
-                    maxAge: 31536000,
-                    includeSubDomains: true,
-                    preload: true,
-                },
-                crossOriginEmbedderPolicy: false,
-            }),
-        )
-        .use(
-            compression({
-                ...ctx.config.compression,
-                filter: (req, res) => {
-                    if (res.getHeader("Cache-Control")?.includes("no-compress")) {
-                        return false;
-                    }
-                    return compression.filter(req, res);
-                },
-            }),
-        )
-        .use(
-            rateLimit({
-                ...ctx.config.rateLimit,
-                handler: async (_req, res) => {
-                    return res.status(429).json({
-                        message: "Too many requests, please try again later.",
-                    });
-                },
-                skip: (_req, _res) => ctx.config.app.env !== "production",
-            }),
-        )
-        .use((req, res, next) => {
-            if (
-                ctx.config.app.env === "production" &&
-                req.header("x-forwarded-proto") !== "https"
-            ) {
-                return res.redirect(`https://${req.header("host")}${req.url}`);
-            }
+    const app = new Hono({ strict: false });
 
-            res.setHeader("X-Content-Type-Options", "nosniff");
-            res.setHeader("X-Frame-Options", "DENY");
-            res.setHeader("X-XSS-Protection", "1; mode=block");
-            res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-
-            next();
-        })
-        .use(ctx.logger.middleware())
-        .use(cookieParser())
-        .use(express.json({ limit: ctx.config.app.jsonLimit || "1mb" }))
-        .use(
-            express.urlencoded({
-                extended: true,
-                limit: ctx.config.app.urlEncodedLimit || "1mb",
-            }),
-        )
-        .use(
-            express.static("./public", {
-                maxAge: ctx.config.app.env === "production" ? ctx.config.cache.staticMaxAge : "0",
-                etag: true,
-                lastModified: true,
-                immutable: ctx.config.app.env === "production" && ctx.config.cache.staticImmutable,
-                setHeaders: (res, path, _stat) => {
-                    const extensionPattern = new RegExp(
-                        `\\.(${ctx.config.cache.staticExtensions.join("|")})$`,
-                    );
-                    if (ctx.config.app.env === "production" && path.match(extensionPattern)) {
-                        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-                        res.setHeader("Vary", "Accept-Encoding");
-                    }
-                },
-            }),
-        )
-        .use(
-            createRouter({
-                db: ctx.db,
-                models: ctx.models,
-                services: ctx.services,
-                middleware: ctx.middleware,
-                utils: ctx.utils,
-                logger: ctx.logger,
-                config: ctx.config,
-                errors: ctx.errors,
-                validators: ctx.validators,
+    if (ctx.config.cors?.origin) {
+        app.use(
+            "*",
+            cors({
+                origin: ctx.config.cors.origin,
+                credentials: !!ctx.config.cors.credentials,
             }),
         );
+    }
+
+    app.use("*", contextStorage());
+    app.use("*", createSecurityHeaders(ctx.config));
+    app.use("*", requestId());
+    app.use(
+        "*",
+        honoLogger((message, ...rest) => {
+            ctx.logger.info("request", { message: [message, ...rest].join(" ") });
+        }),
+    );
+    app.use(
+        "*",
+        compress({
+            threshold: ctx.config.compression?.threshold || 1024,
+        }),
+    );
+    app.use("*", etag());
+    app.use("/api/*", prettyJSON());
+    app.use(
+        "*",
+        rateLimiter({
+            windowMs: ctx.config.rateLimit?.windowMs || 15 * 60 * 1000,
+            limit: ctx.config.rateLimit?.max || 1000,
+            standardHeaders: ctx.config.rateLimit?.standardHeaders === false ? false : "draft-6",
+            skipSuccessfulRequests: !!ctx.config.rateLimit?.skipSuccessfulRequests,
+            skipFailedRequests: !!ctx.config.rateLimit?.skipFailedRequests,
+            skip: () => ctx.config.app.env !== "production",
+            keyGenerator: (c) =>
+                c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+                c.req.header("x-real-ip") ||
+                c.env?.incoming?.socket?.remoteAddress ||
+                "unknown",
+            message: {
+                message: "Too many requests, please try again later.",
+            },
+        }),
+    );
+    app.use(
+        "/api/*",
+        bodyLimit({
+            maxSize: Math.max(
+                parseByteLimit(ctx.config.app.jsonLimit),
+                parseByteLimit(ctx.config.app.urlEncodedLimit),
+            ),
+            onError: (c) =>
+                c.json(
+                    {
+                        success: false,
+                        message: "Request body too large",
+                        errors: { body: "Request body too large" },
+                        data: null,
+                    },
+                    413,
+                ),
+        }),
+    );
+    app.use(
+        "/api/*",
+        timeout(
+            ctx.config.timeouts?.server || 120000,
+            new HTTPException(408, { message: "Request timed out" }),
+        ),
+    );
+    app.use("*", async (c, next) => {
+        if (ctx.config.app.env === "production" && c.req.header("x-forwarded-proto") !== "https") {
+            const url = new URL(c.req.url);
+            return c.redirect(`https://${c.req.header("host")}${url.pathname}${url.search}`);
+        }
+
+        await next();
+    });
+    app.use(
+        "*",
+        serveStatic({
+            root: "./public",
+            onFound: (path, c) => {
+                const extensionPattern = new RegExp(
+                    `\\.(${ctx.config.cache.staticExtensions.join("|")})$`,
+                );
+
+                if (ctx.config.app.env === "production" && path.match(extensionPattern)) {
+                    c.header("Cache-Control", "public, max-age=31536000, immutable");
+                    c.header("Vary", "Accept-Encoding", { append: true });
+                    return;
+                }
+
+                c.header("Cache-Control", "public, max-age=0");
+            },
+        }),
+    );
+    app.route(
+        "/",
+        createRouter({
+            db: ctx.db,
+            models: ctx.models,
+            services: ctx.services,
+            middleware: ctx.middleware,
+            utils: ctx.utils,
+            logger: ctx.logger,
+            config: ctx.config,
+            errors: ctx.errors,
+            validators: ctx.validators,
+        }),
+    );
+    app.notFound(notFoundHandler({ logger: ctx.logger, utils: ctx.utils, errors: ctx.errors }));
+    app.onError(
+        errorHandler({
+            logger: ctx.logger,
+            utils: ctx.utils,
+            config: ctx.config,
+            errors: ctx.errors,
+        }),
+    );
 
     return { app, ctx };
 }
@@ -127,7 +183,7 @@ export async function createServer(customConfig = {}) {
     const { app, ctx } = await createApp(customConfig);
     const PORT = ctx.config.app.port;
 
-    const server = app.listen(PORT);
+    const server = createAdaptorServer({ fetch: app.fetch });
 
     const serverTimeout = ctx.config.timeouts?.server || 120000;
     server.timeout = serverTimeout;
@@ -165,6 +221,8 @@ export async function createServer(customConfig = {}) {
                 throw error;
         }
     });
+
+    server.listen(PORT);
 
     return { app, server, ctx };
 }
