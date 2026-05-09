@@ -7,21 +7,36 @@
         <title>Calendar</title>
         <script>
             (function () {
-                try {
-                    var cache = localStorage.getItem("calendar:cache");
-                    var parsed = cache ? JSON.parse(cache) : null;
-                    var theme = parsed ? parsed.theme || parsed.data?.theme || "system" : "system";
+                function normalizeTheme(value) {
+                    return value === "light" || value === "dark" || value === "system"
+                        ? value
+                        : null;
+                }
+
+                function applyTheme(theme) {
                     var isDark =
                         theme === "dark" ||
                         (theme === "system" &&
                             window.matchMedia("(prefers-color-scheme: dark)").matches);
                     document.documentElement.classList.toggle("dark", isDark);
+                    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+                }
+
+                try {
+                    var storedTheme = normalizeTheme(localStorage.getItem("calendar:theme"));
+                    var cache = localStorage.getItem("calendar:cache");
+                    var parsed = cache ? JSON.parse(cache) : null;
+                    var cachedTheme = parsed
+                        ? normalizeTheme(parsed.theme) ||
+                          normalizeTheme(parsed.data && parsed.data.theme)
+                        : null;
+                    applyTheme(storedTheme || cachedTheme || "system");
                 } catch (e) {
-                    document.documentElement.classList.add("dark");
+                    applyTheme("system");
                 }
             })();
         </script>
-      <script type="module" crossorigin src="/assets/index-B-93bZOf.js"></script>
+      <script type="module" crossorigin src="/assets/index-BIjIDgJC.js"></script>
       <link rel="modulepreload" crossorigin href="/assets/fullcalendar-yeURergo.js">
       <link rel="stylesheet" crossorigin href="/assets/index-C762PG-L.css">
     </head>
