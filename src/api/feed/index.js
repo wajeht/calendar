@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { validator as honoValidator } from "hono/validator";
 
 export function createFeedRouter(dependencies = {}) {
     const { models, services, logger, errors } = dependencies;
@@ -11,15 +12,19 @@ export function createFeedRouter(dependencies = {}) {
     if (!services) throw new ConfigurationError("Services required for feed router");
 
     const router = new Hono({ strict: false });
-
-    router.get("/:filename", async (c) => {
-        const filename = c.req.param("filename");
+    const feedParam = honoValidator("param", (params) => {
+        const filename = params.filename;
         if (!filename.endsWith(".ics")) {
             throw new NotFoundError("Feed");
         }
 
-        const token = filename.slice(0, -4);
+        return {
+            token: filename.slice(0, -4),
+        };
+    });
 
+    router.get("/:filename", feedParam, async (c) => {
+        const { token } = c.req.valid("param");
         const storedToken = await models.settings.get("feed_token");
 
         if (!storedToken || token !== storedToken) {

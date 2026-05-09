@@ -1,69 +1,67 @@
-export class ValidationError extends Error {
+import { HTTPException } from "hono/http-exception";
+
+export class ValidationError extends HTTPException {
     constructor(errors = {}, options = {}) {
-        const errorMessages = Object.values(errors);
-        super(errorMessages.length > 0 ? errorMessages[0] : "Validation failed", options);
+        const normalizedErrors = Object.fromEntries(
+            Object.entries(errors).filter(([, message]) => message),
+        );
+        const errorMessages = Object.values(normalizedErrors);
+        const message = errorMessages.length > 0 ? errorMessages[0] : "Validation failed";
+        super(400, { ...options, message });
         this.name = "ValidationError";
-        this.statusCode = 400;
-        this.errors = errors;
+        this.errors = normalizedErrors;
     }
 }
 
-export class NotFoundError extends Error {
+export class NotFoundError extends HTTPException {
     constructor(resource = "Resource", options = {}) {
-        super(`${resource} not found`, options);
+        super(404, { ...options, message: `${resource} not found` });
         this.name = "NotFoundError";
-        this.statusCode = 404;
     }
 }
 
-export class CalendarFetchError extends Error {
+export class CalendarFetchError extends HTTPException {
     constructor(message, context = {}, options = {}) {
-        super(message, options);
+        super(502, { ...options, message });
         this.name = "CalendarFetchError";
-        this.statusCode = 502;
         this.context = context;
     }
 }
 
-export class DatabaseError extends Error {
+export class DatabaseError extends HTTPException {
     constructor(message, originalError = null, options = {}) {
-        super(message, options);
+        super(500, { ...options, message, cause: options.cause ?? originalError ?? undefined });
         this.name = "DatabaseError";
-        this.statusCode = 500;
         this.originalError = originalError;
     }
 }
 
-export class AuthenticationError extends Error {
+export class AuthenticationError extends HTTPException {
     constructor(message = "Access token required", options = {}) {
-        super(message, options);
+        super(401, { ...options, message });
         this.name = "AuthenticationError";
-        this.statusCode = 401;
     }
 }
 
-export class ConfigurationError extends Error {
+export class ConfigurationError extends HTTPException {
     constructor(message, options = {}) {
-        super(message, options);
+        super(500, { ...options, message });
         this.name = "ConfigurationError";
-        this.statusCode = 500;
     }
 }
 
-export class TimeoutError extends Error {
+export class TimeoutError extends HTTPException {
     constructor(message, timeout = null, options = {}) {
-        super(message, options);
+        super(408, { ...options, message });
         this.name = "TimeoutError";
-        this.statusCode = 408;
         this.timeout = timeout;
     }
 }
 
-export class ICalParseError extends Error {
+export class ICalParseError extends HTTPException {
     constructor(message, originalError = null, options = {}) {
-        super(message, options);
+        super(422, { ...options, message, cause: options.cause ?? originalError ?? undefined });
         this.name = "ICalParseError";
-        this.statusCode = 422;
         this.originalError = originalError;
     }
 }

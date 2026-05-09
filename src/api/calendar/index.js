@@ -18,7 +18,17 @@ export function createCalendarRouter(dependencies = {}) {
     const router = new Hono({ strict: false });
 
     const requireAuth = middleware.auth.requireAuth();
-    const jsonBody = honoValidator("json", (body) => body);
+    const jsonBody = (validate) =>
+        honoValidator("json", (body) => {
+            validate(body);
+            return body;
+        });
+    const idParam = honoValidator("param", (params) => ({
+        id: validators.validateId(params.id),
+    }));
+    const importBody = jsonBody((body) => validators.validateBody(body));
+    const createBody = jsonBody((body) => validators.validateCalendarCreateBatch(body));
+    const updateBody = jsonBody((body) => validators.validateCalendarUpdate(body));
 
     router.get("/", async (c) => {
         const isAuthenticated = utils.isAuthenticated(c);
@@ -44,9 +54,8 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.post("/import", requireAuth, jsonBody, async (c) => {
+    router.post("/import", requireAuth, importBody, async (c) => {
         const body = c.req.valid("json");
-        validators.validateBody(body);
 
         const { calendars } = body;
 
@@ -60,8 +69,8 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.get("/:id", requireAuth, async (c) => {
-        const id = validators.validateId(c.req.param("id"));
+    router.get("/:id", requireAuth, idParam, async (c) => {
+        const { id } = c.req.valid("param");
 
         const calendar = await models.calendar.getById(id);
 
@@ -77,9 +86,8 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.post("/", requireAuth, jsonBody, async (c) => {
+    router.post("/", requireAuth, createBody, async (c) => {
         const body = c.req.valid("json");
-        validators.validateCalendarCreateBatch(body);
 
         const { name, url, color } = body;
 
@@ -120,8 +128,8 @@ export function createCalendarRouter(dependencies = {}) {
         );
     });
 
-    router.put("/:id", requireAuth, jsonBody, async (c) => {
-        const id = validators.validateId(c.req.param("id"));
+    router.put("/:id", requireAuth, idParam, updateBody, async (c) => {
+        const { id } = c.req.valid("param");
 
         const calendar = await models.calendar.getById(id);
 
@@ -131,8 +139,6 @@ export function createCalendarRouter(dependencies = {}) {
 
         const body = c.req.valid("json");
         const updateData = { ...body };
-
-        validators.validateCalendarUpdate(updateData);
 
         if (updateData.name !== undefined) {
             updateData.name = utils.sanitizeString(updateData.name);
@@ -159,8 +165,8 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
-    router.delete("/:id", requireAuth, async (c) => {
-        const id = validators.validateId(c.req.param("id"));
+    router.delete("/:id", requireAuth, idParam, async (c) => {
+        const { id } = c.req.valid("param");
 
         const calendar = await models.calendar.delete(id);
 

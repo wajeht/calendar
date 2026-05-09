@@ -227,9 +227,9 @@ describe("Auth", () => {
             it("should handle invalid session tokens gracefully", async () => {
                 await server.logout();
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", "session_token=invalid-token-12345");
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: "session_token=invalid-token-12345" },
+                });
 
                 expect(response.status).toBe(200);
                 expect(response.body.success).toBe(true);
@@ -243,9 +243,9 @@ describe("Auth", () => {
                 const expiredTimestamp = Date.now() - 31 * 24 * 60 * 60 * 1000;
                 const expiredToken = `${expiredTimestamp}.expired123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${expiredToken}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${expiredToken}` },
+                });
 
                 expect(response.status).toBe(200);
                 expect(response.body.success).toBe(true);
@@ -255,9 +255,9 @@ describe("Auth", () => {
             it("should handle malformed session tokens gracefully", async () => {
                 await server.logout();
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", "session_token=malformed");
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: "session_token=malformed" },
+                });
 
                 expect(response.status).toBe(200);
                 expect(response.body.success).toBe(true);
@@ -594,9 +594,9 @@ describe("Auth", () => {
             it("should reject tokens older than 30 days", async () => {
                 const token = `${Date.now() - 31 * DAY}.randomtoken123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${Date.now()}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(false);
             });
@@ -604,9 +604,9 @@ describe("Auth", () => {
             it("should accept tokens within 30 days", async () => {
                 const token = `${Date.now() - 29 * DAY}.randomtoken123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${Date.now()}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(true);
             });
@@ -614,9 +614,9 @@ describe("Auth", () => {
             it("should reject at boundary (just over 30 days)", async () => {
                 const token = `${Date.now() - 30 * DAY - 1000}.randomtoken123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${Date.now()}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(false);
             });
@@ -627,9 +627,9 @@ describe("Auth", () => {
                 const token = `${Date.now() - 5 * DAY}.randomtoken123`;
                 const activity = Date.now() - 8 * DAY;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${activity}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(false);
             });
@@ -638,9 +638,9 @@ describe("Auth", () => {
                 const token = `${Date.now() - 5 * DAY}.randomtoken123`;
                 const activity = Date.now() - 6 * DAY;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${activity}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(true);
             });
@@ -649,9 +649,9 @@ describe("Auth", () => {
                 const token = `${Date.now() - DAY}.randomtoken123`;
                 const activity = Date.now() - 7 * DAY + 1000;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${activity}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(true);
             });
@@ -689,9 +689,9 @@ describe("Auth", () => {
             it("should reject when absolute exceeded even with recent activity", async () => {
                 const token = `${Date.now() - 31 * DAY}.randomtoken123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${Date.now()}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${Date.now()}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(false);
             });
@@ -700,9 +700,9 @@ describe("Auth", () => {
                 const token = `${Date.now() - 5 * DAY}.randomtoken123`;
                 const activity = Date.now() - 8 * DAY;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${activity}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(false);
             });
@@ -711,9 +711,9 @@ describe("Auth", () => {
                 const token = `${Date.now() - 15 * DAY}.randomtoken123`;
                 const activity = Date.now() - 3 * DAY;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=${activity}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=${activity}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(true);
             });
@@ -723,9 +723,9 @@ describe("Auth", () => {
             it("should accept when session_activity cookie missing", async () => {
                 const token = `${Date.now() - DAY}.randomtoken123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(true);
             });
@@ -733,9 +733,9 @@ describe("Auth", () => {
             it("should accept when session_activity is invalid", async () => {
                 const token = `${Date.now() - DAY}.randomtoken123`;
 
-                const response = await server
-                    .request("get", "/api/auth/me")
-                    .set("Cookie", `session_token=${token}; session_activity=invalid`);
+                const response = await server.get("/api/auth/me", {
+                    headers: { Cookie: `session_token=${token}; session_activity=invalid` },
+                });
 
                 expect(response.body.data.isAuthenticated).toBe(true);
             });

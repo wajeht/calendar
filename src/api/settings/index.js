@@ -19,20 +19,13 @@ export function createSettingsRouter(dependencies = {}) {
     const router = new Hono({ strict: false });
 
     const requireAuth = middleware.auth.requireAuth();
-    const jsonBody = honoValidator("json", (body) => body);
-
-    router.get("/cron", requireAuth, async (c) => {
-        const status = services.cron.getStatus();
-        return c.json({
-            success: true,
-            message: "Cron settings retrieved successfully",
-            errors: null,
-            data: status,
+    const jsonBody = (validate) =>
+        honoValidator("json", (body) => {
+            validate(body);
+            return body;
         });
-    });
 
-    router.put("/cron", requireAuth, jsonBody, async (c) => {
-        const body = c.req.valid("json");
+    const cronBody = jsonBody((body) => {
         validators.validateBody(body);
 
         const { enabled, schedule } = body;
@@ -58,6 +51,42 @@ export function createSettingsRouter(dependencies = {}) {
                 });
             }
         }
+    });
+
+    const themeBody = jsonBody((body) => {
+        validators.validateBody(body);
+
+        const { theme } = body;
+
+        if (!theme || !["light", "dark", "system"].includes(theme)) {
+            throw new ValidationError({
+                theme: "Theme must be 'light', 'dark', or 'system'",
+            });
+        }
+    });
+
+    const feedCalendarsBody = jsonBody((body) => {
+        validators.validateBody(body);
+
+        if (!Array.isArray(body.calendars)) {
+            throw new ValidationError({
+                calendars: "Calendars must be an array of IDs",
+            });
+        }
+    });
+
+    router.get("/cron", requireAuth, async (c) => {
+        const status = services.cron.getStatus();
+        return c.json({
+            success: true,
+            message: "Cron settings retrieved successfully",
+            errors: null,
+            data: status,
+        });
+    });
+
+    router.put("/cron", requireAuth, cronBody, async (c) => {
+        const { enabled, schedule } = c.req.valid("json");
 
         const result = await services.cron.updateSettings({ enabled, schedule });
 
@@ -71,17 +100,8 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.put("/theme", requireAuth, jsonBody, async (c) => {
-        const body = c.req.valid("json");
-        validators.validateBody(body);
-
-        const { theme } = body;
-
-        if (!theme || !["light", "dark", "system"].includes(theme)) {
-            throw new ValidationError({
-                theme: "Theme must be 'light', 'dark', or 'system'",
-            });
-        }
+    router.put("/theme", requireAuth, themeBody, async (c) => {
+        const { theme } = c.req.valid("json");
 
         await models.settings.set("theme", theme);
 
@@ -141,17 +161,8 @@ export function createSettingsRouter(dependencies = {}) {
         });
     });
 
-    router.put("/feed-token/calendars", requireAuth, jsonBody, async (c) => {
-        const body = c.req.valid("json");
-        validators.validateBody(body);
-
-        const { calendars } = body;
-
-        if (!Array.isArray(calendars)) {
-            throw new ValidationError({
-                calendars: "Calendars must be an array of IDs",
-            });
-        }
+    router.put("/feed-token/calendars", requireAuth, feedCalendarsBody, async (c) => {
+        const { calendars } = c.req.valid("json");
 
         await models.settings.set("feed_calendars", calendars);
 

@@ -1,4 +1,5 @@
 import { getCookie, setCookie } from "hono/cookie";
+import { createMiddleware } from "hono/factory";
 import { toCookieOptions } from "../http.js";
 
 export function createAuthMiddleware(dependencies = {}) {
@@ -20,7 +21,7 @@ export function createAuthMiddleware(dependencies = {}) {
 
     return {
         requireAuth() {
-            return async (c, next) => {
+            return createMiddleware(async (c, next) => {
                 const token = getCookie(c, "session_token") || null;
                 const lastActivity = getCookie(c, "session_activity") || null;
 
@@ -50,7 +51,7 @@ export function createAuthMiddleware(dependencies = {}) {
                 );
 
                 await next();
-            };
+            });
         },
     };
 }

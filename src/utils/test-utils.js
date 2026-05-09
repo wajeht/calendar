@@ -79,8 +79,9 @@ export async function createTestServer() {
         };
     }
 
-    async function executeRequest(method, path, body = null, customHeaders = new Headers()) {
-        const headers = new Headers(customHeaders);
+    async function executeRequest(method, path, body = null, options = {}) {
+        const headers = new Headers(options.headers || options);
+        const requestMethod = method.toUpperCase();
         let requestBody;
 
         if (body !== null && body !== undefined) {
@@ -88,28 +89,21 @@ export async function createTestServer() {
             requestBody = JSON.stringify(body);
         }
 
+        if (requestMethod !== "GET" && requestMethod !== "HEAD" && !headers.has("sec-fetch-site")) {
+            headers.set("sec-fetch-site", "same-origin");
+        }
+
         if (cookieJar.size > 0 && !headers.has("cookie")) {
             headers.set("cookie", serializeCookies());
         }
 
         const response = await app.request(path, {
-            method: method.toUpperCase(),
+            method: requestMethod,
             headers,
             body: requestBody,
         });
 
         return toTestResponse(response);
-    }
-
-    function requestBuilder(method, path) {
-        const headers = new Headers();
-
-        return {
-            set(name, value) {
-                headers.set(name, value);
-                return executeRequest(method, path, null, headers);
-            },
-        };
     }
 
     async function login(password = null) {
@@ -158,11 +152,11 @@ export async function createTestServer() {
         logout,
         cleanDatabase,
         stop,
-        get: (path) => executeRequest("get", path),
-        post: (path, body = null) => executeRequest("post", path, body),
-        put: (path, body = null) => executeRequest("put", path, body),
-        delete: (path) => executeRequest("delete", path),
-        request: (method, path) => requestBuilder(method, path),
+        get: (path, options = {}) => executeRequest("get", path, null, options),
+        post: (path, body = null, options = {}) => executeRequest("post", path, body, options),
+        put: (path, body = null, options = {}) => executeRequest("put", path, body, options),
+        delete: (path, options = {}) => executeRequest("delete", path, null, options),
+        request: (method, path, options = {}) => executeRequest(method, path, null, options),
     };
 }
 

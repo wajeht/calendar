@@ -22,17 +22,83 @@ export function createAuthRouter(dependencies = {}) {
 
     const router = new Hono({ strict: false });
     const requireAuth = middleware.auth.requireAuth();
-    const jsonBody = honoValidator("json", (body) => body);
+    const jsonBody = (validate) =>
+        honoValidator("json", (body) => {
+            validate(body);
+            return body;
+        });
 
-    router.post("/", jsonBody, async (c) => {
-        const body = c.req.valid("json");
+    const loginBody = jsonBody((body) => {
         validators.validateBody(body);
 
-        const { password } = body;
-
-        if (!password) {
+        if (!body.password) {
             throw new ValidationError({ password: "Password is required" });
         }
+    });
+
+    const initialPasswordBody = jsonBody((body) => {
+        validators.validateBody(body);
+
+        const { password, confirmPassword } = body;
+
+        if (!password) {
+            throw new ValidationError({
+                password: "Password is required",
+            });
+        }
+
+        if (!confirmPassword) {
+            throw new ValidationError({
+                confirmPassword: "Password confirmation is required",
+            });
+        }
+
+        if (password !== confirmPassword) {
+            throw new ValidationError({
+                confirmPassword: "Passwords do not match",
+            });
+        }
+
+        if (password.length < 8) {
+            throw new ValidationError({
+                password: "Password must be at least 8 characters long",
+            });
+        }
+    });
+
+    const passwordChangeBody = jsonBody((body) => {
+        validators.validateBody(body);
+
+        const { currentPassword, newPassword, confirmPassword } = body;
+
+        if (!currentPassword || !newPassword) {
+            throw new ValidationError({
+                currentPassword: currentPassword ? undefined : "Current password is required",
+                newPassword: newPassword ? undefined : "New password is required",
+            });
+        }
+
+        if (!confirmPassword) {
+            throw new ValidationError({
+                confirmPassword: "Password confirmation is required",
+            });
+        }
+
+        if (newPassword !== confirmPassword) {
+            throw new ValidationError({
+                confirmPassword: "Passwords do not match",
+            });
+        }
+
+        if (newPassword.length < 8) {
+            throw new ValidationError({
+                newPassword: "New password must be at least 8 characters long",
+            });
+        }
+    });
+
+    router.post("/", loginBody, async (c) => {
+        const { password } = c.req.valid("json");
 
         const failedAttempts = parseInt(getCookie(c, "failed_attempts") || "0");
         const lockedUntil = parseInt(getCookie(c, "locked_until") || "0");
@@ -200,35 +266,8 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.post("/password", jsonBody, async (c) => {
-        const body = c.req.valid("json");
-        validators.validateBody(body);
-
-        const { password, confirmPassword } = body;
-
-        if (!password) {
-            throw new ValidationError({
-                password: "Password is required",
-            });
-        }
-
-        if (!confirmPassword) {
-            throw new ValidationError({
-                confirmPassword: "Password confirmation is required",
-            });
-        }
-
-        if (password !== confirmPassword) {
-            throw new ValidationError({
-                confirmPassword: "Passwords do not match",
-            });
-        }
-
-        if (password.length < 8) {
-            throw new ValidationError({
-                password: "Password must be at least 8 characters long",
-            });
-        }
+    router.post("/password", initialPasswordBody, async (c) => {
+        const { password } = c.req.valid("json");
 
         const existingPassword = await models.settings.get("app_password");
         if (existingPassword) {
@@ -250,36 +289,8 @@ export function createAuthRouter(dependencies = {}) {
         });
     });
 
-    router.put("/password", requireAuth, jsonBody, async (c) => {
-        const body = c.req.valid("json");
-        validators.validateBody(body);
-
-        const { currentPassword, newPassword, confirmPassword } = body;
-
-        if (!currentPassword || !newPassword) {
-            throw new ValidationError({
-                currentPassword: currentPassword ? undefined : "Current password is required",
-                newPassword: newPassword ? undefined : "New password is required",
-            });
-        }
-
-        if (!confirmPassword) {
-            throw new ValidationError({
-                confirmPassword: "Password confirmation is required",
-            });
-        }
-
-        if (newPassword !== confirmPassword) {
-            throw new ValidationError({
-                confirmPassword: "Passwords do not match",
-            });
-        }
-
-        if (newPassword.length < 8) {
-            throw new ValidationError({
-                newPassword: "New password must be at least 8 characters long",
-            });
-        }
+    router.put("/password", requireAuth, passwordChangeBody, async (c) => {
+        const { currentPassword, newPassword } = c.req.valid("json");
 
         const storedPasswordHash = await models.settings.get("app_password");
         if (!storedPasswordHash) {

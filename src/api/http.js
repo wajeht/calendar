@@ -1,6 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { html } from "hono/html";
 
-const publicIndex = serveStatic({ path: "./public/index.html" });
+const publicIndex = serveStatic({
+    path: fileURLToPath(new URL("../../public/index.html", import.meta.url)),
+});
 
 export function parseByteLimit(value, fallback = 1024 * 1024) {
     if (typeof value === "number") return value;
@@ -45,9 +49,18 @@ export function servePublicIndex(c) {
     return publicIndex(c, async () => c.text("Not Found", 404));
 }
 
-export function htmlError(c, title, error, statusCode) {
+export function htmlError(c, title, error, status) {
     return c.html(
-        `<!doctype html><html><head><title>${title}</title></head><body><h1>${title}</h1><p>${error}</p></body></html>`,
-        statusCode,
+        html`<!doctype html>
+            <html>
+                <head>
+                    <title>${title}</title>
+                </head>
+                <body>
+                    <h1>${title}</h1>
+                    <p>${error}</p>
+                </body>
+            </html>`,
+        status,
     );
 }

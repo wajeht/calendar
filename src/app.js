@@ -1,9 +1,11 @@
+import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { createContext } from "./context.js";
 import { bodyLimit } from "hono/body-limit";
 import { compress } from "hono/compress";
 import { contextStorage } from "hono/context-storage";
 import { cors } from "hono/cors";
+import { csrf } from "hono/csrf";
 import { etag } from "hono/etag";
 import { HTTPException } from "hono/http-exception";
 import { logger as honoLogger } from "hono/logger";
@@ -11,11 +13,13 @@ import { prettyJSON } from "hono/pretty-json";
 import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
-import { createAdaptorServer } from "@hono/node-server";
+import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { rateLimiter } from "hono-rate-limiter";
 import { createRouter, errorHandler, notFoundHandler } from "./api/index.js";
 import { parseByteLimit } from "./api/http.js";
+
+const publicRoot = fileURLToPath(new URL("../public", import.meta.url));
 
 function createSecurityHeaders(config) {
     return secureHeaders({
@@ -80,6 +84,7 @@ export async function createApp(customConfig = {}) {
     );
     app.use("*", etag());
     app.use("/api/*", prettyJSON());
+    app.use("/api/*", csrf());
     app.use(
         "*",
         rateLimiter({
@@ -136,7 +141,7 @@ export async function createApp(customConfig = {}) {
     app.use(
         "*",
         serveStatic({
-            root: "./public",
+            root: publicRoot,
             onFound: (path, c) => {
                 const extensionPattern = new RegExp(
                     `\\.(${ctx.config.cache.staticExtensions.join("|")})$`,
@@ -183,15 +188,7 @@ export async function createServer(customConfig = {}) {
     const { app, ctx } = await createApp(customConfig);
     const PORT = ctx.config.app.port;
 
-    const server = createAdaptorServer({ fetch: app.fetch });
-
-    const serverTimeout = ctx.config.timeouts?.server || 120000;
-    server.timeout = serverTimeout;
-    server.keepAliveTimeout = 65000;
-    server.headersTimeout = 66000;
-    server.requestTimeout = serverTimeout;
-
-    server.on("listening", async () => {
+    const server = serve({ fetch: app.fetch, port: PORT }, async () => {
         ctx.logger.info("server started", { port: PORT, url: `http://localhost:${PORT}` });
 
         if (process.env.NODE_ENV !== "test") {
@@ -202,6 +199,12 @@ export async function createServer(customConfig = {}) {
             }
         }
     });
+
+    const serverTimeout = ctx.config.timeouts?.server || 120000;
+    server.timeout = serverTimeout;
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+    server.requestTimeout = serverTimeout;
 
     server.on("error", (error) => {
         if (error.syscall !== "listen") {
@@ -221,8 +224,6 @@ export async function createServer(customConfig = {}) {
                 throw error;
         }
     });
-
-    server.listen(PORT);
 
     return { app, server, ctx };
 }

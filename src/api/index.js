@@ -30,8 +30,8 @@ export function createGeneralRouter(dependencies = {}) {
                 database: dbHealth,
             };
 
-            const statusCode = dbHealth.healthy ? 200 : 503;
-            return c.json(health, statusCode);
+            const status = dbHealth.healthy ? 200 : 503;
+            return c.json(health, status);
         } catch (error) {
             return c.json(
                 {
@@ -96,42 +96,41 @@ export function errorHandler(dependencies = {}) {
     if (!config) throw new ConfigurationError("Config required for errorHandler");
 
     return (err, c) => {
-        if (err instanceof ValidationError) {
+        const respond = ({
+            status,
+            message,
+            errors = null,
+            data = null,
+            htmlTitle = `${status} - Error`,
+            htmlMessage = message,
+            jsonOnly = false,
+        }) => {
             const response = {
                 success: false,
-                message: err.message,
-                errors: err.errors,
-                data: null,
+                message,
+                errors,
+                data,
             };
 
-            if (utils.isApiRequest(c)) {
-                return c.json(response, 400);
+            if (jsonOnly || utils.isApiRequest(c)) {
+                return c.json(response, status);
             }
-            return c.json(response, 400);
+
+            return htmlError(c, htmlTitle, htmlMessage, status);
+        };
+
+        if (err instanceof ValidationError) {
+            return respond({
+                status: err.status,
+                message: err.message,
+                errors: err.errors,
+                jsonOnly: true,
+            });
         }
 
         if (err instanceof AuthenticationError) {
             logger.warn("authentication failed", { method: c.req.method, url: requestPath(c) });
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message: err.message,
-                        errors: null,
-                        data: null,
-                    },
-                    401,
-                );
-            }
-            return c.json(
-                {
-                    success: false,
-                    message: err.message,
-                    errors: null,
-                    data: null,
-                },
-                401,
-            );
+            return respond({ status: err.status, message: err.message, jsonOnly: true });
         }
 
         if (err instanceof NotFoundError) {
@@ -140,154 +139,81 @@ export function errorHandler(dependencies = {}) {
                 method: c.req.method,
                 url: requestPath(c),
             });
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message: err.message,
-                        errors: null,
-                        data: null,
-                    },
-                    404,
-                );
-            }
-            return htmlError(c, "404 - Not Found", err.message, 404);
+            return respond({
+                status: err.status,
+                message: err.message,
+                htmlTitle: "404 - Not Found",
+            });
         }
 
         if (err instanceof CalendarFetchError) {
             logger.error("calendar fetch error", { error: err.message, context: err.context });
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message: err.message,
-                        errors: null,
-                        data: config.app.env === "development" ? { context: err.context } : null,
-                    },
-                    502,
-                );
-            }
-            return htmlError(
-                c,
-                "502 - Service Error",
-                "Calendar service temporarily unavailable",
-                502,
-            );
+            return respond({
+                status: err.status,
+                message: err.message,
+                data: config.app.env === "development" ? { context: err.context } : null,
+                htmlTitle: "502 - Service Error",
+                htmlMessage: "Calendar service temporarily unavailable",
+            });
         }
 
         if (err instanceof DatabaseError) {
             logger.error("database error", { error: err.message });
             const message =
                 config.app.env === "development" ? err.message : "Database error occurred";
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message: message,
-                        errors: null,
-                        data: null,
-                    },
-                    500,
-                );
-            }
-            return htmlError(c, "500 - Database Error", message, 500);
+            return respond({
+                status: err.status,
+                message,
+                htmlTitle: "500 - Database Error",
+            });
         }
 
         if (err instanceof TimeoutError) {
             logger.error("timeout error", { error: err.message });
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message: err.message,
-                        errors: null,
-                        data: null,
-                    },
-                    408,
-                );
-            }
-            return htmlError(c, "408 - Request Timeout", "Request timed out", 408);
+            return respond({
+                status: err.status,
+                message: err.message,
+                htmlTitle: "408 - Request Timeout",
+                htmlMessage: "Request timed out",
+            });
         }
 
         if (err instanceof ICalParseError) {
             logger.error("ical parse error", { error: err.message });
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message: err.message,
-                        errors: null,
-                        data: null,
-                    },
-                    422,
-                );
-            }
-            return htmlError(c, "422 - Calendar Parse Error", "Invalid calendar data format", 422);
+            return respond({
+                status: err.status,
+                message: err.message,
+                htmlTitle: "422 - Calendar Parse Error",
+                htmlMessage: "Invalid calendar data format",
+            });
         }
 
         if (err instanceof ConfigurationError) {
             logger.error("configuration error", { error: err.message });
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message:
-                            config.app.env === "development" ? err.message : "Configuration error",
-                        errors: null,
-                        data: null,
-                    },
-                    500,
-                );
-            }
-            return htmlError(
-                c,
-                "500 - Configuration Error",
-                config.app.env === "development" ? err.message : "Service configuration error",
-                500,
-            );
+            return respond({
+                status: err.status,
+                message: config.app.env === "development" ? err.message : "Configuration error",
+                htmlTitle: "500 - Configuration Error",
+                htmlMessage:
+                    config.app.env === "development" ? err.message : "Service configuration error",
+            });
         }
 
         if (err instanceof HTTPException) {
-            const statusCode = err.status;
+            const status = err.status;
             const message = err.message || err.getResponse().statusText;
-
-            if (utils.isApiRequest(c)) {
-                return c.json(
-                    {
-                        success: false,
-                        message,
-                        errors: null,
-                        data: null,
-                    },
-                    statusCode,
-                );
-            }
-
-            return htmlError(c, `${statusCode} - Error`, message, statusCode);
+            return respond({ status, message });
         }
 
-        logger.error("unhandled error", { error: err.message, stack: err.stack });
-        const statusCode = err.statusCode || err.status || 500;
-        const message = err.message || "Internal server error";
+        const message = err instanceof Error ? err.message : "Internal server error";
+        const stack = err instanceof Error ? err.stack : undefined;
+        logger.error("unhandled error", { error: message, stack });
 
-        if (utils.isApiRequest(c)) {
-            return c.json(
-                {
-                    success: false,
-                    message: config.app.env === "development" ? message : "Internal server error",
-                    errors: null,
-                    data: null,
-                },
-                statusCode,
-            );
-        }
-
-        return htmlError(
-            c,
-            `${statusCode} - Error`,
-            config.app.env === "development" ? message : "An error occurred",
-            statusCode,
-        );
+        return respond({
+            status: 500,
+            message: config.app.env === "development" ? message : "Internal server error",
+            htmlMessage: config.app.env === "development" ? message : "An error occurred",
+        });
     };
 }
 
