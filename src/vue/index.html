@@ -9,7 +9,8 @@
             (function () {
                 try {
                     var cache = localStorage.getItem("calendar:cache");
-                    var theme = cache ? JSON.parse(cache).theme : "system";
+                    var parsed = cache ? JSON.parse(cache) : null;
+                    var theme = parsed ? parsed.theme || parsed.data?.theme || "system" : "system";
                     var isDark =
                         theme === "dark" ||
                         (theme === "system" &&

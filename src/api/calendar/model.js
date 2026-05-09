@@ -63,8 +63,6 @@ export function createCalendar(dependencies = {}) {
                           "show_details_to_public",
                           "events_private",
                           "events_processed",
-                          "created_at",
-                          "updated_at",
                       ]
                     : [
                           "id",
@@ -74,8 +72,6 @@ export function createCalendar(dependencies = {}) {
                           "show_details_to_public",
                           "events_public",
                           "events_processed",
-                          "created_at",
-                          "updated_at",
                       ];
 
                 let query = db("calendars").select(fields);
@@ -116,8 +112,6 @@ export function createCalendar(dependencies = {}) {
                             visible_to_public: calendar.visible_to_public,
                             show_details_to_public: calendar.show_details_to_public,
                             events: parseEvents(calendar.events_private, calendar.events_processed),
-                            created_at: calendar.created_at,
-                            updated_at: calendar.updated_at,
                         };
                     } else {
                         result[i] = {
@@ -127,8 +121,6 @@ export function createCalendar(dependencies = {}) {
                             visible_to_public: calendar.visible_to_public,
                             show_details_to_public: calendar.show_details_to_public,
                             events: parseEvents(calendar.events_public, calendar.events_processed),
-                            created_at: calendar.created_at,
-                            updated_at: calendar.updated_at,
                         };
                     }
                 }
@@ -136,6 +128,31 @@ export function createCalendar(dependencies = {}) {
                 return result;
             } catch (error) {
                 throw new DatabaseError("Failed to fetch calendars for access level", error, {
+                    cause: error,
+                });
+            }
+        },
+
+        /**
+         * Get a stable version string for calendars visible at the given access level.
+         * This avoids reading/parsing large event blobs when the client already has data.
+         * @param {boolean} isAuthenticated - Whether user is authenticated
+         * @returns {Promise<string>} Version string based on calendar ids and update times
+         */
+        async getAccessVersion(isAuthenticated = false) {
+            try {
+                let query = db("calendars").select("id", "updated_at").orderBy("id", "asc");
+
+                if (!isAuthenticated) {
+                    query = query.where("visible_to_public", true);
+                }
+
+                const calendars = await query;
+                return calendars
+                    .map((calendar) => `${calendar.id}:${calendar.updated_at || "missing"}`)
+                    .join("|");
+            } catch (error) {
+                throw new DatabaseError("Failed to get calendar access version", error, {
                     cause: error,
                 });
             }
@@ -288,6 +305,8 @@ export function createCalendar(dependencies = {}) {
             }
 
             try {
+                updateData.updated_at = new Date();
+
                 const updated = await db("calendars").where("id", id).update(updateData);
 
                 if (updated === 0) {

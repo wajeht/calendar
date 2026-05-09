@@ -111,11 +111,32 @@ describe("Auth", () => {
                     expect.objectContaining({
                         isAuthenticated: expect.any(Boolean),
                         isPasswordConfigured: expect.any(Boolean),
+                        access: "auth",
+                        version: expect.any(String),
                         calendars: expect.any(Array),
                         cronSettings: expect.any(Object),
                         theme: expect.any(String),
                     }),
                 );
+            });
+
+            it("should skip calendars when client already has the current version", async () => {
+                const firstResponse = await server.get("/api/auth/me");
+                const version = firstResponse.body.data.version;
+
+                const response = await server.get(
+                    `/api/auth/me?version=${encodeURIComponent(version)}`,
+                );
+
+                expect(response.status).toBe(200);
+                expect(response.body.data).toMatchObject({
+                    isAuthenticated: true,
+                    access: "auth",
+                    version,
+                    notModified: true,
+                    cronSettings: expect.any(Object),
+                });
+                expect(response.body.data).not.toHaveProperty("calendars");
             });
         });
 
@@ -170,12 +191,32 @@ describe("Auth", () => {
                     expect.objectContaining({
                         isAuthenticated: false,
                         isPasswordConfigured: expect.any(Boolean),
+                        access: "public",
+                        version: expect.any(String),
                         calendars: expect.any(Array),
                     }),
                 );
 
                 expect(Object.keys(response.body.data)).not.toContain("cronSettings");
                 expect(Object.keys(response.body.data)).not.toContain("feedToken");
+            });
+
+            it("should skip public calendars when client already has the current version", async () => {
+                const firstResponse = await server.get("/api/auth/me");
+                const version = firstResponse.body.data.version;
+
+                const response = await server.get(
+                    `/api/auth/me?version=${encodeURIComponent(version)}`,
+                );
+
+                expect(response.status).toBe(200);
+                expect(response.body.data).toMatchObject({
+                    isAuthenticated: false,
+                    access: "public",
+                    version,
+                    notModified: true,
+                });
+                expect(response.body.data).not.toHaveProperty("calendars");
             });
         });
 

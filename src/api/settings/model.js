@@ -93,6 +93,30 @@ export function createSettings(dependencies = {}) {
         },
 
         /**
+         * Get a stable version string for a set of settings.
+         * @param {string[]} keys - Array of setting keys
+         * @returns {Promise<string>} Version string based on setting update times
+         */
+        async getVersion(keys) {
+            try {
+                const settings = await db("settings")
+                    .whereIn("key", keys)
+                    .select("key", "updated_at");
+                const updatedByKey = new Map(
+                    settings.map((setting) => [setting.key, setting.updated_at]),
+                );
+
+                return keys.map((key) => `${key}:${updatedByKey.get(key) || "missing"}`).join("|");
+            } catch (error) {
+                throw new DatabaseError(
+                    `Failed to get settings version ${keys.join(", ")}: ${error.message}`,
+                    error,
+                    { cause: error },
+                );
+            }
+        },
+
+        /**
          * Get all settings
          * @returns {Promise<Object>} Object with all settings
          */

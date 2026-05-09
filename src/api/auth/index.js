@@ -19,6 +19,75 @@ export function createAuthRouter(dependencies = {}) {
 
     const router = express.Router();
     const requireAuth = middleware.auth.requireAuth();
+    const contextCache = new Map();
+    const publicContextSettingKeys = ["app_password"];
+    const authContextSettingKeys = [
+        "app_password",
+        "theme",
+        "feed_token",
+        "feed_calendars",
+        "cron_settings",
+    ];
+
+    function getContextSettingKeys(isAuthenticated) {
+        return isAuthenticated ? authContextSettingKeys : publicContextSettingKeys;
+    }
+
+    async function getContextVersion(isAuthenticated) {
+        const [calendarVersion, settingsVersion] = await Promise.all([
+            models.calendar.getAccessVersion(isAuthenticated),
+            models.settings.getVersion(getContextSettingKeys(isAuthenticated)),
+        ]);
+        const access = isAuthenticated ? "auth" : "public";
+        const cronVersion = isAuthenticated ? `:${JSON.stringify(services.cron.getStatus())}` : "";
+
+        return `${access}:${calendarVersion}:${settingsVersion}${cronVersion}`;
+    }
+
+    async function buildSettingsContext(isAuthenticated, version) {
+        const settings = await models.settings.getMany(getContextSettingKeys(isAuthenticated));
+        const data = {
+            isAuthenticated,
+            isPasswordConfigured: !!settings.app_password,
+            access: isAuthenticated ? "auth" : "public",
+            version,
+        };
+
+        if (isAuthenticated) {
+            data.cronSettings = services.cron.getStatus();
+            data.theme = settings.theme || "system";
+
+            if (settings.feed_token) {
+                data.feedToken = {
+                    token: settings.feed_token,
+                    feedUrl: `/api/feed/${settings.feed_token}.ics`,
+                    calendars: settings.feed_calendars || [],
+                };
+            }
+        }
+
+        return data;
+    }
+
+    async function buildUserContext(isAuthenticated, version) {
+        const cacheKey = `${isAuthenticated ? "auth" : "public"}:${version}`;
+        if (contextCache.has(cacheKey)) {
+            return contextCache.get(cacheKey);
+        }
+
+        const [settingsContext, calendars] = await Promise.all([
+            buildSettingsContext(isAuthenticated, version),
+            models.calendar.getAllForAccess(isAuthenticated),
+        ]);
+        const data = { ...settingsContext, calendars };
+
+        contextCache.set(cacheKey, data);
+        if (contextCache.size > 8) {
+            contextCache.delete(contextCache.keys().next().value);
+        }
+
+        return data;
+    }
 
     router.post("/", async (req, res) => {
         validators.validateBody(req.body);
@@ -132,40 +201,16 @@ export function createAuthRouter(dependencies = {}) {
 
     router.get("/me", async (req, res) => {
         const isAuthenticated = utils.isAuthenticated(req);
+        const version = await getContextVersion(isAuthenticated);
+        const clientVersion = typeof req.query.version === "string" ? req.query.version : null;
 
-        const baseResults = await Promise.allSettled([
-            models.settings.get("app_password"),
-            models.calendar.getAllForAccess(isAuthenticated),
-        ]);
-
-        const existingPassword =
-            baseResults[0].status === "fulfilled" ? baseResults[0].value : null;
-        const calendars = baseResults[1].status === "fulfilled" ? baseResults[1].value : [];
-
-        const data = {
-            isAuthenticated,
-            isPasswordConfigured: !!existingPassword,
-            calendars,
-        };
-
-        if (isAuthenticated) {
-            const authSettings = await models.settings.getMany([
-                "theme",
-                "feed_token",
-                "feed_calendars",
-            ]);
-
-            data.cronSettings = services.cron.getStatus();
-            data.theme = authSettings.theme || "system";
-
-            if (authSettings.feed_token) {
-                data.feedToken = {
-                    token: authSettings.feed_token,
-                    feedUrl: `/api/feed/${authSettings.feed_token}.ics`,
-                    calendars: authSettings.feed_calendars || [],
-                };
-            }
-        }
+        const data =
+            clientVersion && clientVersion === version
+                ? {
+                      ...(await buildSettingsContext(isAuthenticated, version)),
+                      notModified: true,
+                  }
+                : await buildUserContext(isAuthenticated, version);
 
         res.json({
             success: true,
