@@ -118,6 +118,9 @@ describe("Auth", () => {
                         theme: expect.any(String),
                     }),
                 );
+                expect(response.body.data.version).toMatch(/^ctx_[a-f0-9]{24}$/);
+                expect(response.body.data.version).not.toContain("app_password");
+                expect(response.body.data.version).not.toContain(":");
             });
 
             it("should skip calendars when client already has the current version", async () => {
@@ -196,6 +199,9 @@ describe("Auth", () => {
                         calendars: expect.any(Array),
                     }),
                 );
+                expect(response.body.data.version).toMatch(/^ctx_[a-f0-9]{24}$/);
+                expect(response.body.data.version).not.toContain("app_password");
+                expect(response.body.data.version).not.toContain(":");
 
                 expect(Object.keys(response.body.data)).not.toContain("cronSettings");
                 expect(Object.keys(response.body.data)).not.toContain("feedToken");

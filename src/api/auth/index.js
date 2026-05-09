@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import express from "express";
 
 export function createAuthRouter(dependencies = {}) {
@@ -33,15 +34,23 @@ export function createAuthRouter(dependencies = {}) {
         return isAuthenticated ? authContextSettingKeys : publicContextSettingKeys;
     }
 
+    function hashContextVersion(parts) {
+        return `ctx_${crypto.createHash("sha256").update(parts.join("\n")).digest("hex").slice(0, 24)}`;
+    }
+
     async function getContextVersion(isAuthenticated) {
         const [calendarVersion, settingsVersion] = await Promise.all([
             models.calendar.getAccessVersion(isAuthenticated),
             models.settings.getVersion(getContextSettingKeys(isAuthenticated)),
         ]);
         const access = isAuthenticated ? "auth" : "public";
-        const cronVersion = isAuthenticated ? `:${JSON.stringify(services.cron.getStatus())}` : "";
 
-        return `${access}:${calendarVersion}:${settingsVersion}${cronVersion}`;
+        return hashContextVersion([
+            access,
+            calendarVersion,
+            settingsVersion,
+            isAuthenticated ? JSON.stringify(services.cron.getStatus()) : "",
+        ]);
     }
 
     async function buildSettingsContext(isAuthenticated, version) {
