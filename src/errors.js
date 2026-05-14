@@ -26,11 +26,10 @@ export class CalendarFetchError extends Error {
 }
 
 export class DatabaseError extends Error {
-    constructor(message, originalError = null, options = {}) {
+    constructor(message, options = {}) {
         super(message, options);
         this.name = "DatabaseError";
         this.statusCode = 500;
-        this.originalError = originalError;
     }
 }
 
@@ -60,10 +59,9 @@ export class TimeoutError extends Error {
 }
 
 export class ICalParseError extends Error {
-    constructor(message, originalError = null, options = {}) {
+    constructor(message, options = {}) {
         super(message, options);
         this.name = "ICalParseError";
         this.statusCode = 422;
-        this.originalError = originalError;
     }
 }

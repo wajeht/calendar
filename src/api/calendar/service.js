@@ -557,7 +557,7 @@ export function createCalendarService(dependencies = {}) {
             }
             throw new CalendarFetchError(
                 `Failed to fetch iCal data from ${url}: ${error.message}`,
-                { url, normalizedUrl, originalError: error },
+                { url, normalizedUrl },
                 { cause: error },
             );
         }
@@ -574,7 +574,7 @@ export function createCalendarService(dependencies = {}) {
                 try {
                     events = parseICalToEvents(rawData);
                 } catch (error) {
-                    throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, error, {
+                    throw new ICalParseError(`Failed to parse iCal data: ${error.message}`, {
                         cause: error,
                     });
                 }

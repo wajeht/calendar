@@ -28,7 +28,7 @@ export function createSettings(dependencies = {}) {
                     return setting.value;
                 }
             } catch (error) {
-                throw new DatabaseError(`Failed to get setting ${key}: ${error.message}`, error, {
+                throw new DatabaseError(`Failed to get setting ${key}: ${error.message}`, {
                     cause: error,
                 });
             }
@@ -58,7 +58,7 @@ export function createSettings(dependencies = {}) {
                         updated_at: new Date(),
                     });
             } catch (error) {
-                throw new DatabaseError(`Failed to set setting ${key}: ${error.message}`, error, {
+                throw new DatabaseError(`Failed to set setting ${key}: ${error.message}`, {
                     cause: error,
                 });
             }
@@ -86,7 +86,6 @@ export function createSettings(dependencies = {}) {
             } catch (error) {
                 throw new DatabaseError(
                     `Failed to get settings ${keys.join(", ")}: ${error.message}`,
-                    error,
                     { cause: error },
                 );
             }
@@ -110,7 +109,6 @@ export function createSettings(dependencies = {}) {
             } catch (error) {
                 throw new DatabaseError(
                     `Failed to get settings version ${keys.join(", ")}: ${error.message}`,
-                    error,
                     { cause: error },
                 );
             }
@@ -135,7 +133,7 @@ export function createSettings(dependencies = {}) {
 
                 return result;
             } catch (error) {
-                throw new DatabaseError(`Failed to get all settings: ${error.message}`, error, {
+                throw new DatabaseError(`Failed to get all settings: ${error.message}`, {
                     cause: error,
                 });
             }
@@ -151,11 +149,9 @@ export function createSettings(dependencies = {}) {
                 const deletedCount = await db("settings").where("key", key).del();
                 return deletedCount > 0;
             } catch (error) {
-                throw new DatabaseError(
-                    `Failed to delete setting ${key}: ${error.message}`,
-                    error,
-                    { cause: error },
-                );
+                throw new DatabaseError(`Failed to delete setting ${key}: ${error.message}`, {
+                    cause: error,
+                });
             }
         },
     };
