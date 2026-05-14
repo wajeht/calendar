@@ -30,6 +30,9 @@ jobs:
             - name: Install dependencies
               run: vp install
 
+            - name: Verify package signatures
+              run: npm audit signatures
+
             - name: Check (lint + format)
               run: vp check
 
