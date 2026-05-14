@@ -13,8 +13,11 @@
 git clone https://github.com/wajeht/calendar.git
 cd calendar
 
-# Install dependencies
+# Install dependencies (lifecycle scripts are blocked by .npmrc for supply-chain safety)
 npm install
+
+# Build the one allowed native module
+npm rebuild better-sqlite3 --ignore-scripts=false
 
 # Set up database
 npm run db:migrate:latest

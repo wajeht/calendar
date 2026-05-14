@@ -26,6 +26,7 @@ WORKDIR /usr/src/app
 # Copy package files and install only production dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && \
+    npm rebuild better-sqlite3 --ignore-scripts=false && \
     npm cache clean --force
 
 # Copy source files and built assets from builder stage
