@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Node.js** 22+
+- **Node.js** 26.1+
 - **npm** or **yarn**
 - **SQLite3** (for database)
 
