@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 export function createUtils(dependencies = {}) {
     const { logger, config, errors } = dependencies;

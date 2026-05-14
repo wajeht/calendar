@@ -1,6 +1,6 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { styleText } from "node:util";
-import { AsyncLocalStorage } from "async_hooks";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 const store = new AsyncLocalStorage();
 const levelColors = { debug: "magenta", info: "cyan", warn: "yellow", error: "red" };
@@ -28,7 +28,7 @@ export function createLogger(service = "app") {
     const middleware = () => (req, res, next) => {
         const start = Date.now();
         const init = {
-            request_id: req.get("x-request-id") || "req_" + crypto.randomBytes(8).toString("hex"),
+            request_id: req.get("x-request-id") || "req_" + crypto.randomUUIDv7(),
             method: req.method,
             path: req.path,
         };
