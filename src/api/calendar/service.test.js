@@ -214,8 +214,8 @@ describe("Calendar Service", () => {
         });
 
         it("should handle fetch timeout", async () => {
-            const timeoutError = new Error("AbortError");
-            timeoutError.name = "AbortError";
+            const timeoutError = new Error("The operation was aborted due to timeout");
+            timeoutError.name = "TimeoutError";
 
             global.fetch.mockRejectedValue(timeoutError);
 

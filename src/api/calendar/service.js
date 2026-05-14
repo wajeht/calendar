@@ -516,8 +516,6 @@ export function createCalendarService(dependencies = {}) {
     async function fetchICalData(url) {
         const normalizedUrl = utils.normalizeCalendarUrl(url);
         const urlHost = new URL(normalizedUrl).host;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
         const fetchStart = Date.now();
 
         try {
@@ -526,10 +524,8 @@ export function createCalendarService(dependencies = {}) {
                     "User-Agent": "Calendar-App/1.0",
                     Accept: "text/calendar, application/calendar, text/plain",
                 },
-                signal: controller.signal,
+                signal: AbortSignal.timeout(fetchTimeout),
             });
-
-            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new CalendarFetchError(`HTTP ${response.status}: ${response.statusText}`, {
@@ -550,10 +546,9 @@ export function createCalendarService(dependencies = {}) {
 
             return data;
         } catch (error) {
-            clearTimeout(timeoutId);
             logger.set({ url_host: urlHost, fetch_ms: Date.now() - fetchStart });
 
-            if (error.name === "AbortError") {
+            if (error.name === "TimeoutError") {
                 throw new TimeoutError(
                     `Request timeout after ${fetchTimeout}ms for ${url}`,
                     fetchTimeout,
