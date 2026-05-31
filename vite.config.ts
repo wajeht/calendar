@@ -9,7 +9,25 @@ import tailwindcss from "@tailwindcss/vite";
 const isDev = process.env.NODE_ENV === "development";
 
 export default defineConfig({
-    plugins: [vue(), tailwindcss()],
+    plugins: [
+        vue(),
+        tailwindcss(),
+        !isDev && {
+            name: "umami-analytics",
+            apply: "build",
+            transformIndexHtml: () => [
+                {
+                    tag: "script",
+                    injectTo: "head",
+                    attrs: {
+                        defer: true,
+                        src: "https://umami.jaw.dev/script.js",
+                        "data-website-id": "911ab20f-6c29-4f6d-a5da-761cf3d36bd6",
+                    },
+                },
+            ],
+        },
+    ],
     resolve: {
         alias: {
             "@": fileURLToPath(new URL("./src/vue", import.meta.url)),
