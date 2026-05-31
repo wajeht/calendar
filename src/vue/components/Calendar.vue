@@ -33,6 +33,7 @@ const showEventModal = ref(false);
 const showSetupPasswordModal = ref(false);
 const selectedEvent = ref(null);
 const selectedEventCalendar = ref(null);
+const pendingPrivateEvent = ref(null);
 const settingsInitialTab = ref("calendars");
 
 const confirmDialog = reactive({
@@ -128,10 +129,52 @@ function showAuthenticationModal() {
     showPasswordModal.value = true;
 }
 
+function closePasswordModal() {
+    showPasswordModal.value = false;
+    pendingPrivateEvent.value = null;
+}
+
+function closeSetupPasswordModal() {
+    showSetupPasswordModal.value = false;
+    pendingPrivateEvent.value = null;
+}
+
 function handlePasswordConfigured() {
     showSetupPasswordModal.value = false;
     auth.setPasswordConfigured(true);
     showPasswordModal.value = true;
+}
+
+function getEventIdentity(event) {
+    return {
+        calendarId: event.source?.id ?? null,
+        uid: event.extendedProps?.uid || "",
+        start: event.start ? new Date(event.start).getTime() : null,
+        end: event.end ? new Date(event.end).getTime() : null,
+        allDay: Boolean(event.allDay),
+    };
+}
+
+function isSameEvent(event, identity) {
+    if (!identity) return false;
+    if (event.extendedProps?.uid && identity.uid && event.extendedProps.uid !== identity.uid) {
+        return false;
+    }
+
+    const start = event.start ? new Date(event.start).getTime() : null;
+    const end = event.end ? new Date(event.end).getTime() : null;
+
+    return (
+        start === identity.start &&
+        end === identity.end &&
+        Boolean(event.allDay) === identity.allDay
+    );
+}
+
+function showEvent(event, sourceCalendar) {
+    selectedEvent.value = event;
+    selectedEventCalendar.value = sourceCalendar;
+    showEventModal.value = true;
 }
 
 function handleEventClick(info) {
@@ -142,14 +185,13 @@ function handleEventClick(info) {
         info.event.extendedProps &&
         !info.event.extendedProps.show_details_to_public
     ) {
+        pendingPrivateEvent.value = getEventIdentity(info.event);
         showAuthenticationModal();
         return;
     }
 
     const sourceCalendar = eventSources.value.find((es) => es.id == info.event.source.id);
-    selectedEvent.value = info.event;
-    selectedEventCalendar.value = sourceCalendar;
-    showEventModal.value = true;
+    showEvent(info.event, sourceCalendar);
 }
 
 function closeEventModal() {
@@ -163,12 +205,25 @@ function handleEventSourceFailure(error) {
     toast.error("Failed to load calendar events");
 }
 
+function showPendingPrivateEvent(calendarData) {
+    const pending = pendingPrivateEvent.value;
+    pendingPrivateEvent.value = null;
+    if (!pending) return;
+
+    const sourceCalendar = calendarData.find((cal) => cal.id == pending.calendarId);
+    const event = sourceCalendar?.events?.find((event) => isSameEvent(event, pending));
+    if (!event) return;
+
+    showEvent(event, sourceCalendar);
+}
+
 async function handleAuthenticated() {
     showPasswordModal.value = false;
     showSettingsModal.value = false;
     const { calendars: data } = await auth.refresh();
     calendars.value = data;
     updateCalendarSources(data);
+    showPendingPrivateEvent(data);
     settingsInitialTab.value = "calendars";
 }
 
@@ -327,7 +382,7 @@ onUnmounted(() => {
 
         <PasswordModal
             v-if="showPasswordModal"
-            @close="showPasswordModal = false"
+            @close="closePasswordModal"
             @authenticated="handleAuthenticated"
         />
 
@@ -361,7 +416,7 @@ onUnmounted(() => {
 
         <SetupPasswordModal
             v-if="showSetupPasswordModal"
-            @close="showSetupPasswordModal = false"
+            @close="closeSetupPasswordModal"
             @password-configured="handlePasswordConfigured"
         />
     </main>
