@@ -116,6 +116,15 @@ async function handleSettingsClick() {
 }
 
 function handleShowPasswordModal() {
+    showAuthenticationModal();
+}
+
+function showAuthenticationModal() {
+    if (auth.isPasswordConfigured.value === false) {
+        showSetupPasswordModal.value = true;
+        return;
+    }
+
     showPasswordModal.value = true;
 }
 
@@ -133,6 +142,7 @@ function handleEventClick(info) {
         info.event.extendedProps &&
         !info.event.extendedProps.show_details_to_public
     ) {
+        showAuthenticationModal();
         return;
     }
 
