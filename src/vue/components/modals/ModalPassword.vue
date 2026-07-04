@@ -141,7 +141,6 @@ onMounted(async () => {
                 @solve="onCapSolve"
                 @reset="onCapReset"
                 @error="onCapReset"
-                @expired="onCapReset"
             ></cap-widget>
         </form>
 
