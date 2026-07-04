@@ -234,8 +234,8 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Whether Cap (self-hosted captcha) is enforced. Only active in
-         * production with a configured site key and secret.
+         * Whether Cap is enforced. Only active in production with a configured
+         * site key and secret.
          * @returns {boolean}
          */
         isCapEnabled() {
