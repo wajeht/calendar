@@ -3,16 +3,38 @@ import { createUtils } from "./utils.js";
 import { createLogger } from "./logger.js";
 import { ConfigurationError, ValidationError } from "../errors.js";
 
-describe("utils.verifyCapToken", () => {
-    const config = {
-        cap: { apiUrl: "https://cap.example.test", secret: "test-secret" },
-    };
-    const utils = createUtils({
+function makeUtils(cap) {
+    return createUtils({
         logger: createLogger("test"),
-        config,
+        config: { app: { env: "production" }, cap },
         errors: { ConfigurationError, ValidationError },
     });
+}
 
+describe("utils.isCapEnabled", () => {
+    const cap = { siteKey: "site", secret: "secret", apiUrl: "https://cap.example.test" };
+
+    it("is enabled in production with a site key and secret", () => {
+        expect(makeUtils(cap).isCapEnabled()).toBe(true);
+    });
+
+    it("is disabled when the site key or secret is missing", () => {
+        expect(makeUtils({ ...cap, siteKey: "" }).isCapEnabled()).toBe(false);
+        expect(makeUtils({ ...cap, secret: "" }).isCapEnabled()).toBe(false);
+    });
+
+    it("is disabled outside production", () => {
+        const utils = createUtils({
+            logger: createLogger("test"),
+            config: { app: { env: "development" }, cap },
+            errors: { ConfigurationError, ValidationError },
+        });
+        expect(utils.isCapEnabled()).toBe(false);
+    });
+});
+
+describe("utils.verifyCapToken", () => {
+    const utils = makeUtils({ secret: "test-secret", apiUrl: "https://cap.example.test" });
     let originalFetch;
 
     beforeEach(() => {
@@ -41,13 +63,15 @@ describe("utils.verifyCapToken", () => {
         });
     });
 
-    it("throws when the cap server reports failure", async () => {
+    it("returns the failure outcome from the cap server", async () => {
         globalThis.fetch = async () => ({ json: async () => ({ success: false }) });
 
-        await expect(utils.verifyCapToken("bad-token")).rejects.toThrow(/Cap validation failed/);
+        const outcome = await utils.verifyCapToken("bad-token");
+
+        expect(outcome.success).toBe(false);
     });
 
-    it("throws when the cap request errors", async () => {
+    it("throws a ConfigurationError when the cap server is unreachable", async () => {
         globalThis.fetch = async () => {
             throw new Error("network down");
         };

@@ -20,6 +20,7 @@ export function createAuthRouter(dependencies = {}) {
 
     const router = express.Router();
     const requireAuth = middleware.auth.requireAuth();
+    const verifyCaptcha = middleware.auth.verifyCaptcha();
     const contextCache = new Map();
     const publicContextSettingKeys = ["app_password"];
     const authContextSettingKeys = [
@@ -34,13 +35,9 @@ export function createAuthRouter(dependencies = {}) {
         return isAuthenticated ? authContextSettingKeys : publicContextSettingKeys;
     }
 
-    function isCapEnabled() {
-        return config.app.env === "production" && !!config.cap.siteKey && !!config.cap.secret;
-    }
-
     function capContext() {
         return {
-            enabled: isCapEnabled(),
+            enabled: utils.isCapEnabled(),
             apiEndpoint: `${config.cap.apiUrl}/${config.cap.siteKey}/`,
         };
     }
@@ -110,28 +107,13 @@ export function createAuthRouter(dependencies = {}) {
         return data;
     }
 
-    router.post("/", async (req, res) => {
+    router.post("/", verifyCaptcha, async (req, res) => {
         validators.validateBody(req.body);
 
-        const { password, capToken } = req.body;
+        const { password } = req.body;
 
         if (!password) {
             throw new ValidationError({ password: "Password is required" });
-        }
-
-        if (isCapEnabled()) {
-            if (!capToken) {
-                throw new ValidationError({
-                    password: "Captcha verification failed: Missing token",
-                });
-            }
-
-            try {
-                await utils.verifyCapToken(capToken);
-            } catch (error) {
-                logger.warn("cap verification failed", { error: error.message });
-                throw new ValidationError({ password: "Captcha verification failed" });
-            }
         }
 
         const failedAttempts = parseInt(req.cookies.failed_attempts || "0");
