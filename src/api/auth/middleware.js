@@ -2,7 +2,7 @@ export function createAuthMiddleware(dependencies = {}) {
     const { utils, errors, config } = dependencies;
 
     if (!errors) throw new Error("Errors required for auth middleware");
-    const { ConfigurationError, AuthenticationError } = errors;
+    const { ConfigurationError, AuthenticationError, ValidationError } = errors;
 
     if (!utils) throw new ConfigurationError("Utils required for auth middleware");
     if (!config) throw new ConfigurationError("Config required for auth middleware");
@@ -35,6 +35,28 @@ export function createAuthMiddleware(dependencies = {}) {
                     ...cookieOptions,
                     maxAge: config.auth.idleTimeout,
                 });
+
+                next();
+            };
+        },
+
+        verifyCaptcha() {
+            return async (req, _res, next) => {
+                if (!utils.isCapEnabled()) {
+                    return next();
+                }
+
+                const { capToken } = req.body || {};
+                if (!capToken) {
+                    throw new ValidationError({
+                        password: "Captcha verification failed: Missing token",
+                    });
+                }
+
+                const outcome = await utils.verifyCapToken(capToken);
+                if (!outcome.success) {
+                    throw new ValidationError({ password: "Captcha verification failed" });
+                }
 
                 next();
             };

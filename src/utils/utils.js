@@ -234,10 +234,23 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Verify a Cap (self-hosted captcha) token against the Cap server
+         * Whether Cap (self-hosted captcha) is enforced. Only active in
+         * production with a configured site key and secret.
+         * @returns {boolean}
+         */
+        isCapEnabled() {
+            return (
+                config.app.env === "production" &&
+                Boolean(config.cap.siteKey) &&
+                Boolean(config.cap.secret)
+            );
+        },
+
+        /**
+         * Verify a Cap token against the Cap server's siteverify endpoint
          * @param {string} token - The cap-token produced by the widget
-         * @returns {Promise<{success: boolean}>} - Cap verification outcome
-         * @throws {Error} When the token is missing/invalid or verification fails
+         * @returns {Promise<{success: boolean}>} - The Cap verification outcome
+         * @throws {ConfigurationError} When the Cap server cannot be reached
          */
         async verifyCapToken(token) {
             try {
@@ -247,15 +260,9 @@ export function createUtils(dependencies = {}) {
                     body: JSON.stringify({ secret: config.cap.secret, response: token }),
                 });
 
-                const outcome = await response.json();
-
-                if (!outcome.success) {
-                    throw new Error("Cap validation failed");
-                }
-
-                return outcome;
+                return await response.json();
             } catch (error) {
-                throw new Error(`Failed to verify Cap token: ${error.message}`);
+                throw new ConfigurationError("Failed to verify Cap token", { cause: error });
             }
         },
 
