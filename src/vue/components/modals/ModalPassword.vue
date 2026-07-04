@@ -12,7 +12,7 @@ const CAP_WIDGET_SRC = "https://cdn.jsdelivr.net/npm/@cap.js/widget@0.1.56";
 
 const emit = defineEmits(["close", "authenticated"]);
 const toast = useToast();
-const { cap } = useAuthStore();
+const auth = useAuthStore();
 const isLoading = ref(false);
 
 const password = ref("");
@@ -25,7 +25,7 @@ const errors = reactive({
 });
 
 function loadCapWidget() {
-    if (!cap.value?.enabled) return;
+    if (!auth.cap.value?.enabled) return;
     if (document.querySelector(`script[src="${CAP_WIDGET_SRC}"]`)) return;
 
     const script = document.createElement("script");
@@ -48,7 +48,7 @@ async function authenticate() {
 
     errors.password = "";
 
-    if (cap.value?.enabled && !capToken.value) {
+    if (auth.cap.value?.enabled && !capToken.value) {
         errors.password = "Please complete the captcha";
         return;
     }
@@ -134,9 +134,9 @@ onMounted(async () => {
             </FormGroup>
 
             <cap-widget
-                v-if="cap?.enabled"
+                v-if="auth.cap.value?.enabled"
                 ref="capWidget"
-                :data-cap-api-endpoint="cap.apiEndpoint"
+                :data-cap-api-endpoint="auth.cap.value.apiEndpoint"
                 style="display: block; width: 100%; --cap-widget-width: 100%"
                 @solve="onCapSolve"
                 @reset="onCapReset"
