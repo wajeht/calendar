@@ -93,4 +93,10 @@ export const config = deepFreeze({
             "txt",
         ],
     },
+
+    cap: {
+        siteKey: process.env.CAP_SITE_KEY || "",
+        secret: process.env.CAP_SECRET || "",
+        apiUrl: process.env.CAP_API_URL || "https://cap.jaw.dev",
+    },
 });

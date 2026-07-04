@@ -35,6 +35,7 @@ const state = reactive({
     cronSettings: null,
     theme: getStoredTheme(),
     feedToken: null,
+    cap: null,
     isSyncing: false,
 });
 
@@ -95,6 +96,9 @@ function applyData(data) {
     state.cronSettings = data.cronSettings || null;
     state.theme = normalizeTheme(data.theme) || getStoredTheme();
     state.feedToken = data.feedToken || null;
+    if (data.cap) {
+        state.cap = data.cap;
+    }
 
     if (data.theme) {
         setStoredTheme(data.theme);
@@ -203,6 +207,7 @@ export function useAuthStore() {
         cronSettings: toRef(state, "cronSettings"),
         theme: toRef(state, "theme"),
         feedToken: toRef(state, "feedToken"),
+        cap: toRef(state, "cap"),
         isSyncing: toRef(state, "isSyncing"),
         initialize,
         refresh,

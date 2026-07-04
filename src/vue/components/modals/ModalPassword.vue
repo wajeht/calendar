@@ -6,25 +6,56 @@ import Input from "../../components/Input.vue";
 import Button from "../../components/Button.vue";
 import { api } from "../../api.js";
 import { useToast } from "../../composables/useToast";
+import { useAuthStore } from "../../composables/useAuthStore.js";
+
+const CAP_WIDGET_SRC = "https://cdn.jsdelivr.net/npm/@cap.js/widget@0.1.56";
 
 const emit = defineEmits(["close", "authenticated"]);
 const toast = useToast();
+const { cap } = useAuthStore();
 const isLoading = ref(false);
 
 const password = ref("");
 const passwordInput = useTemplateRef("passwordInput");
+const capWidget = useTemplateRef("capWidget");
+const capToken = ref("");
 
 const errors = reactive({
     password: "",
 });
 
+function loadCapWidget() {
+    if (!cap.value?.enabled) return;
+    if (document.querySelector(`script[src="${CAP_WIDGET_SRC}"]`)) return;
+
+    const script = document.createElement("script");
+    script.src = CAP_WIDGET_SRC;
+    script.defer = true;
+    document.head.appendChild(script);
+}
+
+function onCapSolve(event) {
+    capToken.value = event.detail?.token || "";
+    errors.password = "";
+}
+
+function onCapReset() {
+    capToken.value = "";
+}
+
 async function authenticate() {
     if (isLoading.value) return;
 
     errors.password = "";
+
+    if (cap.value?.enabled && !capToken.value) {
+        errors.password = "Please complete the captcha";
+        return;
+    }
+
     isLoading.value = true;
     try {
-        const result = await api.auth.login(password.value);
+        const result = await api.auth.login(password.value, capToken.value || undefined);
         if (result.success) {
             toast.success(result.message || "Logged in successfully");
             setTimeout(() => {
@@ -42,6 +73,7 @@ async function authenticate() {
             isLoading.value = false;
 
             password.value = "";
+            resetCapWidget();
             await nextTick();
             passwordInput.value?.focus();
             return;
@@ -51,6 +83,7 @@ async function authenticate() {
         isLoading.value = false;
 
         password.value = "";
+        resetCapWidget();
         await nextTick();
         passwordInput.value?.focus();
         return;
@@ -58,7 +91,14 @@ async function authenticate() {
     isLoading.value = false;
 }
 
+// Cap tokens are single-use — after a failed login the widget must be re-solved
+function resetCapWidget() {
+    capToken.value = "";
+    capWidget.value?.reset?.();
+}
+
 onMounted(async () => {
+    loadCapWidget();
     await nextTick();
     passwordInput.value?.focus();
 });
@@ -92,6 +132,17 @@ onMounted(async () => {
                     @keyup.enter="authenticate"
                 />
             </FormGroup>
+
+            <cap-widget
+                v-if="cap?.enabled"
+                ref="capWidget"
+                :data-cap-api-endpoint="cap.apiEndpoint"
+                style="display: block; width: 100%; --cap-widget-width: 100%"
+                @solve="onCapSolve"
+                @reset="onCapReset"
+                @error="onCapReset"
+                @expired="onCapReset"
+            ></cap-widget>
         </form>
 
         <template #footer>

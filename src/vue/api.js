@@ -100,10 +100,10 @@ export const api = {
             });
         },
 
-        async login(password) {
+        async login(password, capToken) {
             return request("/api/auth", {
                 method: "POST",
-                body: JSON.stringify({ password }),
+                body: JSON.stringify({ password, capToken }),
             });
         },
 

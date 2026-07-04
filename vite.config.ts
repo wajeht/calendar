@@ -10,7 +10,13 @@ const isDev = process.env.NODE_ENV === "development";
 
 export default defineConfig({
     plugins: [
-        vue(),
+        vue({
+            template: {
+                compilerOptions: {
+                    isCustomElement: (tag) => tag === "cap-widget",
+                },
+            },
+        }),
         tailwindcss(),
         !isDev && {
             name: "umami-analytics",
