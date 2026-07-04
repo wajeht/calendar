@@ -234,6 +234,32 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
+         * Verify a Cap (self-hosted captcha) token against the Cap server
+         * @param {string} token - The cap-token produced by the widget
+         * @returns {Promise<{success: boolean}>} - Cap verification outcome
+         * @throws {Error} When the token is missing/invalid or verification fails
+         */
+        async verifyCapToken(token) {
+            try {
+                const response = await fetch(`${config.cap.apiUrl}/siteverify`, {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ secret: config.cap.secret, response: token }),
+                });
+
+                const outcome = await response.json();
+
+                if (!outcome.success) {
+                    throw new Error("Cap validation failed");
+                }
+
+                return outcome;
+            } catch (error) {
+                throw new Error(`Failed to verify Cap token: ${error.message}`);
+            }
+        },
+
+        /**
          * Normalize calendar URL by converting webcal:// to https://
          * @param {string} url - The URL to normalize
          * @returns {string} - The normalized URL
