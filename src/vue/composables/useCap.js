@@ -24,9 +24,15 @@ export function useCap(widget) {
         token.value = event.detail?.token || "";
     }
 
-    // Cap tokens are single-use — reset the widget so it can be re-solved
-    function reset() {
+    // Handles the widget's own reset/error events — clear the token only.
+    // Must not call widget.reset() here, or it re-fires reset and recurses.
+    function onReset() {
         token.value = "";
+    }
+
+    // Cap tokens are single-use — imperatively reset the widget so it can be
+    // re-solved after a failed login. The resulting reset event clears the token.
+    function reset() {
         widget?.value?.reset?.();
     }
 
@@ -36,6 +42,7 @@ export function useCap(widget) {
         token,
         load,
         onSolve,
+        onReset,
         reset,
     };
 }

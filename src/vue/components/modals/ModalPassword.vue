@@ -111,13 +111,20 @@ onMounted(async () => {
                 :data-cap-api-endpoint="cap.apiEndpoint.value"
                 style="display: block; width: 100%; --cap-widget-width: 100%"
                 @solve="cap.onSolve"
-                @reset="cap.reset"
-                @error="cap.reset"
+                @reset="cap.onReset"
+                @error="cap.onReset"
             ></cap-widget>
         </form>
 
         <template #footer>
-            <Button variant="primary" @click="authenticate" :loading="isLoading"> Login </Button>
+            <Button
+                variant="primary"
+                @click="authenticate"
+                :loading="isLoading"
+                :disabled="!password || (cap.enabled.value && !cap.token.value)"
+            >
+                Login
+            </Button>
             <Button @click="emit('close')" :disabled="isLoading">Cancel</Button>
         </template>
     </Modal>
