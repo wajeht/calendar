@@ -26,9 +26,11 @@ jobs:
 
             - name: Set up Vite+
               uses: voidzero-dev/setup-vp@250f29ce396baf5e8f24498e17c0dfdebabc26eb # v1.15.0
+              with:
+                  run-install: false
 
             - name: Install dependencies
-              run: vp install
+              run: npm ci --ignore-scripts --no-audit --no-fund
 
             - name: Build native modules
               run: npm rebuild better-sqlite3 --ignore-scripts=false
