@@ -1,3 +1,9 @@
+import { lookup as dnsLookup } from "node:dns/promises";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+import { isIP } from "node:net";
+import { isPublicNetworkAddress } from "../../utils/network.js";
+
 export function createCalendarService(dependencies = {}) {
     const { ICAL, logger, models, errors, utils, config } = dependencies;
 
@@ -17,7 +23,69 @@ export function createCalendarService(dependencies = {}) {
     if (!utils) throw new ConfigurationError("Utils required for calendar service");
 
     const fetchTimeout = config?.timeouts?.calendarFetch || 30000;
+    const maxResponseBytes = config?.calendar?.maxResponseBytes || 5 * 1024 * 1024;
+    const maxRedirects = config?.calendar?.maxRedirects || 5;
+    const resolveHostname =
+        dependencies.resolveHostname ||
+        ((hostname) => dnsLookup(hostname, { all: true, verbatim: true }));
+    const fetchCalendar = dependencies.fetchCalendar || fetchCalendarFromPublicAddress;
     const pendingFetches = new Map();
+
+    function fetchCalendarFromPublicAddress(url, options) {
+        const request = url.protocol === "https:" ? httpsRequest : httpRequest;
+
+        return new Promise((resolve, reject) => {
+            const calendarRequest = request(
+                url,
+                {
+                    headers: options.headers,
+                    signal: options.signal,
+                    lookup: (_hostname, lookupOptions, callback) => {
+                        const requestedFamily =
+                            typeof lookupOptions === "number"
+                                ? lookupOptions
+                                : lookupOptions?.family;
+                        const addresses = requestedFamily
+                            ? options.addresses.filter(
+                                  ({ family }) => family === Number(requestedFamily),
+                              )
+                            : options.addresses;
+
+                        if (addresses.length === 0) {
+                            const error = new Error("No validated address matches the request");
+                            error.code = "ENOTFOUND";
+                            callback(error);
+                            return;
+                        }
+
+                        if (lookupOptions?.all) {
+                            callback(null, addresses);
+                            return;
+                        }
+
+                        callback(null, addresses[0].address, addresses[0].family);
+                    },
+                },
+                (response) => {
+                    resolve({
+                        ok: response.statusCode >= 200 && response.statusCode < 300,
+                        status: response.statusCode,
+                        statusText: response.statusMessage,
+                        headers: {
+                            get(name) {
+                                const value = response.headers[name.toLowerCase()];
+                                return Array.isArray(value) ? value.join(", ") : value || null;
+                            },
+                        },
+                        body: response,
+                    });
+                },
+            );
+
+            calendarRequest.on("error", reject);
+            calendarRequest.end();
+        });
+    }
 
     function queueCalendarFetch(calendarId, errorMessage) {
         const existingFetch = pendingFetches.get(calendarId);
@@ -513,42 +581,175 @@ export function createCalendarService(dependencies = {}) {
         return { publicEvents, authenticatedEvents };
     }
 
+    async function validateFetchUrl(url) {
+        let parsedUrl;
+        try {
+            parsedUrl = new URL(url);
+        } catch (error) {
+            throw new CalendarFetchError("Invalid calendar URL", { url }, { cause: error });
+        }
+
+        if (
+            !["http:", "https:"].includes(parsedUrl.protocol) ||
+            parsedUrl.username ||
+            parsedUrl.password
+        ) {
+            throw new CalendarFetchError("Calendar URL must use HTTP(S) without credentials", {
+                url,
+            });
+        }
+
+        const hostname = parsedUrl.hostname.replace(/^\[|\]$/g, "");
+        const family = isIP(hostname);
+        const addresses = family
+            ? [{ address: hostname, family }]
+            : await resolveHostname(hostname);
+        const resolvedAddresses = Array.isArray(addresses) ? addresses : [addresses];
+
+        if (
+            resolvedAddresses.length === 0 ||
+            resolvedAddresses.some(({ address }) => !isPublicNetworkAddress(address))
+        ) {
+            throw new CalendarFetchError(
+                "Calendar URL must resolve only to public network addresses",
+                { url },
+            );
+        }
+
+        return { url: parsedUrl, addresses: resolvedAddresses };
+    }
+
+    async function readResponseText(response, url) {
+        const contentLength = Number(response.headers?.get?.("content-length"));
+        if (Number.isFinite(contentLength) && contentLength > maxResponseBytes) {
+            response.body?.destroy?.();
+            throw new CalendarFetchError(
+                `Calendar response exceeds ${maxResponseBytes} byte limit`,
+                { url, maxResponseBytes },
+            );
+        }
+
+        if (response.body?.[Symbol.asyncIterator] && !response.body?.getReader) {
+            const decoder = new TextDecoder();
+            let bytesRead = 0;
+            let text = "";
+
+            for await (const chunk of response.body) {
+                bytesRead += chunk.byteLength;
+                if (bytesRead > maxResponseBytes) {
+                    response.body.destroy();
+                    throw new CalendarFetchError(
+                        `Calendar response exceeds ${maxResponseBytes} byte limit`,
+                        { url, maxResponseBytes },
+                    );
+                }
+                text += decoder.decode(chunk, { stream: true });
+            }
+            return text + decoder.decode();
+        }
+
+        if (!response.body?.getReader) {
+            const text = await response.text();
+            if (Buffer.byteLength(text) > maxResponseBytes) {
+                throw new CalendarFetchError(
+                    `Calendar response exceeds ${maxResponseBytes} byte limit`,
+                    { url, maxResponseBytes },
+                );
+            }
+            return text;
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let bytesRead = 0;
+        let text = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                bytesRead += value.byteLength;
+                if (bytesRead > maxResponseBytes) {
+                    await reader.cancel();
+                    throw new CalendarFetchError(
+                        `Calendar response exceeds ${maxResponseBytes} byte limit`,
+                        { url, maxResponseBytes },
+                    );
+                }
+                text += decoder.decode(value, { stream: true });
+            }
+            return text + decoder.decode();
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
     async function fetchICalData(url) {
-        const normalizedUrl = utils.normalizeCalendarUrl(url);
-        const urlHost = new URL(normalizedUrl).host;
+        let currentUrl = utils.normalizeCalendarUrl(url);
+        const urlHost = new URL(currentUrl).host;
         const fetchStart = Date.now();
 
         try {
-            const response = await fetch(normalizedUrl, {
-                headers: {
-                    "User-Agent": "Calendar-App/1.0",
-                    Accept: "text/calendar, application/calendar, text/plain",
-                },
-                signal: AbortSignal.timeout(fetchTimeout),
-            });
+            let response;
+            const signal = AbortSignal.timeout(fetchTimeout);
+
+            for (let redirectCount = 0; redirectCount <= maxRedirects; redirectCount++) {
+                const validatedTarget = await validateFetchUrl(currentUrl);
+                response = await fetchCalendar(validatedTarget.url, {
+                    addresses: validatedTarget.addresses,
+                    headers: {
+                        "User-Agent": "Calendar-App/1.0",
+                        Accept: "text/calendar, application/calendar, text/plain",
+                    },
+                    redirect: "manual",
+                    signal,
+                });
+
+                if (![301, 302, 303, 307, 308].includes(response.status)) break;
+
+                response.body?.resume?.();
+                const location = response.headers?.get?.("location");
+                if (!location) {
+                    throw new CalendarFetchError("Calendar redirect is missing a location", {
+                        url: currentUrl,
+                    });
+                }
+                if (redirectCount === maxRedirects) {
+                    throw new CalendarFetchError(
+                        `Calendar fetch exceeded ${maxRedirects} redirects`,
+                        { url },
+                    );
+                }
+                currentUrl = new URL(location, validatedTarget.url).href;
+            }
 
             if (!response.ok) {
+                response.body?.resume?.();
                 throw new CalendarFetchError(`HTTP ${response.status}: ${response.statusText}`, {
                     status: response.status,
                     statusText: response.statusText,
-                    url,
+                    url: currentUrl,
                 });
             }
 
-            const data = await response.text();
+            const data = await readResponseText(response, currentUrl);
 
             logger.set({
                 url_host: urlHost,
                 fetch_ms: Date.now() - fetchStart,
                 response_status: response.status,
-                response_bytes: data.length,
+                response_bytes: Buffer.byteLength(data),
             });
 
             return data;
         } catch (error) {
             logger.set({ url_host: urlHost, fetch_ms: Date.now() - fetchStart });
 
-            if (error.name === "TimeoutError") {
+            if (
+                error.name === "TimeoutError" ||
+                (error.name === "AbortError" && error.cause?.name === "TimeoutError")
+            ) {
                 throw new TimeoutError(
                     `Request timeout after ${fetchTimeout}ms for ${url}`,
                     fetchTimeout,
@@ -557,7 +758,7 @@ export function createCalendarService(dependencies = {}) {
             }
             throw new CalendarFetchError(
                 `Failed to fetch iCal data from ${url}: ${error.message}`,
-                { url, normalizedUrl },
+                { url, normalizedUrl: utils.normalizeCalendarUrl(url) },
                 { cause: error },
             );
         }

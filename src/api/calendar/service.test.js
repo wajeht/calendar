@@ -51,8 +51,9 @@ const sampleCalendar = {
 };
 
 async function flushBackgroundFetch() {
-    await new Promise((resolve) => setImmediate(resolve));
-    await Promise.resolve();
+    for (let turn = 0; turn < 4; turn++) {
+        await new Promise((resolve) => setImmediate(resolve));
+    }
 }
 
 function createDeferred() {
@@ -78,6 +79,9 @@ describe("Calendar Service", () => {
             models: testServer.ctx.models,
             errors: testServer.ctx.errors,
             utils: testServer.ctx.utils,
+            resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }],
+            fetchCalendar: (url, { addresses: _addresses, ...options }) =>
+                global.fetch(url.href, options),
             ...overrides,
         });
     }
@@ -179,13 +183,16 @@ describe("Calendar Service", () => {
 
             await calendarService.fetchAndProcessCalendar(calendar.id, webcalUrl);
 
-            expect(global.fetch).toHaveBeenCalledWith(httpsUrl, {
-                headers: {
-                    "User-Agent": "Calendar-App/1.0",
-                    Accept: "text/calendar, application/calendar, text/plain",
-                },
-                signal: expect.any(AbortSignal),
-            });
+            expect(global.fetch).toHaveBeenCalledWith(
+                httpsUrl,
+                expect.objectContaining({
+                    headers: {
+                        "User-Agent": "Calendar-App/1.0",
+                        Accept: "text/calendar, application/calendar, text/plain",
+                    },
+                    redirect: "manual",
+                }),
+            );
         });
     });
 
@@ -249,6 +256,66 @@ describe("Calendar Service", () => {
             await expect(
                 calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url),
             ).rejects.toThrow("HTTP 404: Not Found");
+        });
+
+        it.each([
+            "http://127.0.0.1/calendar.ics",
+            "http://169.254.169.254/latest/meta-data",
+            "http://[::1]/calendar.ics",
+        ])("should reject private network URL %s", async (url) => {
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+
+            await expect(calendarService.fetchAndProcessCalendar(calendar.id, url)).rejects.toThrow(
+                "public network addresses",
+            );
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+
+        it("should reject hostnames resolving to private addresses", async () => {
+            const privateResolver = vi
+                .fn()
+                .mockResolvedValue([{ address: "192.168.1.20", family: 4 }]);
+            const service = buildCalendarService({ resolveHostname: privateResolver });
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+
+            await expect(
+                service.fetchAndProcessCalendar(calendar.id, sampleCalendar.url),
+            ).rejects.toThrow("public network addresses");
+            expect(privateResolver).toHaveBeenCalledWith("example.com");
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+
+        it("should validate redirect targets before following them", async () => {
+            global.fetch.mockResolvedValue({
+                ok: false,
+                status: 302,
+                headers: {
+                    get: (name) => (name === "location" ? "http://127.0.0.1/private.ics" : null),
+                },
+            });
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+
+            await expect(
+                calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url),
+            ).rejects.toThrow("public network addresses");
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+
+        it("should reject oversized calendar responses while streaming", async () => {
+            const service = buildCalendarService({
+                config: { calendar: { maxResponseBytes: 16 } },
+            });
+            global.fetch.mockResolvedValue(
+                new Response("a".repeat(17), {
+                    status: 200,
+                    headers: { "content-type": "text/calendar" },
+                }),
+            );
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+
+            await expect(
+                service.fetchAndProcessCalendar(calendar.id, sampleCalendar.url),
+            ).rejects.toThrow("exceeds 16 byte limit");
         });
 
         it("should handle calendar not found", async () => {

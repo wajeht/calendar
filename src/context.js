@@ -63,6 +63,8 @@ export function createContext(customConfig = {}) {
             utils,
             config: finalConfig,
             ICAL: icalLibrary,
+            resolveHostname: customConfig.resolveHostname,
+            fetchCalendar: customConfig.fetchCalendar,
         }),
     };
 
