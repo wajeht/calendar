@@ -31,6 +31,11 @@ export const config = deepFreeze({
         shutdown: parseInt(process.env.SHUTDOWN_TIMEOUT) || 10000,
     },
 
+    calendar: {
+        maxResponseBytes: parseInt(process.env.CALENDAR_FETCH_MAX_BYTES) || 5 * 1024 * 1024,
+        maxRedirects: parseInt(process.env.CALENDAR_FETCH_MAX_REDIRECTS) || 5,
+    },
+
     security: {
         contentSecurityPolicy:
             (process.env.APP_ENV || process.env.NODE_ENV) === "development" ? false : true,

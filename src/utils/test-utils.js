@@ -15,7 +15,11 @@ export async function createTestServer() {
         headers: { get: () => "text/calendar" },
     });
     const { createApp } = await import("../app.js");
-    const { app, ctx } = await createApp();
+    const { app, ctx } = await createApp({
+        resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }],
+        fetchCalendar: (url, { addresses: _addresses, ...options }) =>
+            global.fetch(url.href, options),
+    });
 
     await ctx.db.migrate.latest();
 
