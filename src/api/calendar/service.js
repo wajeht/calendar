@@ -515,19 +515,66 @@ export function createCalendarService(dependencies = {}) {
         return { publicEvents, authenticatedEvents };
     }
 
-    async function fetchICalData(url) {
+    function getCachedCalendarData(calendar) {
+        if (!calendar.ical_data || calendar.event_views_stale) return null;
+
+        try {
+            const events = JSON.parse(calendar.events_processed);
+            const publicEvents = JSON.parse(calendar.events_public);
+            const authenticatedEvents = JSON.parse(calendar.events_private);
+            if (![events, publicEvents, authenticatedEvents].every(Array.isArray)) return null;
+
+            return {
+                rawData: calendar.ical_data,
+                events,
+                publicEvents,
+                authenticatedEvents,
+            };
+        } catch {
+            return null;
+        }
+    }
+
+    async function fetchICalData(url, sourceMetadata = {}) {
         const normalizedUrl = utils.normalizeCalendarUrl(url);
         const urlHost = new URL(normalizedUrl).host;
         const fetchStart = Date.now();
 
         try {
+            const headers = {
+                "User-Agent": "Calendar-App/1.0",
+                Accept: "text/calendar, application/calendar, text/plain",
+            };
+            if (sourceMetadata.source_etag) {
+                headers["If-None-Match"] = sourceMetadata.source_etag;
+            }
+            if (sourceMetadata.source_last_modified) {
+                headers["If-Modified-Since"] = sourceMetadata.source_last_modified;
+            }
+
             const response = await fetch(normalizedUrl, {
-                headers: {
-                    "User-Agent": "Calendar-App/1.0",
-                    Accept: "text/calendar, application/calendar, text/plain",
-                },
+                headers,
                 signal: AbortSignal.timeout(fetchTimeout),
             });
+
+            const metadata = {
+                source_etag: response.headers?.get?.("etag") || sourceMetadata.source_etag || null,
+                source_last_modified:
+                    response.headers?.get?.("last-modified") ||
+                    sourceMetadata.source_last_modified ||
+                    null,
+                source_url: normalizedUrl,
+            };
+
+            if (response.status === 304) {
+                logger.set({
+                    url_host: urlHost,
+                    fetch_ms: Date.now() - fetchStart,
+                    response_status: response.status,
+                    response_bytes: 0,
+                });
+                return { data: null, notModified: true, ...metadata };
+            }
 
             if (!response.ok) {
                 throw new CalendarFetchError(`HTTP ${response.status}: ${response.statusText}`, {
@@ -546,7 +593,7 @@ export function createCalendarService(dependencies = {}) {
                 response_bytes: data.length,
             });
 
-            return data;
+            return { data, notModified: false, ...metadata };
         } catch (error) {
             logger.set({ url_host: urlHost, fetch_ms: Date.now() - fetchStart });
 
@@ -570,7 +617,56 @@ export function createCalendarService(dependencies = {}) {
 
         return logger.withContext({ calendar_id: calendarId }, async () => {
             try {
-                const rawData = await fetchICalData(url);
+                const initialCalendar = await models.calendar.getById(calendarId);
+                if (!initialCalendar) {
+                    throw new NotFoundError(`Calendar ${calendarId}`);
+                }
+
+                const sameSource = initialCalendar.source_url === utils.normalizeCalendarUrl(url);
+                const sourceMetadata =
+                    sameSource && initialCalendar.ical_data
+                        ? {
+                              source_etag: initialCalendar.source_etag,
+                              source_last_modified: initialCalendar.source_last_modified,
+                          }
+                        : {};
+                const fetched = await fetchICalData(url, sourceMetadata);
+                const cachedData = getCachedCalendarData(initialCalendar);
+
+                if (
+                    cachedData &&
+                    (fetched.notModified || fetched.data === initialCalendar.ical_data)
+                ) {
+                    if (
+                        fetched.source_etag !== initialCalendar.source_etag ||
+                        fetched.source_last_modified !== initialCalendar.source_last_modified ||
+                        fetched.source_url !== initialCalendar.source_url
+                    ) {
+                        await models.calendar.updateFetchMetadata(calendarId, fetched);
+                    }
+
+                    logger.info("calendar sync unchanged", {
+                        calendar_name: initialCalendar.name,
+                        total_events: cachedData.events.length,
+                        duration_ms: Date.now() - startTime,
+                        source_not_modified: fetched.notModified,
+                        success: true,
+                    });
+
+                    return {
+                        ...cachedData,
+                        notModified: fetched.notModified,
+                        unchanged: true,
+                    };
+                }
+
+                const rawData = fetched.notModified ? initialCalendar.ical_data : fetched.data;
+                if (!rawData) {
+                    throw new CalendarFetchError(
+                        "Calendar source returned no data and no cached copy is available",
+                        { url },
+                    );
+                }
 
                 let events;
                 try {
@@ -596,6 +692,10 @@ export function createCalendarService(dependencies = {}) {
                     events_processed: JSON.stringify(events),
                     events_public: JSON.stringify(publicEvents),
                     events_private: JSON.stringify(authenticatedEvents),
+                    source_etag: fetched.source_etag,
+                    source_last_modified: fetched.source_last_modified,
+                    source_url: fetched.source_url,
+                    event_views_stale: false,
                 });
 
                 logger.info("calendar sync complete", {
@@ -700,7 +800,21 @@ export function createCalendarService(dependencies = {}) {
     }
 
     async function update(id, updateData) {
-        const updatedCalendar = await models.calendar.update(id, updateData);
+        const eventViewsChanged =
+            updateData.url !== undefined ||
+            updateData.visible_to_public !== undefined ||
+            updateData.show_details_to_public !== undefined;
+        const finalUpdateData = eventViewsChanged
+            ? { ...updateData, event_views_stale: true }
+            : updateData;
+
+        if (updateData.url !== undefined) {
+            finalUpdateData.source_etag = null;
+            finalUpdateData.source_last_modified = null;
+            finalUpdateData.source_url = null;
+        }
+
+        const updatedCalendar = await models.calendar.update(id, finalUpdateData);
 
         if (
             updatedCalendar &&

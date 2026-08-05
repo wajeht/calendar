@@ -268,6 +268,10 @@ export function createCalendar(dependencies = {}) {
                 "events_processed",
                 "events_public",
                 "events_private",
+                "source_etag",
+                "source_last_modified",
+                "source_url",
+                "event_views_stale",
             ];
 
             for (const field of allowedFields) {
@@ -321,6 +325,27 @@ export function createCalendar(dependencies = {}) {
                     });
                 }
                 throw new DatabaseError(`Failed to update calendar ${id}`, { cause: error });
+            }
+        },
+
+        /**
+         * Store source validators without invalidating the event-view version.
+         * @param {number} id - Calendar ID
+         * @param {Object} metadata - Source response validators
+         * @returns {Promise<boolean>} Whether the calendar was updated
+         */
+        async updateFetchMetadata(id, metadata) {
+            try {
+                const updated = await db("calendars").where("id", id).update({
+                    source_etag: metadata.source_etag,
+                    source_last_modified: metadata.source_last_modified,
+                    source_url: metadata.source_url,
+                });
+                return updated > 0;
+            } catch (error) {
+                throw new DatabaseError(`Failed to update calendar ${id} fetch metadata`, {
+                    cause: error,
+                });
             }
         },
 
