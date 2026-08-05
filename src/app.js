@@ -100,15 +100,27 @@ export async function createApp(customConfig = {}) {
         )
         .use(
             express.static("./public", {
-                maxAge: ctx.config.app.env === "production" ? ctx.config.cache.staticMaxAge : "0",
+                maxAge: "0",
                 etag: true,
                 lastModified: true,
-                immutable: ctx.config.app.env === "production" && ctx.config.cache.staticImmutable,
+                immutable: false,
                 setHeaders: (res, path, _stat) => {
+                    if (path.endsWith("/index.html")) {
+                        res.setHeader("Cache-Control", "no-cache");
+                        return;
+                    }
+
                     const extensionPattern = new RegExp(
                         `\\.(${ctx.config.cache.staticExtensions.join("|")})$`,
                     );
-                    if (ctx.config.app.env === "production" && path.match(extensionPattern)) {
+                    const isVersionedAsset =
+                        /[\\/]assets[\\/][^\\/]+-[A-Za-z0-9_-]{8,}\.[^\\/]+$/.test(path);
+                    if (
+                        ctx.config.app.env === "production" &&
+                        ctx.config.cache.staticImmutable &&
+                        isVersionedAsset &&
+                        path.match(extensionPattern)
+                    ) {
                         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
                         res.setHeader("Vary", "Accept-Encoding");
                     }

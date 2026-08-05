@@ -10,6 +10,15 @@ describe("Main API", () => {
 
             expect(response.status).toBe(200);
             expect(response.headers["content-type"]).toMatch(/text\/html/);
+            expect(response.headers["cache-control"]).toBe("no-cache");
+        });
+
+        it("should revalidate the index for client-side routes", async () => {
+            const response = await server.get("/calendar/settings").set("Accept", "text/html");
+
+            expect(response.status).toBe(200);
+            expect(response.headers["content-type"]).toMatch(/text\/html/);
+            expect(response.headers["cache-control"]).toBe("no-cache");
         });
     });
 
