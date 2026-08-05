@@ -1,3 +1,8 @@
+const MAX_RECURRING_OCCURRENCES = 365;
+const MAX_PAST_RECURRING_OCCURRENCES = 100;
+const MAX_RECURRENCE_ITERATIONS = 10_000;
+const RECURRENCE_PAST_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
+const RECURRENCE_FUTURE_WINDOW_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 const CALENDAR_REFRESH_CONCURRENCY = 4;
 
 export function createCalendarService(dependencies = {}) {
@@ -19,6 +24,7 @@ export function createCalendarService(dependencies = {}) {
     if (!utils) throw new ConfigurationError("Utils required for calendar service");
 
     const fetchTimeout = config?.timeouts?.calendarFetch || 30000;
+    const now = dependencies.now || (() => new Date());
     const pendingFetches = new Map();
 
     function queueCalendarFetch(calendarId, errorMessage) {
@@ -322,6 +328,19 @@ export function createCalendarService(dependencies = {}) {
         return directException || null;
     }
 
+    function hasOnlyFiniteRecurrenceRules(event) {
+        return event.component
+            .getAllProperties("rrule")
+            .every((property) => property.getFirstValue()?.isFinite());
+    }
+
+    function addRecentPastOccurrence(events, occurrence) {
+        events.push(occurrence);
+        if (events.length > MAX_PAST_RECURRING_OCCURRENCES) {
+            events.shift();
+        }
+    }
+
     function parseICalToEvents(icalData) {
         const jCalData = ICAL.parse(icalData);
         const comp = new ICAL.Component(jCalData);
@@ -333,6 +352,11 @@ export function createCalendarService(dependencies = {}) {
         let skippedExceptions = 0;
         let cancelledOccurrences = 0;
         let parseErrors = 0;
+        let windowedRecurringEvents = 0;
+        let cappedRecurrenceIterations = 0;
+        const recurrenceNow = now().getTime();
+        const recurrenceWindowStart = recurrenceNow - RECURRENCE_PAST_WINDOW_MS;
+        const recurrenceWindowEnd = recurrenceNow + RECURRENCE_FUTURE_WINDOW_MS;
 
         for (const vevent of vevents) {
             try {
@@ -352,11 +376,27 @@ export function createCalendarService(dependencies = {}) {
                 if (event.isRecurring()) {
                     recurringCount++;
                     const expand = event.iterator();
-
+                    const completeSeriesEvents = [];
+                    const recentPastEvents = [];
+                    const upcomingEvents = [];
+                    const canPreserveCompleteSeries = hasOnlyFiniteRecurrenceRules(event);
+                    let useRecurrenceWindow = !canPreserveCompleteSeries;
                     let next;
-                    let count = 0;
-                    // Limit: ~1 year of daily, ~7 years of weekly, ~30 years of monthly
-                    while ((next = expand.next()) && count < 365) {
+                    let iterations = 0;
+
+                    while (iterations < MAX_RECURRENCE_ITERATIONS && (next = expand.next())) {
+                        iterations++;
+                        if (!useRecurrenceWindow && iterations > MAX_RECURRING_OCCURRENCES) {
+                            completeSeriesEvents.length = 0;
+                            useRecurrenceWindow = true;
+                        }
+                        if (
+                            useRecurrenceWindow &&
+                            next.toJSDate().getTime() > recurrenceWindowEnd
+                        ) {
+                            break;
+                        }
+
                         const directException = getDirectExceptionComponent(exceptionState, next);
                         if (
                             directException &&
@@ -364,7 +404,6 @@ export function createCalendarService(dependencies = {}) {
                             !directException.hasProperty("dtstart")
                         ) {
                             cancelledOccurrences++;
-                            count++;
                             continue;
                         }
 
@@ -374,7 +413,6 @@ export function createCalendarService(dependencies = {}) {
                         } catch (error) {
                             if (directException && isCancelledExceptionComponent(directException)) {
                                 cancelledOccurrences++;
-                                count++;
                                 continue;
                             }
 
@@ -391,12 +429,51 @@ export function createCalendarService(dependencies = {}) {
 
                         if (isCancelledEvent(occurrenceDetails.item)) {
                             cancelledOccurrences++;
-                            count++;
                             continue;
                         }
 
-                        events.push(createEventFromOccurrenceDetails(event, occurrenceDetails));
-                        count++;
+                        const parsedOccurrence = createEventFromOccurrenceDetails(
+                            event,
+                            occurrenceDetails,
+                        );
+                        const occurrenceTime = occurrenceDetails.startDate.toJSDate().getTime();
+
+                        if (!useRecurrenceWindow) {
+                            completeSeriesEvents.push(parsedOccurrence);
+                        }
+
+                        if (
+                            occurrenceTime >= recurrenceWindowStart &&
+                            occurrenceTime < recurrenceNow
+                        ) {
+                            addRecentPastOccurrence(recentPastEvents, parsedOccurrence);
+                        } else if (
+                            occurrenceTime >= recurrenceNow &&
+                            occurrenceTime <= recurrenceWindowEnd &&
+                            upcomingEvents.length <
+                                MAX_RECURRING_OCCURRENCES - MAX_PAST_RECURRING_OCCURRENCES
+                        ) {
+                            upcomingEvents.push(parsedOccurrence);
+                        }
+
+                        if (
+                            useRecurrenceWindow &&
+                            upcomingEvents.length ===
+                                MAX_RECURRING_OCCURRENCES - MAX_PAST_RECURRING_OCCURRENCES
+                        ) {
+                            break;
+                        }
+                    }
+
+                    if (iterations === MAX_RECURRENCE_ITERATIONS) {
+                        cappedRecurrenceIterations++;
+                    }
+
+                    if (useRecurrenceWindow) {
+                        windowedRecurringEvents++;
+                        events.push(...recentPastEvents, ...upcomingEvents);
+                    } else {
+                        events.push(...completeSeriesEvents);
                     }
                 } else {
                     singleCount++;
@@ -417,6 +494,8 @@ export function createCalendarService(dependencies = {}) {
             single_events: singleCount,
             skipped_exceptions: skippedExceptions,
             cancelled_occurrences: cancelledOccurrences,
+            windowed_recurring_events: windowedRecurringEvents,
+            capped_recurrence_iterations: cappedRecurrenceIterations,
             parse_errors: parseErrors,
         });
 
