@@ -680,6 +680,40 @@ END:VCALENDAR`;
             expect(result.successful).toBe(1);
             expect(result.failed).toBe(1);
         });
+
+        it("should refresh calendars with bounded concurrency", async () => {
+            let activeFetches = 0;
+            let maxActiveFetches = 0;
+            global.fetch.mockImplementation(async () => {
+                activeFetches++;
+                maxActiveFetches = Math.max(maxActiveFetches, activeFetches);
+                await new Promise((resolve) => setImmediate(resolve));
+                activeFetches--;
+                return {
+                    ok: true,
+                    text: () => Promise.resolve(sampleICalData),
+                    headers: { get: () => "text/calendar" },
+                };
+            });
+
+            for (let index = 0; index < 6; index++) {
+                await testServer.ctx.models.calendar.create({
+                    name: `Concurrent Calendar ${index}`,
+                    url: `https://example.com/concurrent-${index}.ics`,
+                    color: "#447dfc",
+                    visible_to_public: true,
+                    show_details_to_public: true,
+                });
+            }
+
+            const result = await calendarService.refetchAllCalendars();
+
+            expect(result.successful).toBe(6);
+            expect(maxActiveFetches).toBe(4);
+            expect(result.results.map(({ calendarId }) => calendarId)).toEqual(
+                [...result.results].map(({ calendarId }) => calendarId).sort((a, b) => a - b),
+            );
+        });
     });
 
     describe("export", () => {

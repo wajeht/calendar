@@ -1,3 +1,5 @@
+const CALENDAR_REFRESH_CONCURRENCY = 4;
+
 export function createCalendarService(dependencies = {}) {
     const { ICAL, logger, models, errors, utils, config } = dependencies;
 
@@ -724,18 +726,35 @@ export function createCalendarService(dependencies = {}) {
         const startTime = Date.now();
         const calendars = await models.calendar.getAll();
 
-        const results = [];
+        const results = Array.from({ length: calendars.length });
         let totalEvents = 0;
 
-        for (const calendar of calendars) {
-            try {
-                const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
-                totalEvents += result.events.length;
-                results.push({ success: true, calendarId: calendar.id, ...result });
-            } catch (error) {
-                results.push({ success: false, calendarId: calendar.id, message: error.message });
+        let nextCalendarIndex = 0;
+        async function refreshNextCalendar() {
+            while (nextCalendarIndex < calendars.length) {
+                const calendarIndex = nextCalendarIndex++;
+                const calendar = calendars[calendarIndex];
+
+                try {
+                    const result = await fetchAndProcessCalendar(calendar.id, calendar.url);
+                    totalEvents += result.events.length;
+                    results[calendarIndex] = {
+                        success: true,
+                        calendarId: calendar.id,
+                        ...result,
+                    };
+                } catch (error) {
+                    results[calendarIndex] = {
+                        success: false,
+                        calendarId: calendar.id,
+                        message: error.message,
+                    };
+                }
             }
         }
+
+        const workerCount = Math.min(CALENDAR_REFRESH_CONCURRENCY, calendars.length);
+        await Promise.all(Array.from({ length: workerCount }, refreshNextCalendar));
 
         const successful = results.filter((r) => r.success).length;
         const failed = results.length - successful;
