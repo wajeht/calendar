@@ -10,6 +10,32 @@ export function createUtils(dependencies = {}) {
     if (!logger) throw new ConfigurationError("Logger required for utils");
     if (!config) throw new ConfigurationError("Config required for utils");
 
+    const sessionSecret = config.auth?.sessionSecret;
+    if (!sessionSecret) throw new ConfigurationError("Session secret required for utils");
+
+    function signSessionValue(value) {
+        return crypto.createHmac("sha256", sessionSecret).update(value).digest("hex");
+    }
+
+    function hasValidSessionSignature(value, signature) {
+        if (!/^[0-9a-f]{64}$/i.test(signature || "")) {
+            return false;
+        }
+
+        const expected = Buffer.from(signSessionValue(value), "hex");
+        const actual = Buffer.from(signature, "hex");
+        return crypto.timingSafeEqual(actual, expected);
+    }
+
+    function parseSessionTimestamp(value) {
+        if (!/^\d+$/.test(value || "")) {
+            return null;
+        }
+
+        const timestamp = Number(value);
+        return Number.isSafeInteger(timestamp) && timestamp > 0 ? timestamp : null;
+    }
+
     return {
         /**
          * Check if a request is an API request
@@ -128,40 +154,81 @@ export function createUtils(dependencies = {}) {
         },
 
         /**
-         * Validate session token with idle and absolute timeouts
+         * Create a signed session token.
+         * @param {number} [createdAt] - Session creation timestamp
+         * @returns {string} Signed session token
+         */
+        createSessionToken(createdAt = Date.now()) {
+            const timestamp = String(createdAt);
+            const nonce = crypto.randomBytes(16).toString("hex");
+            const payload = `${timestamp}.${nonce}`;
+            return `${payload}.${signSessionValue(payload)}`;
+        },
+
+        /**
+         * Create a signed activity value bound to a session token.
+         * @param {string} token - Signed session token
+         * @param {number} [activeAt] - Last activity timestamp
+         * @returns {string} Signed session activity value
+         */
+        createSessionActivity(token, activeAt = Date.now()) {
+            const timestamp = String(activeAt);
+            const payload = `${token}.${timestamp}`;
+            return `${timestamp}.${signSessionValue(payload)}`;
+        },
+
+        /**
+         * Validate signed session and activity values with idle and absolute timeouts.
          * @param {string} token - Session token to validate
-         * @param {number} [lastActivity] - Last activity timestamp for idle check
+         * @param {string} lastActivity - Signed activity value for idle check
          * @returns {boolean} - True if token is valid and not expired
          */
         validateSessionToken(token, lastActivity = null) {
-            if (!token || typeof token !== "string") {
+            if (
+                !token ||
+                typeof token !== "string" ||
+                !lastActivity ||
+                typeof lastActivity !== "string"
+            ) {
                 return false;
             }
 
             try {
-                const [timestamp] = token.split(".");
-                const tokenCreatedAt = parseInt(timestamp);
+                const tokenParts = token.split(".");
+                const activityParts = lastActivity.split(".");
+                if (tokenParts.length !== 3 || activityParts.length !== 2) {
+                    return false;
+                }
 
-                if (isNaN(tokenCreatedAt)) {
+                const [createdAtValue, nonce, tokenSignature] = tokenParts;
+                const [activeAtValue, activitySignature] = activityParts;
+                const tokenCreatedAt = parseSessionTimestamp(createdAtValue);
+                const lastActivityTime = parseSessionTimestamp(activeAtValue);
+
+                if (
+                    !tokenCreatedAt ||
+                    !lastActivityTime ||
+                    !/^[0-9a-f]{32}$/i.test(nonce) ||
+                    !hasValidSessionSignature(`${createdAtValue}.${nonce}`, tokenSignature) ||
+                    !hasValidSessionSignature(`${token}.${activeAtValue}`, activitySignature)
+                ) {
                     return false;
                 }
 
                 const now = Date.now();
 
                 // Absolute timeout - max session lifetime from creation
-                if (now - tokenCreatedAt > config.auth.absoluteTimeout) {
+                if (tokenCreatedAt > now || now - tokenCreatedAt > config.auth.absoluteTimeout) {
                     return false;
                 }
 
                 // Idle timeout - max time since last activity
-                if (lastActivity) {
-                    const lastActivityTime = parseInt(lastActivity);
-                    if (
-                        !isNaN(lastActivityTime) &&
-                        now - lastActivityTime > config.auth.idleTimeout
-                    ) {
-                        return false;
-                    }
+                if (
+                    lastActivityTime < tokenCreatedAt ||
+                    lastActivityTime > now ||
+                    now - lastActivityTime > config.auth.idleTimeout
+                ) {
+                    return false;
                 }
 
                 return true;

@@ -27,11 +27,12 @@ export function createAuthMiddleware(dependencies = {}) {
 
                 // Sliding session: extend cookies on each authenticated request
                 const now = Date.now();
+                const sessionActivity = utils.createSessionActivity(token, now);
                 res.cookie("session_token", token, {
                     ...cookieOptions,
                     maxAge: config.auth.absoluteTimeout,
                 });
-                res.cookie("session_activity", String(now), {
+                res.cookie("session_activity", sessionActivity, {
                     ...cookieOptions,
                     maxAge: config.auth.idleTimeout,
                 });
