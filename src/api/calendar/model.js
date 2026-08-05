@@ -71,7 +71,6 @@ export function createCalendar(dependencies = {}) {
                           "visible_to_public",
                           "show_details_to_public",
                           "events_public",
-                          "events_processed",
                       ];
 
                 let query = db("calendars").select(fields);
@@ -82,19 +81,14 @@ export function createCalendar(dependencies = {}) {
 
                 const calendars = await query;
 
-                const parseEvents = (eventsStr, fallbackStr) => {
-                    if (eventsStr) {
-                        try {
-                            return JSON.parse(eventsStr);
-                        } catch {}
-                    }
+                const parseEvents = (...eventStrings) => {
+                    for (const eventsStr of eventStrings) {
+                        if (!eventsStr) continue;
 
-                    if (fallbackStr) {
                         try {
-                            return JSON.parse(fallbackStr);
-                        } catch {
-                            return [];
-                        }
+                            const events = JSON.parse(eventsStr);
+                            if (Array.isArray(events)) return events;
+                        } catch {}
                     }
                     return [];
                 };
@@ -120,7 +114,7 @@ export function createCalendar(dependencies = {}) {
                             color: calendar.color,
                             visible_to_public: calendar.visible_to_public,
                             show_details_to_public: calendar.show_details_to_public,
-                            events: parseEvents(calendar.events_public, calendar.events_processed),
+                            events: parseEvents(calendar.events_public),
                         };
                     }
                 }
@@ -321,6 +315,31 @@ export function createCalendar(dependencies = {}) {
                     });
                 }
                 throw new DatabaseError(`Failed to update calendar ${id}`, { cause: error });
+            }
+        },
+
+        /**
+         * Update fetched event views only when the privacy settings used to build them still match.
+         * @param {number} id - Calendar ID
+         * @param {Object} data - Event data to update
+         * @param {Object} privacy - Privacy settings used to build the event views
+         * @returns {Promise<boolean>} Whether the update was applied
+         */
+        async updateEventViews(id, data, privacy) {
+            try {
+                const updated = await db("calendars")
+                    .where({
+                        id,
+                        visible_to_public: privacy.visible_to_public,
+                        show_details_to_public: privacy.show_details_to_public,
+                    })
+                    .update({ ...data, updated_at: new Date() });
+
+                return updated > 0;
+            } catch (error) {
+                throw new DatabaseError(`Failed to update calendar ${id} event views`, {
+                    cause: error,
+                });
             }
         },
 

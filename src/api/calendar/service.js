@@ -515,6 +515,22 @@ export function createCalendarService(dependencies = {}) {
         return { publicEvents, authenticatedEvents };
     }
 
+    function parseStoredEvents(calendar) {
+        if (!calendar.events_processed) return [];
+
+        try {
+            const events = JSON.parse(calendar.events_processed);
+            if (!Array.isArray(events)) throw new TypeError("Stored events must be an array");
+            return events;
+        } catch (error) {
+            logger.warn("stored calendar events invalid", {
+                calendar_id: calendar.id,
+                error: error.message,
+            });
+            return [];
+        }
+    }
+
     async function fetchICalData(url) {
         const normalizedUrl = utils.normalizeCalendarUrl(url);
         const urlHost = new URL(normalizedUrl).host;
@@ -581,22 +597,36 @@ export function createCalendarService(dependencies = {}) {
                     });
                 }
 
-                const calendar = await models.calendar.getById(calendarId);
-                if (!calendar) {
-                    throw new NotFoundError(`Calendar ${calendarId}`);
+                let calendar;
+                let publicEvents;
+                let authenticatedEvents;
+                let viewsUpdated = false;
+
+                while (!viewsUpdated) {
+                    calendar = await models.calendar.getById(calendarId);
+                    if (!calendar) {
+                        throw new NotFoundError(`Calendar ${calendarId}`);
+                    }
+
+                    ({ publicEvents, authenticatedEvents } = processEventsForViews(
+                        events,
+                        calendar,
+                    ));
+
+                    viewsUpdated = await models.calendar.updateEventViews(
+                        calendarId,
+                        {
+                            ical_data: rawData,
+                            events_processed: JSON.stringify(events),
+                            events_public: JSON.stringify(publicEvents),
+                            events_private: JSON.stringify(authenticatedEvents),
+                        },
+                        {
+                            visible_to_public: calendar.visible_to_public,
+                            show_details_to_public: calendar.show_details_to_public,
+                        },
+                    );
                 }
-
-                const { publicEvents, authenticatedEvents } = processEventsForViews(
-                    events,
-                    calendar,
-                );
-
-                await models.calendar.update(calendarId, {
-                    ical_data: rawData,
-                    events_processed: JSON.stringify(events),
-                    events_public: JSON.stringify(publicEvents),
-                    events_private: JSON.stringify(authenticatedEvents),
-                });
 
                 logger.info("calendar sync complete", {
                     calendar_name: calendar.name,
@@ -700,14 +730,29 @@ export function createCalendarService(dependencies = {}) {
     }
 
     async function update(id, updateData) {
-        const updatedCalendar = await models.calendar.update(id, updateData);
+        const privacyChanged =
+            updateData.visible_to_public !== undefined ||
+            updateData.show_details_to_public !== undefined;
+        let finalUpdateData = updateData;
 
-        if (
-            updatedCalendar &&
-            (updateData.url !== undefined ||
-                updateData.visible_to_public !== undefined ||
-                updateData.show_details_to_public !== undefined)
-        ) {
+        if (privacyChanged) {
+            const calendar = await models.calendar.getById(id);
+            if (!calendar) return null;
+
+            const updatedPrivacy = { ...calendar, ...updateData };
+            const { publicEvents } = processEventsForViews(
+                parseStoredEvents(calendar),
+                updatedPrivacy,
+            );
+            finalUpdateData = {
+                ...updateData,
+                events_public: JSON.stringify(publicEvents),
+            };
+        }
+
+        const updatedCalendar = await models.calendar.update(id, finalUpdateData);
+
+        if (updatedCalendar && updateData.url !== undefined) {
             queueCalendarFetch(updatedCalendar.id, "background calendar reprocessing failed");
         }
 
