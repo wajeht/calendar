@@ -213,6 +213,93 @@ describe("Calendar Service", () => {
             expect(JSON.parse(updatedCalendar.events_processed)).toHaveLength(4);
         });
 
+        it("should reuse cached events when the source returns not modified", async () => {
+            global.fetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    status: 200,
+                    text: () => Promise.resolve(sampleICalData),
+                    headers: {
+                        get: (name) =>
+                            ({
+                                etag: '"calendar-v1"',
+                                "last-modified": "Tue, 05 Aug 2025 12:00:00 GMT",
+                            })[name] || null,
+                    },
+                })
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 304,
+                    headers: { get: () => null },
+                });
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+            await calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
+            const updateSpy = vi.spyOn(testServer.ctx.models.calendar, "update");
+
+            const result = await calendarService.fetchAndProcessCalendar(
+                calendar.id,
+                sampleCalendar.url,
+            );
+
+            expect(global.fetch).toHaveBeenLastCalledWith(
+                sampleCalendar.url,
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        "If-None-Match": '"calendar-v1"',
+                        "If-Modified-Since": "Tue, 05 Aug 2025 12:00:00 GMT",
+                    }),
+                }),
+            );
+            expect(result).toMatchObject({ notModified: true, unchanged: true });
+            expect(result.events).toHaveLength(4);
+            expect(updateSpy).not.toHaveBeenCalled();
+        });
+
+        it("should not rewrite valid event views when the downloaded body is unchanged", async () => {
+            global.fetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: () => Promise.resolve(sampleICalData),
+                headers: { get: () => null },
+            });
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+            await calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
+            const updateSpy = vi.spyOn(testServer.ctx.models.calendar, "update");
+
+            const result = await calendarService.fetchAndProcessCalendar(
+                calendar.id,
+                sampleCalendar.url,
+            );
+
+            expect(result.unchanged).toBe(true);
+            expect(updateSpy).not.toHaveBeenCalled();
+        });
+
+        it("should rebuild cached views after privacy settings change", async () => {
+            global.fetch.mockResolvedValue({
+                ok: true,
+                status: 200,
+                text: () => Promise.resolve(sampleICalData),
+                headers: { get: () => null },
+            });
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+            await calendarService.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
+            await testServer.ctx.models.calendar.update(calendar.id, {
+                show_details_to_public: false,
+                event_views_stale: true,
+            });
+
+            const result = await calendarService.fetchAndProcessCalendar(
+                calendar.id,
+                sampleCalendar.url,
+            );
+
+            expect(result.unchanged).toBeUndefined();
+            expect(result.publicEvents[0].title).toBe("Private");
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            expect(updatedCalendar.event_views_stale).toBe(0);
+        });
+
         it("should handle fetch timeout", async () => {
             const timeoutError = new Error("The operation was aborted due to timeout");
             timeoutError.name = "TimeoutError";
