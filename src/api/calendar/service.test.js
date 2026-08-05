@@ -408,6 +408,40 @@ describe("Calendar Service", () => {
             expect(recurringEvents[0]).toHaveProperty("description", "Weekly recurring event");
         });
 
+        it("should include current occurrences from old unbounded series", async () => {
+            const service = buildCalendarService({
+                now: () => new Date("2026-08-04T12:00:00.000Z"),
+            });
+            const oldRecurringICalData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:old-daily@example.com
+DTSTART:20200101T120000Z
+DTEND:20200101T130000Z
+RRULE:FREQ=DAILY
+SUMMARY:Old Daily Event
+END:VEVENT
+END:VCALENDAR`;
+
+            global.fetch.mockResolvedValue({
+                ok: true,
+                text: () => Promise.resolve(oldRecurringICalData),
+                headers: { get: () => "text/calendar" },
+            });
+            const calendar = await testServer.ctx.models.calendar.create(sampleCalendar);
+
+            await service.fetchAndProcessCalendar(calendar.id, sampleCalendar.url);
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const events = JSON.parse(updatedCalendar.events_processed);
+
+            expect(events).toHaveLength(365);
+            expect(events.some((event) => event.start === "2026-08-04T12:00:00.000Z")).toBe(true);
+            expect(events.some((event) => event.start.startsWith("2020-"))).toBe(false);
+            expect(events.at(-1).start).toBe("2027-04-25T12:00:00.000Z");
+        });
+
         it("should handle events with attendees and organizer", async () => {
             global.fetch.mockResolvedValue({
                 ok: true,
