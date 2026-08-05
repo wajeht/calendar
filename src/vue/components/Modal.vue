@@ -33,6 +33,9 @@ const emit = defineEmits(["close"]);
 const dialogRef = useTemplateRef("dialogRef");
 const isClosing = ref(false);
 const isVisible = ref(false);
+const isDragging = ref(false);
+const dragOffset = ref({ x: 0, y: 0 });
+let dragState = null;
 
 function handleDialogClick(event) {
     event.stopPropagation();
@@ -51,6 +54,55 @@ function handleBackdropClick() {
     if (props.closable && modalStack.value.at(-1) === closeModal) {
         closeModal();
     }
+}
+
+function handleDragStart(event) {
+    if (
+        event.button !== 0 ||
+        event.target.closest("button, a, input, select, textarea, [role='button'], [data-no-drag]")
+    ) {
+        return;
+    }
+
+    const dialog = dialogRef.value;
+    if (!dialog) return;
+
+    const rect = dialog.getBoundingClientRect();
+    dragState = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startOffsetX: dragOffset.value.x,
+        startOffsetY: dragOffset.value.y,
+        rect,
+    };
+    isDragging.value = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+}
+
+function handleDragMove(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+    const { rect } = dragState;
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const clampedX = Math.min(Math.max(deltaX, -rect.left), window.innerWidth - rect.right);
+    const clampedY = Math.min(Math.max(deltaY, -rect.top), window.innerHeight - rect.bottom);
+
+    dragOffset.value = {
+        x: dragState.startOffsetX + clampedX,
+        y: dragState.startOffsetY + clampedY,
+    };
+}
+
+function handleDragEnd(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    dragState = null;
+    isDragging.value = false;
 }
 
 onMounted(() => {
@@ -84,6 +136,11 @@ const sizeClasses = computed(() => {
             return "max-w-md w-[90%] max-h-[85vh]";
     }
 });
+
+const dialogStyle = computed(() => ({
+    "--modal-drag-x": `${dragOffset.value.x}px`,
+    "--modal-drag-y": `${dragOffset.value.y}px`,
+}));
 </script>
 
 <template>
@@ -104,14 +161,20 @@ const sizeClasses = computed(() => {
                 props.highZIndex ? 'z-[4001]' : 'z-[3001]',
                 isClosing ? 'modal-closing' : '',
                 !isVisible ? 'modal-entering' : '',
+                isDragging ? 'modal-dragging' : '',
                 sizeClasses,
             ]"
+            :style="dialogStyle"
             @click="handleDialogClick"
         >
             <!-- Modal Header -->
             <div
                 v-if="props.title || $slots.header"
-                class="bg-gray-100 border-b border-gray-300 p-4 relative dark:bg-gray-900 dark:border-gray-600"
+                class="modal-drag-handle bg-gray-100 border-b border-gray-300 p-4 relative dark:bg-gray-900 dark:border-gray-600"
+                @pointerdown="handleDragStart"
+                @pointermove="handleDragMove"
+                @pointerup="handleDragEnd"
+                @pointercancel="handleDragEnd"
             >
                 <h2 class="m-0 text-base font-bold text-gray-800 dark:text-gray-100">
                     <slot name="header">{{ props.title }}</slot>
@@ -150,12 +213,15 @@ const sizeClasses = computed(() => {
 
 <style scoped>
 .modal-dialog {
+    --modal-drag-x: 0px;
+    --modal-drag-y: 0px;
     position: fixed;
     top: 50%;
     left: 50%;
     margin: 0;
     padding: 0;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translate(calc(-50% + var(--modal-drag-x)), calc(-50% + var(--modal-drag-y)))
+        scale(1);
     opacity: 1;
     transition:
         opacity 0.15s ease-out,
@@ -164,12 +230,28 @@ const sizeClasses = computed(() => {
 
 .modal-entering {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: translate(calc(-50% + var(--modal-drag-x)), calc(-50% + var(--modal-drag-y)))
+        scale(0.95);
 }
 
 .modal-closing {
     opacity: 0 !important;
-    transform: translate(-50%, -50%) scale(0.95) !important;
+    transform: translate(calc(-50% + var(--modal-drag-x)), calc(-50% + var(--modal-drag-y)))
+        scale(0.95) !important;
+}
+
+.modal-dragging {
+    transition: none;
+}
+
+.modal-drag-handle {
+    cursor: move;
+    touch-action: none;
+    user-select: none;
+}
+
+.modal-dragging .modal-drag-handle {
+    cursor: grabbing;
 }
 
 dialog::backdrop {
