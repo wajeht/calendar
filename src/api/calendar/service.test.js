@@ -558,6 +558,7 @@ END:VCALENDAR`;
 
     describe("refetchAllCalendars", () => {
         it("should refetch all calendars and return results", async () => {
+            const getAllSpy = vi.spyOn(testServer.ctx.models.calendar, "getAll");
             global.fetch.mockImplementation(() =>
                 Promise.resolve({
                     ok: true,
@@ -588,6 +589,7 @@ END:VCALENDAR`;
             expect(result.successful).toBe(2);
             expect(result.failed).toBe(0);
             expect(result.results).toHaveLength(2);
+            expect(getAllSpy).toHaveBeenCalledWith({ includeEvents: false });
         });
 
         it("should handle mixed success and failure", async () => {
@@ -626,6 +628,40 @@ END:VCALENDAR`;
             expect(result.total).toBe(2);
             expect(result.successful).toBe(1);
             expect(result.failed).toBe(1);
+        });
+
+        it("should refresh calendars with bounded concurrency", async () => {
+            let activeFetches = 0;
+            let maxActiveFetches = 0;
+            global.fetch.mockImplementation(async () => {
+                activeFetches++;
+                maxActiveFetches = Math.max(maxActiveFetches, activeFetches);
+                await new Promise((resolve) => setImmediate(resolve));
+                activeFetches--;
+                return {
+                    ok: true,
+                    text: () => Promise.resolve(sampleICalData),
+                    headers: { get: () => "text/calendar" },
+                };
+            });
+
+            for (let index = 0; index < 6; index++) {
+                await testServer.ctx.models.calendar.create({
+                    name: `Concurrent Calendar ${index}`,
+                    url: `https://example.com/concurrent-${index}.ics`,
+                    color: "#447dfc",
+                    visible_to_public: true,
+                    show_details_to_public: true,
+                });
+            }
+
+            const result = await calendarService.refetchAllCalendars();
+
+            expect(result.successful).toBe(6);
+            expect(maxActiveFetches).toBe(4);
+            expect(result.results.map(({ calendarId }) => calendarId)).toEqual(
+                [...result.results].map(({ calendarId }) => calendarId).sort((a, b) => a - b),
+            );
         });
     });
 
@@ -708,6 +744,70 @@ END:VCALENDAR`;
     });
 
     describe("update", () => {
+        it("should apply public privacy changes immediately without refetching", async () => {
+            const events = [
+                {
+                    uid: "private-event@example.com",
+                    title: "Secret Meeting",
+                    description: "Confidential details",
+                    location: "Secret Location",
+                    start: "2025-01-11T10:00:00.000Z",
+                    end: "2025-01-11T11:00:00.000Z",
+                    organizer: { name: "Private Organizer", email: "private@example.com" },
+                    attendees: [{ name: "Private Attendee", email: "attendee@example.com" }],
+                },
+            ];
+            const calendar = await testServer.ctx.models.calendar.create({
+                name: "Privacy Update",
+                url: "https://example.com/privacy.ics",
+                color: "#447dfc",
+                visible_to_public: true,
+                show_details_to_public: true,
+                events_processed: JSON.stringify(events),
+                events_public: JSON.stringify([{ title: "Secret Meeting" }]),
+            });
+
+            await calendarService.update(calendar.id, {
+                show_details_to_public: false,
+            });
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            const publicEvents = JSON.parse(updatedCalendar.events_public);
+
+            expect(publicEvents).toHaveLength(1);
+            expect(publicEvents[0]).toMatchObject({
+                title: "Private",
+                extendedProps: {
+                    description: "",
+                    location: "",
+                    show_details_to_public: false,
+                },
+            });
+            expect(publicEvents[0]).not.toHaveProperty("url");
+            expect(publicEvents[0].extendedProps).not.toHaveProperty("organizerEmail");
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+
+        it("should fail closed when stored events cannot be sanitized", async () => {
+            const calendar = await testServer.ctx.models.calendar.create({
+                name: "Invalid Stored Events",
+                url: "https://example.com/invalid-stored-events.ics",
+                color: "#447dfc",
+                visible_to_public: true,
+                show_details_to_public: true,
+                events_processed: "not-json",
+                events_public: JSON.stringify([{ title: "Sensitive Event" }]),
+            });
+
+            await calendarService.update(calendar.id, {
+                show_details_to_public: false,
+            });
+
+            const updatedCalendar = await testServer.ctx.models.calendar.getById(calendar.id);
+            expect(JSON.parse(updatedCalendar.events_public)).toEqual([]);
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+
         it("should reprocess events when the source URL changes", async () => {
             const updatedICalData = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -838,6 +938,28 @@ END:VCALENDAR`;
                     }),
                 }),
             );
+        });
+    });
+
+    describe("public access", () => {
+        it("should not fall back to unsanitized events", async () => {
+            const calendar = await testServer.ctx.models.calendar.create({
+                name: "Missing Public Events",
+                url: "https://example.com/missing-public-events.ics",
+                color: "#447dfc",
+                visible_to_public: true,
+                show_details_to_public: true,
+                events_processed: JSON.stringify([{ title: "Sensitive Event" }]),
+            });
+
+            const calendars = await testServer.ctx.models.calendar.getAllForAccess(false);
+
+            expect(calendars).toEqual([
+                expect.objectContaining({
+                    id: calendar.id,
+                    events: [],
+                }),
+            ]);
         });
     });
 
