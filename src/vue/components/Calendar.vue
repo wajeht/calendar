@@ -17,6 +17,7 @@ import { useToast } from "../composables/useToast";
 import { useAuthStore } from "../composables/useAuthStore.js";
 import { useTheme } from "../composables/useTheme.js";
 import { useLogger } from "../composables/useLogger.js";
+import { api } from "../api.js";
 
 const toast = useToast();
 const logger = useLogger("Calendar");
@@ -253,13 +254,63 @@ function updateCalendarSources(calendarData) {
     calendar.render();
 }
 
-async function reloadCalendars() {
+const SYNC_POLL_INTERVAL_MS = 1000;
+const SYNC_POLL_TIMEOUT_MS = 35000;
+
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForCalendarSync(calendarIds) {
+    const watchedIds = new Set(calendarIds);
+    const deadline = Date.now() + SYNC_POLL_TIMEOUT_MS;
+
+    while (Date.now() < deadline) {
+        const response = await api.calendar.syncStatus();
+        if (!response.success) throw new Error(response.message || "Failed to check sync status");
+
+        const pendingIds = response.data.pendingCalendarIds.filter((id) => watchedIds.has(id));
+        if (pendingIds.length === 0) {
+            return response.data.results.filter(
+                (result) => watchedIds.has(result.calendarId) && !result.success,
+            );
+        }
+
+        await wait(SYNC_POLL_INTERVAL_MS);
+    }
+
+    return null;
+}
+
+async function reloadCalendars(calendarIds = []) {
+    let syncToastId = null;
     try {
         const { calendars: data } = await auth.refresh();
         calendars.value = data;
         updateCalendarSources(data);
+
+        if (calendarIds.length > 0) {
+            syncToastId = toast.info("Syncing calendar events...", null, 0);
+            const failures = await waitForCalendarSync(calendarIds);
+
+            if (failures === null) {
+                toast.warning("Calendar sync is still running. Events will update shortly.");
+                setTimeout(() => void reloadCalendars(), 5000);
+                return;
+            }
+
+            const { calendars: freshData } = await auth.refresh();
+            calendars.value = freshData;
+            updateCalendarSources(freshData);
+
+            if (failures.length > 0) {
+                toast.error(failures.map((failure) => failure.message).join("; "));
+            }
+        }
     } catch (error) {
         toast.error("Failed to load calendars");
+    } finally {
+        if (syncToastId) toast.removeToast(syncToastId);
     }
 }
 

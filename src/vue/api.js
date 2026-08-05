@@ -187,6 +187,10 @@ export const api = {
                 method: "POST",
             });
         },
+
+        async syncStatus() {
+            return request("/api/calendars/sync-status");
+        },
     },
 
     settings: {

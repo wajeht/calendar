@@ -18,8 +18,22 @@ export function createCalendarService(dependencies = {}) {
 
     const fetchTimeout = config?.timeouts?.calendarFetch || 30000;
     const pendingFetches = new Map();
+    const completedFetches = new Map();
+
+    function recordFetchResult(calendarId, result) {
+        completedFetches.set(calendarId, {
+            calendarId,
+            completedAt: new Date().toISOString(),
+            ...result,
+        });
+
+        if (completedFetches.size > 100) {
+            completedFetches.delete(completedFetches.keys().next().value);
+        }
+    }
 
     function queueCalendarFetch(calendarId, errorMessage) {
+        completedFetches.delete(calendarId);
         const existingFetch = pendingFetches.get(calendarId);
         if (existingFetch) {
             existingFetch.rerun = true;
@@ -41,7 +55,9 @@ export function createCalendarService(dependencies = {}) {
                 }
 
                 await fetchAndProcessCalendar(calendar.id, calendar.url);
+                recordFetchResult(calendarId, { success: true, message: null });
             } catch (error) {
+                recordFetchResult(calendarId, { success: false, message: error.message });
                 logger.error(fetchState.errorMessage, {
                     calendar_id: calendarId,
                     error: error.message,
@@ -54,6 +70,13 @@ export function createCalendarService(dependencies = {}) {
                 }
             }
         });
+    }
+
+    function getSyncStatus() {
+        return {
+            pendingCalendarIds: [...pendingFetches.keys()],
+            results: [...completedFetches.values()],
+        };
     }
 
     function formatDate(icalTime) {
@@ -707,7 +730,7 @@ export function createCalendarService(dependencies = {}) {
             });
         }
 
-        const results = { imported: 0, skipped: 0, errors: [] };
+        const results = { imported: 0, skipped: 0, errors: [], calendarIds: [] };
 
         for (const data of calendarsData) {
             try {
@@ -739,6 +762,7 @@ export function createCalendarService(dependencies = {}) {
                 });
                 queueCalendarFetch(calendar.id, "background imported calendar fetch failed");
                 results.imported++;
+                results.calendarIds.push(calendar.id);
             } catch (error) {
                 results.errors.push({ calendar: data, message: error.message });
             }
@@ -821,6 +845,7 @@ export function createCalendarService(dependencies = {}) {
         refetchAllCalendars,
         fetchAndProcessCalendar,
         combineCalendarsToIcal,
+        getSyncStatus,
         update,
     };
 }

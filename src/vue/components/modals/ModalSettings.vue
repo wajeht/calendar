@@ -139,13 +139,13 @@ function deleteCalendar(calendar) {
     showDeleteModal.value = true;
 }
 
-function handleCalendarAdded() {
-    emit("calendar-updated");
+function handleCalendarAdded(calendarId) {
+    emit("calendar-updated", [calendarId]);
     showAddModal.value = false;
 }
 
-function handleCalendarUpdated() {
-    emit("calendar-updated");
+function handleCalendarUpdated(calendarId) {
+    emit("calendar-updated", [calendarId]);
     showEditModal.value = false;
     editingCalendar.value = null;
 }
@@ -207,7 +207,7 @@ async function importCalendars(event) {
 
         const result = await api.calendar.import(settings.calendars);
         if (result.success) {
-            emit("calendar-updated");
+            emit("calendar-updated", result.data.calendarIds);
             toast.success("Settings imported successfully");
         } else {
             throw new Error(result.message || "Failed to import calendars");

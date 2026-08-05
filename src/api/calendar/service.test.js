@@ -671,6 +671,54 @@ END:VCALENDAR`;
             expect(events).toHaveLength(1);
             expect(events[0].title).toBe("Created Background Event");
         });
+
+        it("should report background sync progress and completion", async () => {
+            const pendingFetch = createDeferred();
+            global.fetch.mockReturnValue(pendingFetch.promise);
+
+            const calendar = await calendarService.create({
+                name: "Tracked Background Sync",
+                url: "https://example.com/tracked-background.ics",
+                color: "#447dfc",
+            });
+
+            expect(calendarService.getSyncStatus().pendingCalendarIds).toContain(calendar.id);
+
+            pendingFetch.resolve({
+                ok: true,
+                text: () => Promise.resolve(sampleICalData),
+                headers: { get: () => "text/calendar" },
+            });
+            await flushBackgroundFetch();
+
+            expect(calendarService.getSyncStatus()).toMatchObject({
+                pendingCalendarIds: [],
+                results: expect.arrayContaining([
+                    expect.objectContaining({ calendarId: calendar.id, success: true }),
+                ]),
+            });
+        });
+
+        it("should report background sync failures", async () => {
+            global.fetch.mockRejectedValue(new Error("Calendar source unavailable"));
+
+            const calendar = await calendarService.create({
+                name: "Failed Background Sync",
+                url: "https://example.com/failed-background.ics",
+                color: "#447dfc",
+            });
+            await flushBackgroundFetch();
+
+            expect(calendarService.getSyncStatus().results).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        calendarId: calendar.id,
+                        success: false,
+                        message: expect.stringContaining("Calendar source unavailable"),
+                    }),
+                ]),
+            );
+        });
     });
 
     describe("update", () => {
@@ -824,6 +872,7 @@ END:VCALENDAR`;
             expect(result.imported).toBe(1);
             expect(result.skipped).toBe(0);
             expect(result.errors).toHaveLength(0);
+            expect(result.calendarIds).toHaveLength(1);
 
             const calendars = await testServer.ctx.models.calendar.getAll();
             const importedCalendar = calendars.find((cal) => cal.name === "Imported Cal");
