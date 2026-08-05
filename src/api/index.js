@@ -18,6 +18,7 @@ export function createGeneralRouter(dependencies = {}) {
     router.get("/", (_req, res) => {
         return res
             .setHeader("Content-Type", "text/html")
+            .setHeader("Cache-Control", "no-cache")
             .status(200)
             .sendFile(utils.cwd() + "/public/index.html");
     });
@@ -69,6 +70,7 @@ export function notFoundHandler(dependencies = {}) {
 
         return res
             .setHeader("Content-Type", "text/html")
+            .setHeader("Cache-Control", "no-cache")
             .status(200)
             .sendFile(utils.cwd() + "/public/index.html");
     };
