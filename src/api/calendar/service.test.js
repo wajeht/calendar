@@ -524,6 +524,7 @@ END:VCALENDAR`;
 
     describe("refetchAllCalendars", () => {
         it("should refetch all calendars and return results", async () => {
+            const getAllSpy = vi.spyOn(testServer.ctx.models.calendar, "getAll");
             global.fetch.mockImplementation(() =>
                 Promise.resolve({
                     ok: true,
@@ -554,6 +555,7 @@ END:VCALENDAR`;
             expect(result.successful).toBe(2);
             expect(result.failed).toBe(0);
             expect(result.results).toHaveLength(2);
+            expect(getAllSpy).toHaveBeenCalledWith({ includeEvents: false });
         });
 
         it("should handle mixed success and failure", async () => {
