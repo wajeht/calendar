@@ -724,7 +724,7 @@ export function createCalendarService(dependencies = {}) {
 
     async function refetchAllCalendars() {
         const startTime = Date.now();
-        const calendars = await models.calendar.getAll();
+        const calendars = await models.calendar.getAll({ includeEvents: false });
 
         const results = Array.from({ length: calendars.length });
         let totalEvents = 0;
