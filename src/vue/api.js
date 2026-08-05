@@ -185,6 +185,7 @@ export const api = {
         async refresh() {
             return request("/api/calendars/refresh", {
                 method: "POST",
+                timeoutMs: 120000,
             });
         },
 

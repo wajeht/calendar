@@ -18,6 +18,7 @@ import { useAuthStore } from "../composables/useAuthStore.js";
 import { useTheme } from "../composables/useTheme.js";
 import { useLogger } from "../composables/useLogger.js";
 import { api } from "../api.js";
+import { formatLocalDate } from "../utils/date.js";
 
 const toast = useToast();
 const logger = useLogger("Calendar");
@@ -320,8 +321,8 @@ function updateURL() {
 
     const view = calendar.view;
     const date = calendar.getDate();
-    const today = new Date().toISOString().split("T")[0];
-    const currentDate = date.toISOString().split("T")[0];
+    const today = formatLocalDate(new Date());
+    const currentDate = formatLocalDate(date);
 
     const viewName =
         Object.keys(viewMappings).find((key) => viewMappings[key] === view.type) || "week";
@@ -338,7 +339,7 @@ function updateURL() {
     window.history.replaceState({}, "", url.toString());
 }
 
-const lastKnownDate = ref(new Date().toISOString().split("T")[0]);
+const lastKnownDate = ref(formatLocalDate(new Date()));
 const midnightTimeout = ref(null);
 
 function navigateToTodayIfNeeded(previousDate) {
@@ -354,7 +355,7 @@ function navigateToTodayIfNeeded(previousDate) {
         !confirmDialog.show;
 
     if (isIdle) {
-        const calendarDate = calendar.getDate().toISOString().split("T")[0];
+        const calendarDate = formatLocalDate(calendar.getDate());
 
         // If calendar was showing the previous date, navigate to new today
         if (calendarDate === previousDate) {
@@ -365,7 +366,7 @@ function navigateToTodayIfNeeded(previousDate) {
 }
 
 function handleDateChange() {
-    const currentDate = new Date().toISOString().split("T")[0];
+    const currentDate = formatLocalDate(new Date());
     if (currentDate === lastKnownDate.value) return;
 
     const previousDate = lastKnownDate.value;
