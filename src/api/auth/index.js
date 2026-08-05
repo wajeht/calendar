@@ -167,8 +167,9 @@ export function createAuthRouter(dependencies = {}) {
         res.clearCookie("failed_attempts", { path: "/" });
         res.clearCookie("locked_until", { path: "/" });
 
-        const sessionToken = `${Date.now()}.${utils.generateSecureToken(16)}`;
         const now = Date.now();
+        const sessionToken = utils.createSessionToken(now);
+        const sessionActivity = utils.createSessionActivity(sessionToken, now);
 
         const cookieOptions = {
             httpOnly: true,
@@ -182,7 +183,7 @@ export function createAuthRouter(dependencies = {}) {
             ...cookieOptions,
             maxAge: config.auth.absoluteTimeout,
         });
-        res.cookie("session_activity", String(now), {
+        res.cookie("session_activity", sessionActivity, {
             ...cookieOptions,
             maxAge: config.auth.idleTimeout,
         });

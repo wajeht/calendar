@@ -6,7 +6,15 @@ import { ConfigurationError, ValidationError } from "../errors.js";
 function makeUtils(cap) {
     return createUtils({
         logger: createLogger("test"),
-        config: { app: { env: "production" }, cap },
+        config: {
+            app: { env: "production" },
+            auth: {
+                sessionSecret: "test-session-secret",
+                idleTimeout: 7 * 24 * 60 * 60 * 1000,
+                absoluteTimeout: 30 * 24 * 60 * 60 * 1000,
+            },
+            cap,
+        },
         errors: { ConfigurationError, ValidationError },
     });
 }
@@ -26,7 +34,15 @@ describe("utils.isCapEnabled", () => {
     it("is disabled outside production", () => {
         const utils = createUtils({
             logger: createLogger("test"),
-            config: { app: { env: "development" }, cap },
+            config: {
+                app: { env: "development" },
+                auth: {
+                    sessionSecret: "test-session-secret",
+                    idleTimeout: 7 * 24 * 60 * 60 * 1000,
+                    absoluteTimeout: 30 * 24 * 60 * 60 * 1000,
+                },
+                cap,
+            },
             errors: { ConfigurationError, ValidationError },
         });
         expect(utils.isCapEnabled()).toBe(false);
@@ -77,5 +93,33 @@ describe("utils.verifyCapToken", () => {
         };
 
         await expect(utils.verifyCapToken("token")).rejects.toThrow(/Failed to verify Cap token/);
+    });
+});
+
+describe("utils session signing", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const utils = makeUtils({ secret: "test-secret", apiUrl: "https://cap.example.test" });
+
+    it("accepts a generated session with signed activity", () => {
+        const token = utils.createSessionToken(Date.now() - DAY);
+        const activity = utils.createSessionActivity(token);
+
+        expect(utils.validateSessionToken(token, activity)).toBe(true);
+    });
+
+    it("rejects a token with a forged signature", () => {
+        const token = utils.createSessionToken();
+        const parts = token.split(".");
+        parts[2] = "0".repeat(64);
+        const forgedToken = parts.join(".");
+        const activity = utils.createSessionActivity(forgedToken);
+
+        expect(utils.validateSessionToken(forgedToken, activity)).toBe(false);
+    });
+
+    it("rejects unsigned activity timestamps", () => {
+        const token = utils.createSessionToken();
+
+        expect(utils.validateSessionToken(token, String(Date.now()))).toBe(false);
     });
 });
