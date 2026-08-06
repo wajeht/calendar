@@ -65,7 +65,7 @@ async function handleSubmit() {
         const result = await api.calendar.update(props.calendar.id, editForm);
         if (result.success) {
             toast.success(result.message || "Calendar updated successfully");
-            emit("calendar-updated");
+            emit("calendar-updated", result.data.id);
             emit("close");
         } else {
             toast.error(result.message || "Failed to update calendar");

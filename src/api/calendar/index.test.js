@@ -260,6 +260,27 @@ describe("Calendar", () => {
         });
     });
 
+    describe("GET /api/calendars/sync-status", () => {
+        it("should return background sync status", async () => {
+            const response = await server.get("/api/calendars/sync-status");
+
+            expect(response.status).toBe(200);
+            expect(response.body.data).toEqual({
+                pendingCalendarIds: expect.any(Array),
+                results: expect.any(Array),
+            });
+        });
+
+        it("should require authentication", async () => {
+            await server.logout();
+
+            const response = await server.get("/api/calendars/sync-status");
+
+            expect(response.status).toBe(401);
+            await server.login();
+        });
+    });
+
     describe("GET /api/calendars/export", () => {
         it("should export calendars successfully", async () => {
             const response = await server.get("/api/calendars/export");

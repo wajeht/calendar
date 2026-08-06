@@ -188,6 +188,10 @@ export const api = {
                 timeoutMs: 120000,
             });
         },
+
+        async syncStatus() {
+            return request("/api/calendars/sync-status");
+        },
     },
 
     settings: {
