@@ -1,4 +1,4 @@
-FROM node:26-slim@sha256:3da386ce626509488d4631d71ae67b8009ec12481eda55539e1f611eca98fd77 AS builder
+FROM node:26-slim@sha256:4ebb5ace66f15a24c14c492e01a8beeed4fddf970a856109f5126e703e5fe503 AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
