@@ -42,6 +42,15 @@ export function createCalendarRouter(dependencies = {}) {
         });
     });
 
+    router.get("/sync-status", requireAuth, (_req, res) => {
+        res.json({
+            success: true,
+            message: "Calendar sync status retrieved successfully",
+            errors: null,
+            data: services.calendar.getSyncStatus(),
+        });
+    });
+
     router.post("/import", requireAuth, async (req, res) => {
         validators.validateBody(req.body);
 

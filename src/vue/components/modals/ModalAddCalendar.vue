@@ -55,7 +55,7 @@ async function handleSubmit() {
         const result = await api.calendar.create(newCalendar);
         if (result.success) {
             toast.success(result.message || "Calendar added successfully");
-            emit("calendar-added");
+            emit("calendar-added", result.data.id);
             emit("close");
             resetForm();
         } else {
