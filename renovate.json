@@ -1,4 +1,12 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["github>wajeht/renovate-config"]
+    "extends": ["github>wajeht/renovate-config"],
+    "packageRules": [
+        {
+            "description": "Keep FullCalendar packages aligned until the stable v7 API and package migration is complete.",
+            "matchPackageNames": ["@fullcalendar/*"],
+            "groupName": "fullcalendar monorepo",
+            "allowedVersions": "7.0.0-rc.0"
+        }
+    ]
 }
