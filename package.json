@@ -76,7 +76,7 @@
         "@vitejs/plugin-vue": "6.0.9",
         "concurrently": "10.0.5",
         "supertest": "7.3.1",
-        "vite-plus": "0.3.3"
+        "vite-plus": "1.0.0"
     },
     "engines": {
         "node": ">=26.1.0",
