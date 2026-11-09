@@ -1,7 +1,7 @@
 import { ref, computed } from "vue";
 import { useAuthStore } from "./useAuthStore.js";
 
-const WIDGET_SRC = "https://cdn.jsdelivr.net/npm/@cap.js/widget@0.1.56";
+const WIDGET_SRC = "https://cdn.jsdelivr.net/npm/@cap.js/widget@0.1.61";
 
 export function useCap(widget) {
     const auth = useAuthStore();
