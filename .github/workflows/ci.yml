@@ -86,7 +86,7 @@ jobs:
         if: github.event_name == 'push'
         needs: ["test", "build"]
         name: Deploy
-        uses: wajeht/docker-cd-deploy-workflow/.github/workflows/deploy.yaml@0bc04980ed44366020f68363a15a923b36307059 # v0.0.29
+        uses: wajeht/docker-cd-deploy-workflow/.github/workflows/deploy.yaml@22eff51583297b7492bc6ae4a06be80c301f2180 # v0.0.28
         with:
             app-path: apps/calendar
             service-name: calendar
@@ -146,7 +146,7 @@ jobs:
         needs: temp-build
         permissions:
             deployments: write
-        uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-deploy.yaml@0bc04980ed44366020f68363a15a923b36307059 # v0.0.29
+        uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-deploy.yaml@22eff51583297b7492bc6ae4a06be80c301f2180 # v0.0.28
         with:
             app-path: apps/calendar
             service-name: calendar
@@ -163,7 +163,7 @@ jobs:
             (github.event.action == 'unlabeled' && github.event.label.name == 'temp-deploy')
         permissions:
             deployments: write
-        uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-cleanup.yaml@0bc04980ed44366020f68363a15a923b36307059 # v0.0.29
+        uses: wajeht/docker-cd-deploy-workflow/.github/workflows/temp-cleanup.yaml@22eff51583297b7492bc6ae4a06be80c301f2180 # v0.0.28
         with:
             app-path: apps/calendar
         secrets:
